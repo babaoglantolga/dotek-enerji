@@ -1,0 +1,6 @@
+{
+  "name": "dotek-enerji",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=18" }
+}

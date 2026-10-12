@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Dotek Randevu Paneli</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fira+Sans+Extra+Condensed:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{--bg:#0d1526;--panel:#141f35;--panel-2:#1a2842;--line:#2a3a5a;--fg:#eef1f6;--muted:#9aa7bf;--signal:#f5d90a;--signal-ink:#1a1500;
+--f-display:"Fira Sans Extra Condensed","Arial Narrow",sans-serif;--f-body:"IBM Plex Sans",system-ui,sans-serif;--f-mono:"IBM Plex Mono",ui-monospace,monospace;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 var(--f-body)}
+.wrap{max-width:1100px;margin-inline:auto;padding:calc(20px + env(safe-area-inset-top,0px)) 16px 40px}
+h1{font:800 clamp(1.8rem,5vw,2.6rem)/1 var(--f-display);text-transform:uppercase;margin:0}
+.eyebrow{font:500 .75rem var(--f-mono);letter-spacing:.14em;text-transform:uppercase;color:var(--signal);margin:0 0 8px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{background:var(--panel);color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font:500 .88rem var(--f-body);cursor:pointer}
+.filters button[aria-pressed="true"]{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
+.login{max-width:360px;margin:12vh auto 0;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;display:grid;gap:12px}
+.login input{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:12px;font:400 1rem var(--f-body)}
+.btn{background:var(--signal);color:var(--signal-ink);border:0;border-radius:8px;padding:12px 16px;font:600 1rem var(--f-body);cursor:pointer}
+.err{color:#ff8f7d;font-size:.9rem;margin:0}
+.muted{color:var(--muted)}
+.appts{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.appt{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px;display:grid;gap:12px;align-content:start;min-width:0}
+.appt.new{border-color:var(--signal)}
+.appt-top{display:flex;justify-content:space-between;gap:8px;align-items:center;font-size:.85rem;color:var(--muted)}
+.pill{display:inline-block;font:600 .78rem var(--f-body);padding:4px 10px;border-radius:999px;border:1px solid}
+.pill.ok{color:#7ff0ac;border-color:#2f7d50;background:rgba(58,208,122,.12)}
+.pill.warn{color:var(--signal);border-color:#7a6c10;background:rgba(245,217,10,.1)}
+.pill.off{color:var(--muted);border-color:var(--line)}
+.t{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.when{display:grid;gap:4px;font-size:1.15rem}
+.when span{font-size:.95rem;color:var(--signal)}
+dl{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;margin:0;font-size:.92rem}
+dt{color:var(--muted)} dd{margin:0;overflow-wrap:anywhere}
+.acts{display:flex;gap:8px;flex-wrap:wrap}
+.acts button,.acts a,.newf button{font:600 .88rem var(--f-body);border-radius:8px;padding:8px 12px;cursor:pointer;text-decoration:none;border:1px solid var(--line);background:none;color:var(--fg)}
+.acts .ok{background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
+.acts .wa{background:#1f9d55;border-color:#1f9d55;color:#fff}
+.newf{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:end}
+.newf label{display:grid;gap:4px;font-size:.8rem;color:var(--muted)}
+.newf input,.newf select{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px;font:400 .9rem var(--f-body);width:100%;min-width:0}
+.newf button{grid-column:1/-1;background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
+.empty{color:var(--muted);padding:18px;border:1px dashed var(--line);border-radius:10px}
+:focus-visible{outline:2px solid var(--signal);outline-offset:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <form class="login" id="login">
+    <p class="eyebrow">Dotek Enerji Sistemleri</p>
+    <h1>Randevu Paneli</h1>
+    <label for="pw" class="muted">Panel şifresi</label>
+    <input id="pw" type="password" autocomplete="current-password" required>
+    <button class="btn" type="submit">Giriş</button>
+    <p class="err" id="loginErr" hidden>Şifre yanlış.</p>
+  </form>
+
+  <div id="app" hidden>
+    <div class="top">
+      <div><p class="eyebrow">Dotek Enerji Sistemleri</p><h1>Gelen randevular</h1></div>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div id="list"><p class="empty">Yükleniyor…</p></div>
+  </div>
+</div>
+<script src="/i18n.js"></script>
+<script>
+const T = window.T;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const DEPTS = [["all","Tümü"],["elec","Elektronik"],["gen","Jeneratör"],["auto","Otomasyon"],["elecw","Elektrik"],["bob","Bobinaj"]];
+const PLACE = { atolye:"Atölye", yerinde:"Yerinde" };
+const ST = { yeni:["Onay bekliyor","warn"], onay:["Onaylandı","ok"], oneri:["Yeni saat önerildi","warn"], kabul:["Müşteri yeni saati kabul etti","ok"], iptal:["Müşteri iptal etti","off"], tamam:["Tamamlandı","off"] };
+let key = "", items = [], filter = "all";
+try { key = sessionStorage.getItem("dotek_panel") || ""; filter = localStorage.getItem("dotek_filter") || "all"; } catch(_) {}
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function isoDay(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function slotsFor(day){
+  if (!day) return [];
+  const wd = new Date(day+"T12:00").getDay(); if (wd === 0) return null;
+  const end = wd === 6 ? 12*60+30 : 17*60, out = [];
+  for (let m = 8*60+30; m <= end; m += 30) out.push(pad(Math.floor(m/60))+":"+pad(m%60));
+  return out;
+}
+function trDate(d){ const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d||""); return m ? `${m[3]}.${m[2]}.${m[1]}` : (d||""); }
+function trSfx(tm){ const m = /^(\d{1,2}):(\d{2})$/.exec(tm||""); if (!m) return ""; if (m[2] === "30") return " da"; return " " + ({8:"de",9:"da",10:"da",11:"de",12:"de",13:"te",14:"te",15:"te",16:"da",17:"de"}[+m[1]] || "de"); }
+function waNum(ph){ let d = String(ph||"").replace(/\D/g,""); if (d.startsWith("00")) d = d.slice(2); else if (d.startsWith("0")) d = "90" + d.slice(1); else if (d.length === 10 && d.startsWith("5")) d = "90" + d; return d; }
+function waText(r){
+  const t = T[r.lang] || T.tr, dn = (t.wa_dept||T.tr.wa_dept)[r.dept] || r.deptName || "";
+  const tr = (r.lang||"tr") === "tr";
+  const f = s => s.replace("{d}", dn).replace("{date}", trDate(r.date)).replace("{time}", r.time||"").replace("{sfx}", tr ? trSfx(r.time) : "").replace("{nd}", trDate(r.newDate)).replace("{nt}", r.newTime||"").replace("{nsfx}", tr ? trSfx(r.newTime) : "");
+  return f(r.status === "oneri" ? t.wa_new : t.wa_ok);
+}
+
+async function api(method, body){
+  const r = await fetch("/api/panel", { method, headers:{ "x-panel-key":key, "content-type":"application/json" }, body: body ? JSON.stringify(body) : undefined });
+  if (r.status === 401) { logout(); throw new Error("auth"); }
+  if (!r.ok) throw new Error("http " + r.status);
+  return r.json();
+}
+function logout(){ key = ""; try { sessionStorage.removeItem("dotek_panel"); } catch(_) {} $("#app").hidden = true; $("#login").hidden = false; }
+async function load(){
+  try { const j = await api("GET"); items = j.items || []; $("#login").hidden = true; $("#app").hidden = false; draw(); return true; }
+  catch(e) { return false; }
+}
+$("#login").addEventListener("submit", async e => {
+  e.preventDefault(); key = $("#pw").value;
+  if (await load()) { try { sessionStorage.setItem("dotek_panel", key); } catch(_) {} $("#loginErr").hidden = true; }
+  else { $("#loginErr").hidden = false; }
+});
+
+function draw(){
+  $("#filters").innerHTML = DEPTS.map(([k,n]) => {
+    const c = k === "all" ? items.filter(i => i.status === "yeni").length : items.filter(i => i.dept === k && i.status === "yeni").length;
+    return `<button type="button" data-f="${k}" aria-pressed="${k===filter}">${n}${c ? ` (${c})` : ""}</button>`;
+  }).join("");
+  const rows = items.filter(i => filter === "all" || i.dept === filter);
+  if (!rows.length) { $("#list").innerHTML = `<p class="empty">Bu bölümde randevu yok.</p>`; return; }
+  $("#list").innerHTML = `<div class="appts">${rows.map(r => {
+    const st = ST[r.status] || ST.yeni, wa = waNum(r.phone);
+    const canWa = (r.status === "onay" || r.status === "oneri") && wa.length >= 10;
+    return `<article class="appt${r.status==="yeni"?" new":""}" data-id="${esc(r.id)}">
+      <div class="appt-top"><span class="pill ${st[1]}">${esc(st[0])}</span><span>${esc(r.deptName)}</span></div>
+      <div class="when"><b class="t">${esc(trDate(r.date))} · ${esc(r.time)}</b>${r.newDate ? `<span>→ yeni: <b class="t">${esc(trDate(r.newDate))} · ${esc(r.newTime)}</b></span>` : ""}</div>
+      <dl><dt>Müşteri</dt><dd>${esc(r.name)}</dd><dt>Telefon</dt><dd class="t"><a href="tel:${esc(r.phone)}" style="color:inherit">${esc(r.phone)}</a></dd><dt>Yer</dt><dd>${esc(PLACE[r.place]||"")}</dd><dt>Not</dt><dd>${esc(r.note||"—")}</dd><dt>Dil</dt><dd class="t">${esc(String(r.lang||"").toUpperCase())}</dd></dl>
+      <div class="acts">
+        ${r.status !== "tamam" && r.status !== "iptal" ? `<button type="button" class="ok" data-act="onay">Onayla</button><button type="button" data-act="newform">Başka saat öner</button>` : ""}
+        ${canWa ? `<a class="wa" href="https://wa.me/${wa}?text=${encodeURIComponent(waText(r))}" target="_blank" rel="noopener">WhatsApp'tan müşteriye bildir</a>` : ""}
+        ${r.status === "onay" || r.status === "kabul" ? `<button type="button" data-act="tamam">Tamamlandı</button>` : ""}
+      </div>
+      <form class="newf" hidden>
+        <label>Yeni tarih<input type="date" name="nd" min="${isoDay(new Date())}"></label>
+        <label>Yeni saat<select name="nt"><option value="">Önce tarih</option></select></label>
+        <button type="submit">Öneriyi kaydet</button>
+        <p class="err" hidden></p>
+      </form>
+    </article>`; }).join("")}</div>`;
+}
+document.addEventListener("click", async e => {
+  const f = e.target.closest("[data-f]");
+  if (f) { filter = f.dataset.f; try { localStorage.setItem("dotek_filter", filter); } catch(_) {} draw(); return; }
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const card = b.closest(".appt"), id = card.dataset.id;
+  if (b.dataset.act === "newform") { const fm = card.querySelector(".newf"); fm.hidden = !fm.hidden; return; }
+  b.disabled = true;
+  try { const upd = await api("POST", { id, action:b.dataset.act }); items = items.map(i => i.id === id ? upd : i); draw(); }
+  catch(_) { b.disabled = false; }
+});
+document.addEventListener("change", e => {
+  if (!e.target.matches(".newf [name=nd]")) return;
+  const fm = e.target.form, sl = slotsFor(e.target.value), err = fm.querySelector(".err");
+  err.hidden = true;
+  if (sl === null) { fm.nt.innerHTML = `<option value="">—</option>`; err.textContent = "Pazar kapalı, başka gün seçin."; err.hidden = false; return; }
+  fm.nt.innerHTML = sl.map(x => `<option>${x}</option>`).join("");
+});
+document.addEventListener("submit", async e => {
+  if (!e.target.matches(".newf")) return;
+  e.preventDefault();
+  const fm = e.target, id = fm.closest(".appt").dataset.id, err = fm.querySelector(".err");
+  if (!fm.nd.value || !fm.nt.value) { err.textContent = "Tarih ve saat seçin."; err.hidden = false; return; }
+  try { const upd = await api("POST", { id, action:"oneri", newDate:fm.nd.value, newTime:fm.nt.value }); items = items.map(i => i.id === id ? upd : i); draw(); }
+  catch(_) { err.textContent = "Kaydedilemedi, tekrar deneyin."; err.hidden = false; }
+});
+if (key) load();
+setInterval(() => { if (key && !document.querySelector(".newf:not([hidden])")) load(); }, 30000);
+</script>
+</body>
+</html>
