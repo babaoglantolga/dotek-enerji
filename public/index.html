@@ -767,20 +767,25 @@ const KW = {
   gen:["jenerat","generator","генератор","γεννήτρ","ژنراتور"],
   bob:["bobin","sarım","sardır","rewind","перемот","обмотк","περιέλ","سیم‌پیچ","سیم پیچ"],
   auto:["otomasyon","plc","automat","автомат","αυτοματ","اتوماسیون","pano","panel","щит","πίνακ","تابلو","pompa","pump","насос","αντλί","پمپ"],
-  elec:["kart","board","ecu","inverter","invert","плат","эбу","πλακέτ","برد","çamaşır","bulaşık","buzdolab","washing","fridge","dishwash","стирал","холодил","πλυντήρ","ψυγ","لباسشویی","یخچال","tv","televiz","телевиз","τηλεόρ","تلویزیون","kaynak","weld","свар","κόλλησ","جوش"],
+  elec:["kart","board","ecu","inverter","invert","плат","эбу","πλακέτ","برد","çamaşır","bulaşık","buzdolab","washing","fridge","dishwash","стирал","холодил","πλυντήρ","ψυγ","لباسشویی","یخچال","tv","televiz","телевиз","τηλεόρ","تلویزیون","kaynak","weld","свар","κόλλησ","جوش","klima","kombi","fırın","mikrodalga","ac ","3d","baskı","scan","tarama","print"],
   elecw:["elektrik","tesisat","sigorta","kaçak","wiring","electric","fuse","электр","провод","ηλεκτρ","καλωδ","برق","سیم‌کشی","لامپ","ışık","light","свет","φωτ"],
   hours:["saat","açık","hours","open","час","открыт","ώρ","ωράρ","ανοιχτ","ساعت","باز","adres","address","адрес","διεύθ","نشانی"]
 };
+let fbState = { dept:null, step:0, asked:0 };
 function fallback(text){
   const t = T[lang], s = text.toLowerCase();
-  for (const k of ["hours","gen","bob","auto","elec","elecw"]) {
-    if (KW[k].some(w => s.includes(w))) {
-      if (k === "hours") return t.fb_hours;
-      const d = t.svc[k];
-      return `${t.fb_intro} ${d.n}.\n${d.d}\n\n${t.fb_next}\n${t.fb_hours}`;
-    }
+  if (KW.hours.some(w => s.includes(w)) && !fbState.dept) return t.fb_hours;
+  if (!fbState.dept && curRoom) fbState.dept = curRoom.depts[0];
+  if (!fbState.dept) {
+    for (const k of ["gen","bob","auto","elec","elecw"]) if (KW[k].some(w => s.includes(w))) { fbState.dept = k; break; }
+    if (!fbState.dept && /klima|air ?con|кондиц|κλιματ|کولر/.test(s)) fbState.dept = "elec";
+    if (!fbState.dept) { fbState.asked++; return fbState.asked > 2 ? t.fb_more.replace("{d}", t.office).replace("{p}", PHONES.office) : t.fb_ask_device; }
   }
-  return t.fb_generic;
+  const k = fbState.dept, dn = t.ph_names[k], ph = PHONES[k];
+  fbState.step++;
+  if (fbState.step === 1) return k === "elec" ? t.fb_ask_board : t.fb_ask_detail;
+  if (fbState.step === 2) return k === "elec" ? t.fb_elec_fee : t.fb_other_fee.replace("{d}", dn).replace("{p}", ph);
+  return t.fb_more.replace("{d}", dn).replace("{p}", ph);
 }
 
 let ctl = null;
@@ -797,6 +802,7 @@ async function send(text){
     while (turns.length && turns[0].role !== "user") turns.shift();
     const res = await fetch("/api/chat", { method:"POST", headers:{ "content-type":"application/json" }, signal:ctl.signal,
       body: JSON.stringify({ messages: turns, room: curRoom ? curRoom.depts : [], lang }) });
+    if (res.status === 503 && aiReady) { aiReady = false; setStatus(); }
     if (!res.ok) throw new Error("http " + res.status);
     const { text: answer } = await res.json();
     if (!answer) throw new Error("empty");
@@ -833,7 +839,7 @@ function fillRoom(r){
 }
 function resetChat(text){
   try { ctl?.abort(); } catch(_) {}
-  convo = []; $("#msgs").innerHTML = ""; $("#q").value = "";
+  convo = []; fbState = { dept:null, step:0, asked:0 }; $("#msgs").innerHTML = ""; $("#q").value = "";
   addMsg("bot", text); convo.push({ role:"assistant", content:text });
   chat.hidden = true; fab.hidden = false;
 }
