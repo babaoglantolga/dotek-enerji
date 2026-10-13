@@ -8,7 +8,7 @@ tr:{
  panel_title:"Atölye bölümleri",panel_live:"Açık",
  s_eyebrow:"5 bölüm",s_title:"Hizmetlerimiz",s_sub:"Her bölümün kendi ustası ve kendi hattı var. İşiniz doğrudan doğru kişiye gider.",
  svc:{
-  elec:{n:"Elektronik Kart Tamiri",d:"Arızalı kartı çöpe atmayın. Komponent seviyesinde teşhis edip onarıyoruz.",i:["Çamaşır, bulaşık makinesi ve buzdolabı kartları","Solar ve standart inverter kartları","Kaynak makinesi ve endüstriyel cihaz kartları","Araç beyinleri (ECU)","TV kartları"]},
+  elec:{n:"Elektronik Kart Tamiri",d:"Arızalı kartı çöpe atmayın. Komponent seviyesinde teşhis edip onarıyoruz.",i:["Çamaşır, bulaşık makinesi ve buzdolabı kartları","Solar ve standart inverter kartları","Kaynak makinesi ve endüstriyel cihaz kartları","Araç beyinleri (ECU)","TV kartları","3D baskı ile parça üretimi","3D tarama (scan) hizmeti"]},
   gen:{n:"Jeneratör Satış ve Tamiri",d:"Ev, işyeri ve otel için doğru güçte jeneratör; bakım ve arıza onarımı.",i:["İhtiyaca göre kVA hesabı ve satış","Periyodik bakım","Çalışmayan jeneratörde arıza tespiti ve onarım","Yerinde servis"]},
   auto:{n:"Otomasyon",d:"Elle yapılan işleri panoya ve sensöre bırakın.",i:["PLC ve kumanda panoları","Motor sürücü (inverter) montajı ve ayarı","Pompa ve depo seviye otomasyonu","Mevcut sistemlerin arıza ve revizyonu"]},
   elecw:{n:"Elektrik İşleri",d:"Konut ve işyerleri için tesisat, pano ve arıza çözümü.",i:["Yeni tesisat ve tesisat yenileme","Dağıtım panoları","Kaçak akım ve arıza tespiti","Aydınlatma"]},
@@ -45,7 +45,7 @@ en:{
  panel_title:"Workshop departments",panel_live:"Open",
  s_eyebrow:"5 departments",s_title:"Our services",s_sub:"Each department has its own technician and its own line, so your job goes straight to the right person.",
  svc:{
-  elec:{n:"Electronic Board Repair",d:"Don't throw a faulty board away. We diagnose and repair at component level.",i:["Washing machine, dishwasher and fridge boards","Solar and standard inverter boards","Welding machine and industrial device boards","Car ECUs","TV boards"]},
+  elec:{n:"Electronic Board Repair",d:"Don't throw a faulty board away. We diagnose and repair at component level.",i:["Washing machine, dishwasher and fridge boards","Solar and standard inverter boards","Welding machine and industrial device boards","Car ECUs","TV boards","3D printing of spare parts","3D scanning service"]},
   gen:{n:"Generator Sales & Repair",d:"The right size generator for homes, businesses and hotels, plus servicing and repair.",i:["kVA sizing and sales","Scheduled maintenance","Fault finding and repair","On-site service"]},
   auto:{n:"Automation",d:"Hand repetitive manual work over to panels and sensors.",i:["PLC and control panels","Motor drive (inverter) installation and setup","Pump and tank level automation","Repair and upgrade of existing systems"]},
   elecw:{n:"Electrical Work",d:"Wiring, panels and fault finding for homes and businesses.",i:["New wiring and rewiring","Distribution panels","Earth leakage and fault tracing","Lighting"]},
@@ -82,7 +82,7 @@ ru:{
  panel_title:"Отделы мастерской",panel_live:"Открыто",
  s_eyebrow:"5 отделов",s_title:"Наши услуги",s_sub:"У каждого отдела свой мастер и свой номер, поэтому ваш заказ сразу попадает к нужному специалисту.",
  svc:{
-  elec:{n:"Ремонт электронных плат",d:"Не выбрасывайте неисправную плату. Диагностируем и ремонтируем на уровне компонентов.",i:["Платы стиральных и посудомоечных машин, холодильников","Платы солнечных и обычных инверторов","Платы сварочных аппаратов и промышленного оборудования","ЭБУ автомобилей","Платы телевизоров"]},
+  elec:{n:"Ремонт электронных плат",d:"Не выбрасывайте неисправную плату. Диагностируем и ремонтируем на уровне компонентов.",i:["Платы стиральных и посудомоечных машин, холодильников","Платы солнечных и обычных инверторов","Платы сварочных аппаратов и промышленного оборудования","ЭБУ автомобилей","Платы телевизоров","3D-печать запчастей","3D-сканирование"]},
   gen:{n:"Продажа и ремонт генераторов",d:"Генератор нужной мощности для дома, бизнеса и отеля, обслуживание и ремонт.",i:["Подбор мощности (кВА) и продажа","Плановое обслуживание","Диагностика и ремонт","Выезд на объект"]},
   auto:{n:"Автоматизация",d:"Передайте ручную работу щитам и датчикам.",i:["ПЛК и щиты управления","Монтаж и настройка частотных преобразователей","Автоматика насосов и уровня в баках","Ремонт и модернизация существующих систем"]},
   elecw:{n:"Электромонтаж",d:"Проводка, щиты и поиск неисправностей для домов и предприятий.",i:["Новая проводка и замена старой","Распределительные щиты","Поиск утечек тока и неисправностей","Освещение"]},
@@ -119,7 +119,7 @@ el:{
  panel_title:"Τμήματα συνεργείου",panel_live:"Ανοιχτά",
  s_eyebrow:"5 τμήματα",s_title:"Οι υπηρεσίες μας",s_sub:"Κάθε τμήμα έχει τον δικό του τεχνικό και τη δική του γραμμή, ώστε η δουλειά σας να πηγαίνει κατευθείαν στο σωστό άτομο.",
  svc:{
-  elec:{n:"Επισκευή ηλεκτρονικών πλακετών",d:"Μην πετάτε τη χαλασμένη πλακέτα. Κάνουμε διάγνωση και επισκευή σε επίπεδο εξαρτημάτων.",i:["Πλακέτες πλυντηρίων ρούχων, πιάτων και ψυγείων","Πλακέτες ηλιακών και κανονικών inverter","Πλακέτες ηλεκτροκόλλησης και βιομηχανικών συσκευών","Εγκέφαλοι αυτοκινήτων (ECU)","Πλακέτες τηλεοράσεων"]},
+  elec:{n:"Επισκευή ηλεκτρονικών πλακετών",d:"Μην πετάτε τη χαλασμένη πλακέτα. Κάνουμε διάγνωση και επισκευή σε επίπεδο εξαρτημάτων.",i:["Πλακέτες πλυντηρίων ρούχων, πιάτων και ψυγείων","Πλακέτες ηλιακών και κανονικών inverter","Πλακέτες ηλεκτροκόλλησης και βιομηχανικών συσκευών","Εγκέφαλοι αυτοκινήτων (ECU)","Πλακέτες τηλεοράσεων","Τρισδιάστατη εκτύπωση ανταλλακτικών","Υπηρεσία τρισδιάστατης σάρωσης"]},
   gen:{n:"Πώληση & επισκευή γεννητριών",d:"Γεννήτρια σωστής ισχύος για σπίτια, επιχειρήσεις και ξενοδοχεία, με συντήρηση και επισκευή.",i:["Υπολογισμός kVA και πώληση","Τακτική συντήρηση","Εντοπισμός βλάβης και επισκευή","Επί τόπου εξυπηρέτηση"]},
   auto:{n:"Αυτοματισμοί",d:"Αφήστε τις χειροκίνητες εργασίες σε πίνακες και αισθητήρες.",i:["PLC και πίνακες ελέγχου","Εγκατάσταση και ρύθμιση inverter κινητήρων","Αυτοματισμός αντλιών και στάθμης δεξαμενών","Επισκευή και αναβάθμιση υπαρχόντων συστημάτων"]},
   elecw:{n:"Ηλεκτρολογικές εργασίες",d:"Καλωδιώσεις, πίνακες και εντοπισμός βλαβών για σπίτια και επιχειρήσεις.",i:["Νέα καλωδίωση και ανακαίνιση","Πίνακες διανομής","Εντοπισμός διαρροής ρεύματος και βλαβών","Φωτισμός"]},
@@ -156,7 +156,7 @@ fa:{
  panel_title:"بخش‌های کارگاه",panel_live:"باز",
  s_eyebrow:"۵ بخش",s_title:"خدمات ما",s_sub:"هر بخش تکنسین و خط تلفن خودش را دارد تا کار شما مستقیم به دست فرد مناسب برسد.",
  svc:{
-  elec:{n:"تعمیر بردهای الکترونیکی",d:"برد خراب را دور نیندازید. عیب‌یابی و تعمیر را در سطح قطعه انجام می‌دهیم.",i:["برد ماشین لباسشویی، ظرفشویی و یخچال","برد اینورترهای خورشیدی و معمولی","برد دستگاه جوش و تجهیزات صنعتی","ای‌سی‌یو خودرو","برد تلویزیون"]},
+  elec:{n:"تعمیر بردهای الکترونیکی",d:"برد خراب را دور نیندازید. عیب‌یابی و تعمیر را در سطح قطعه انجام می‌دهیم.",i:["برد ماشین لباسشویی، ظرفشویی و یخچال","برد اینورترهای خورشیدی و معمولی","برد دستگاه جوش و تجهیزات صنعتی","ای‌سی‌یو خودرو","برد تلویزیون","چاپ سه‌بعدی قطعات","خدمات اسکن سه‌بعدی"]},
   gen:{n:"فروش و تعمیر ژنراتور",d:"ژنراتور با توان مناسب برای خانه، محل کار و هتل، همراه با سرویس و تعمیر.",i:["محاسبه توان (kVA) و فروش","سرویس دوره‌ای","عیب‌یابی و تعمیر","سرویس در محل"]},
   auto:{n:"اتوماسیون",d:"کارهای دستی را به تابلو و سنسور بسپارید.",i:["PLC و تابلوهای فرمان","نصب و تنظیم درایو (اینورتر) موتور","اتوماسیون پمپ و سطح مخزن","تعمیر و بازسازی سیستم‌های موجود"]},
   elecw:{n:"کارهای برق",d:"سیم‌کشی، تابلو و عیب‌یابی برای منازل و محل‌های کار.",i:["سیم‌کشی جدید و نوسازی","تابلوهای توزیع","تشخیص نشتی جریان و خرابی","روشنایی"]},
