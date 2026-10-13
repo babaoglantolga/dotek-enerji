@@ -153,9 +153,10 @@ html[lang="fa"] .kv dt{letter-spacing:0;font-family:var(--f-body)}
 .hours{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;font-variant-numeric:tabular-nums}
 .hours span:nth-child(even){font-family:var(--f-mono);font-size:.95rem}
 .phones{display:grid;gap:0}
-.phones div{display:flex;justify-content:space-between;gap:12px;padding-block:10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.phones div{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding-block:10px;border-bottom:1px solid var(--line)}
+.phones span:first-child{min-width:0}
 .phones div:last-child{border-bottom:0}
-.phones span:last-child{color:var(--muted);font-family:var(--f-mono);font-size:.9rem}
+.phones span:last-child{color:var(--muted);font-family:var(--f-mono);font-size:.86rem;white-space:nowrap}
 @media (max-width:780px){.contact{grid-template-columns:1fr}}
 
 .priority{display:flex;align-items:center;gap:10px;margin-top:18px;padding:10px 14px;border:1px dashed var(--signal);border-radius:var(--r);font-weight:500;width:fit-content;max-width:100%}
