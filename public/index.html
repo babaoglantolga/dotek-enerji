@@ -189,6 +189,7 @@ html[lang="fa"] .kv dt{letter-spacing:0;font-family:var(--f-body)}
 .entry .lead{color:var(--muted);font-size:1.05rem;max-width:56ch}
 @media (max-width:880px){.entry-head{grid-template-columns:1fr}}
 .facade-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--line);-webkit-overflow-scrolling:touch}
+.facade-scroll,.facade{direction:ltr}
 .facade{position:relative;min-width:680px;line-height:0}
 .shop{width:100%;height:auto;display:block}
 .shop .leaf{transition:transform .7s cubic-bezier(.6,.05,.3,1)}
@@ -202,7 +203,7 @@ html[lang="fa"] .kv dt{letter-spacing:0;font-family:var(--f-body)}
 .door:hover,.door:focus-visible{background:color-mix(in srgb,var(--signal) 14%,transparent);border-color:var(--signal)}
 .door-tag{position:absolute;left:50%;bottom:-6px;transform:translate(-50%,100%);white-space:nowrap;line-height:1.2;background:var(--signal);color:var(--signal-ink);font:600 .82rem var(--f-body);padding:6px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
 .door-tag small{display:block;font-weight:500;font-size:.72rem;opacity:.85;margin-top:2px}
-.door-tag{text-align:center}
+.door-tag{text-align:center;white-space:normal;width:max-content;max-width:150px}
 .door-tag::before{content:"";border:5px solid transparent;border-bottom-color:var(--signal);position:absolute;top:-10px;left:50%;transform:translateX(-50%)}
 .door[data-pos="top"] .door-tag{bottom:auto;top:-6px;transform:translate(-50%,-100%)}
 .door[data-pos="top"] .door-tag::before{top:auto;bottom:-10px;border-bottom-color:transparent;border-top-color:var(--signal)}
@@ -241,7 +242,7 @@ html[lang="fa"] .staff small{letter-spacing:0;font-family:var(--f-body)}
 .room-svc ul{margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .room-svc li{display:flex;gap:10px;align-items:baseline}
 .room-svc li::before{content:"";width:6px;height:6px;background:var(--signal);flex:none;transform:translateY(-2px)}
-.gate{position:absolute;inset:0;display:flex;pointer-events:none;perspective:1400px;z-index:2}
+.gate{position:absolute;inset:0;display:flex;direction:ltr;pointer-events:none;perspective:1400px;z-index:2}
 .gate i{flex:1;background:linear-gradient(90deg,#1b2537,#2a3650 45%,#1b2537);border:6px solid #3a4560;position:relative;transition:transform 1s cubic-bezier(.6,.05,.3,1)}
 .gate i::after{content:"";position:absolute;top:50%;width:8px;height:120px;transform:translateY(-50%);background:#8a94a8;border-radius:4px}
 .gate .gl{transform-origin:left center}.gate .gl::after{right:22px}
@@ -478,22 +479,23 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <rect x="946.5" y="218" width="79.5" height="292" fill="none" stroke="#3a404a" stroke-width="7"/>
 </g>
 <rect x="1026" y="210" width="56" height="306" fill="#2a2e35" stroke="#3e444e"/>
-<text x="1054.0" y="250.7" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">E</text>
-<text x="1054.0" y="275.2" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">L</text>
-<text x="1054.0" y="324.3" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">A</text>
-<text x="1054.0" y="348.8" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">L</text>
-<text x="1054.0" y="373.4" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">E</text>
-<text x="1054.0" y="397.9" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">T</text>
-<text x="1054.0" y="422.5" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">L</text>
-<text x="1054.0" y="447.0" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">E</text>
-<text x="1054.0" y="471.6" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">R</text>
-<text x="1054.0" y="496.1" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">İ</text>
-<g class="bay" id="bay-ela">
+<text x="1054.0" y="256.0" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">3</text>
+<text x="1054.0" y="289.8" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">D</text>
+<text x="1054.0" y="357.2" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">B</text>
+<text x="1054.0" y="391.0" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">A</text>
+<text x="1054.0" y="424.8" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">S</text>
+<text x="1054.0" y="458.5" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">K</text>
+<text x="1054.0" y="492.2" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="30.0">I</text>
+<g class="bay" id="bay-p3d">
 <rect x="1082" y="218" width="196" height="292" fill="url(#inside)"/>
-<rect x="1092" y="260" width="176" height="4" fill="#b8b2a6"/><rect x="1100" y="238" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1134" y="238" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1168" y="238" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1202" y="238" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1236" y="238" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1092" y="318" width="176" height="4" fill="#b8b2a6"/><rect x="1100" y="296" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1134" y="296" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1168" y="296" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1202" y="296" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1236" y="296" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1092" y="376" width="176" height="4" fill="#b8b2a6"/><rect x="1100" y="354" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1134" y="354" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1168" y="354" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1202" y="354" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1236" y="354" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1092" y="434" width="176" height="4" fill="#b8b2a6"/><rect x="1100" y="412" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1134" y="412" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1168" y="412" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1202" y="412" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1236" y="412" width="22" height="22" rx="3" fill="#2563c9"/>
+<rect x="1098" y="406" width="76" height="88" rx="3" fill="#2b3038" stroke="#5a616c" stroke-width="2"/><rect x="1104" y="414" width="64" height="5" fill="#9aa2ac"/><rect x="1128" y="419" width="14" height="12" fill="#f5c400"/><rect x="1108" y="476" width="56" height="6" fill="#9aa2ac"/><path d="M1124 476 l12 -26 l12 26z" fill="#2f9e57"/><rect x="1190" y="406" width="76" height="88" rx="3" fill="#2b3038" stroke="#5a616c" stroke-width="2"/><rect x="1196" y="414" width="64" height="5" fill="#9aa2ac"/><rect x="1220" y="419" width="14" height="12" fill="#f5c400"/><rect x="1200" y="476" width="56" height="6" fill="#9aa2ac"/><path d="M1216 476 l12 -26 l12 26z" fill="#d23b2f"/><rect x="1092" y="254" width="176" height="4" fill="#b8b2a6"/><circle cx="1112" cy="242" r="10" fill="#f5c400"/><circle cx="1154" cy="242" r="10" fill="#2563c9"/><circle cx="1196" cy="242" r="10" fill="#d23b2f"/><circle cx="1238" cy="242" r="10" fill="#2f9e57"/><rect x="1092" y="306" width="176" height="4" fill="#b8b2a6"/><circle cx="1112" cy="294" r="10" fill="#2563c9"/><circle cx="1154" cy="294" r="10" fill="#d23b2f"/><circle cx="1196" cy="294" r="10" fill="#2f9e57"/><circle cx="1238" cy="294" r="10" fill="#f5c400"/>
+<rect x="1082.0" y="218" width="98.0" height="292" fill="url(#warm)" class="light"/>
+<g class="leaf" style="transform-origin:1082.0px 0px">
 <rect x="1082.0" y="218" width="98.0" height="292" fill="url(#glass)" opacity=".48"/>
-<polygon points="1090.0,230 1131.0,230 1090.0,380" fill="#fff" opacity=".07"/>
 <rect x="1082.0" y="218" width="98.0" height="292" fill="none" stroke="#3a404a" stroke-width="7"/>
+<rect x="1162.0" y="330" width="7" height="70" rx="3" fill="#aeb5bf"/>
+<polygon points="1090.0,230 1126.1,230 1090.0,360" fill="#fff" opacity=".07"/>
+</g>
 <rect x="1180.0" y="218" width="98.0" height="292" fill="url(#glass)" opacity=".48"/>
 <polygon points="1188.0,230 1229.0,230 1188.0,380" fill="#fff" opacity=".07"/>
 <rect x="1180.0" y="218" width="98.0" height="292" fill="none" stroke="#3a404a" stroke-width="7"/>
@@ -537,6 +539,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <rect x="698" y="532" width="338" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="688" y="548" width="358" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="678" y="564" width="378" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
+<rect x="1072" y="532" width="216" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
+<rect x="1062" y="548" width="236" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
+<rect x="1052" y="564" width="256" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="1268" y="532" width="258" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="1258" y="548" width="278" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="1248" y="564" width="298" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
@@ -608,9 +613,9 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
           <a class="btn btn-ghost" href="https://maps.app.goo.gl/nyraCJF5m8dEXtbJ7" target="_blank" rel="noopener" data-i="c_map" style="justify-self:start"></a>
         </div>
         <div class="card">
-          <dl class="kv"><dt data-i="c_phones"></dt></dl>
-          <div class="phones" id="phones"></div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn btn-signal" type="button" data-appt><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span data-i="appt_btn"></span></button><button class="btn btn-ghost" type="button" data-open-chat><span data-i="cta_ask"></span></button></div>
+          <dl class="kv"><dt data-i="c_phones"></dt><dd data-i="c_appt_txt" style="font-size:1rem;font-weight:400;color:var(--muted)"></dd></dl>
+          <div class="phones" id="phones" hidden></div>
+          <button class="btn btn-signal" type="button" data-appt style="justify-self:start"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg><span data-i="appt_btn"></span></button>
           <p style="color:var(--muted);font-size:.92rem" data-i="appt_badge"></p>
         </div>
         <div class="card mapcard">
@@ -694,12 +699,12 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <script src="/i18n.js"></script>
 <script>
 const T = window.T;
-const PHONES = { office:"0533 854 07 07", elec:"0546 997 99 11", gen:"0542 863 36 77", auto:"0533 845 41 96", elecw:"0533 845 41 96", bob:"0546 993 99 11" };
+const PHONES = { office:"0533 854 07 07", elec:"0546 997 99 11", p3d:"0546 997 99 11", gen:"0542 863 36 77", auto:"0533 845 41 96", elecw:"0533 845 41 96", bob:"0546 993 99 11" };
 
 const DEST = "35.121575,33.933509";
 function setDir(){ $("#dirGo").href = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent($("#dirFrom").value) + "&destination=" + DEST; }
-const SVC_KEYS = ["elec","gen","auto","elecw","bob"];
-const SPEC = { elec:"ECU · INVERTER · PCB", gen:"kVA · DİZEL", auto:"PLC · 24V DC", elecw:"230 / 400 V", bob:"1~ / 3~ MOTOR" };
+const SVC_KEYS = ["elec","p3d","gen","auto","elecw","bob"];
+const SPEC = { elec:"ECU · INVERTER · PCB", p3d:"PLA · PETG · 3D SCAN", gen:"kVA · DİZEL", auto:"PLC · 24V DC", elecw:"230 / 400 V", bob:"1~ / 3~ MOTOR" };
 
 
 const LANGS = [["tr","TR"],["en","EN"],["ru","RU"],["el","EL"],["fa","FA"]];
@@ -768,7 +773,8 @@ const KW = {
   gen:["jenerat","generator","генератор","γεννήτρ","ژنراتور"],
   bob:["bobin","sarım","sardır","rewind","перемот","обмотк","περιέλ","سیم‌پیچ","سیم پیچ"],
   auto:["otomasyon","plc","automat","автомат","αυτοματ","اتوماسیون","pano","panel","щит","πίνακ","تابلو","pompa","pump","насос","αντλί","پمپ"],
-  elec:["kart","board","ecu","inverter","invert","плат","эбу","πλακέτ","برد","çamaşır","bulaşık","buzdolab","washing","fridge","dishwash","стирал","холодил","πλυντήρ","ψυγ","لباسشویی","یخچال","tv","televiz","телевиз","τηλεόρ","تلویزیون","kaynak","weld","свар","κόλλησ","جوش","klima","kombi","fırın","mikrodalga","ac ","3d","baskı","scan","tarama","print"],
+  elec:["kart","board","ecu","inverter","invert","плат","эбу","πλακέτ","برد","çamaşır","bulaşık","buzdolab","washing","fridge","dishwash","стирал","холодил","πλυντήρ","ψυγ","لباسشویی","یخچال","tv","televiz","телевиз","τηλεόρ","تلویزیون","kaynak","weld","свар","κόλλησ","جوش","klima","kombi","fırın","mikrodalga","ac "],
+  p3d:["3d","baskı","yazıcı","scan","tarama","print","печат","скан","εκτύπ","σάρωσ","چاپ","اسکن"],
   elecw:["elektrik","tesisat","sigorta","kaçak","wiring","electric","fuse","электр","провод","ηλεκτρ","καλωδ","برق","سیم‌کشی","لامپ","ışık","light","свет","φωτ"],
   hours:["saat","açık","hours","open","час","открыт","ώρ","ωράρ","ανοιχτ","ساعت","باز","adres","address","адрес","διεύθ","نشانی"]
 };
@@ -778,7 +784,7 @@ function fallback(text){
   if (KW.hours.some(w => s.includes(w)) && !fbState.dept) return t.fb_hours;
   if (!fbState.dept && curRoom) fbState.dept = curRoom.depts[0];
   if (!fbState.dept) {
-    for (const k of ["gen","bob","auto","elec","elecw"]) if (KW[k].some(w => s.includes(w))) { fbState.dept = k; break; }
+    for (const k of ["p3d","gen","bob","auto","elec","elecw"]) if (KW[k].some(w => s.includes(w))) { fbState.dept = k; break; }
     if (!fbState.dept && /klima|air ?con|кондиц|κλιματ|کولر/.test(s)) fbState.dept = "elec";
     if (!fbState.dept) { fbState.asked++; return fbState.asked > 2 ? t.fb_more.replace("{d}", t.office).replace("{p}", PHONES.office) : t.fb_ask_device; }
   }
@@ -824,6 +830,7 @@ const ROOMS = [
   { id:"ofis", depts:["auto","elecw"], box:[6.0,34,14.375,45.5] },
   { id:"gen",  depts:["gen"],  box:[23.875,34,16.875,45.5] },
   { id:"bob",  depts:["bob"],  box:[44.25,34,19.875,45.5] },
+  { id:"p3d",  depts:["p3d"],  box:[67.625,34,12.25,45.5] },
   { id:"elec", depts:["elec"], box:[79.875,34,14.875,45.5] }
 ];
 let curRoom = null, roomDept = null;

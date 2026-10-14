@@ -1,7 +1,7 @@
 import { FACTS } from "../lib/facts.js";
 import { sendJson, clean } from "../lib/util.js";
 
-const ROOM_NAMES = { elec: "Electronic Board Repair", gen: "Generator Sales & Repair", auto: "Automation", elecw: "Electrical Work", bob: "Motor Rewinding" };
+const ROOM_NAMES = { elec: "Electronic Board Repair", gen: "Generator Sales & Repair", auto: "Automation", elecw: "Electrical Work", bob: "Motor Rewinding", p3d: "3D Printing & Scanning" };
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return sendJson(res, 405, { error: "method" });

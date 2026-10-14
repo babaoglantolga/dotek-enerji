@@ -73,7 +73,7 @@ dt{color:var(--muted)} dd{margin:0;overflow-wrap:anywhere}
 const T = window.T;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const DEPTS = [["all","Tümü"],["elec","Elektronik"],["gen","Jeneratör"],["auto","Otomasyon"],["elecw","Elektrik"],["bob","Bobinaj"]];
+const DEPTS = [["all","Tümü"],["elec","Elektronik"],["p3d","3D Baskı"],["gen","Jeneratör"],["auto","Otomasyon"],["elecw","Elektrik"],["bob","Bobinaj"]];
 const PLACE = { atolye:"Atölye", yerinde:"Yerinde" };
 const ST = { yeni:["Onay bekliyor","warn"], onay:["Onaylandı","ok"], oneri:["Yeni saat önerildi","warn"], kabul:["Müşteri yeni saati kabul etti","ok"], iptal:["Müşteri iptal etti","off"], tamam:["Tamamlandı","off"] };
 let key = "", items = [], filter = "all";
