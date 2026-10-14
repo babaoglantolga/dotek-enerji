@@ -279,6 +279,29 @@ html[lang="fa"] .staff small{letter-spacing:0;font-family:var(--f-body)}
 .appt-new input,.appt-new select{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:8px;font:400 .9rem var(--f-body);min-width:0;width:100%}
 .appt-new button{grid-column:1/-1;background:var(--signal);color:var(--signal-ink);border-color:var(--signal)}
 .appt-new .err{grid-column:1/-1;color:#ff8f7d;font-size:.85rem}
+.room-svc .svc-item{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer;background:rgba(13,21,38,.5)}
+.room-svc .svc-item:hover,.room-svc .svc-item:focus-visible{border-color:var(--signal);background:rgba(245,217,10,.08)}
+.room-svc .svc-item b{color:var(--signal);font-size:1.1rem;line-height:1}
+html[dir="rtl"] .room-svc .svc-item b{transform:scaleX(-1)}
+.room-svc li{display:block}
+.room-svc li::before{display:none}
+.tap-hint{color:var(--muted);font-size:.85rem}
+.works{display:grid;gap:14px}
+.works h3{font-size:1.6rem}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.gal figure{margin:0;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:zoom-in}
+.gal img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+.gal figcaption{padding:8px 10px;font-size:.85rem;color:var(--muted)}
+.gal-empty{color:var(--muted);padding:18px;border:1px dashed var(--line);border-radius:10px;background:rgba(13,21,38,.5)}
+.svc-modal{position:fixed;inset:0;z-index:58;background:rgba(5,8,15,.78);display:grid;place-items:center;padding:20px}
+.svc-box{background:var(--panel);border:1px solid var(--line);border-radius:14px;width:min(760px,100%);max-height:calc(100% - 40px);overflow-y:auto;padding:22px;display:grid;gap:14px}
+.svc-box-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.svc-box h3{font-size:1.6rem}
+.svc-box p{color:var(--muted)}
+.lightbox{position:fixed;inset:0;z-index:59;background:rgba(0,0,0,.9);display:grid;place-items:center;padding:20px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:85%;border-radius:8px}
+.lightbox p{color:#fff;margin-top:10px;text-align:center}
+.room-bg.photo{background-size:cover;background-position:center}
 footer{border-top:1px solid var(--line);padding-block:28px;color:var(--muted);font-size:.9rem}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
@@ -367,7 +390,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
     </div>
     <div class="facade-scroll">
       <div class="facade" id="facade">
-<svg class="shop" viewBox="0 0 1600 640" role="img" aria-label="Dotek Enerji Sistemleri dükkân cephesi">
+<svg class="shop" viewBox="0 0 1760 640" role="img" aria-label="Dotek Enerji Sistemleri dükkân cephesi">
 <defs>
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc3e8"/><stop offset=".7" stop-color="#dfe9f2"/><stop offset="1" stop-color="#eef0ea"/></linearGradient>
 <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2a3a52"/><stop offset=".55" stop-color="#121a27"/><stop offset="1" stop-color="#1c2738"/></linearGradient>
@@ -377,7 +400,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <linearGradient id="stone" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e2ded6"/><stop offset="1" stop-color="#bdb8ae"/></linearGradient>
 <filter id="lift" x="-5%" y="-5%" width="110%" height="120%"><feDropShadow dx="0" dy="3" stdDeviation="1.5" flood-color="#000" flood-opacity=".45"/></filter>
 </defs>
-<rect width="1600" height="640" fill="url(#sky)"/>
+<rect width="1760" height="640" fill="url(#sky)"/>
 <g fill="#b8c7cf" opacity=".55"><rect x="0" y="120" width="40" height="420"/><rect x="1570" y="140" width="30" height="400"/></g>
 <rect x="22" y="38" width="1556" height="14" fill="#3b4049"/>
 <rect x="28" y="52" width="1544" height="158" fill="#2f343c"/>
@@ -528,7 +551,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <text x="1544.0" y="441.5" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="25.6">N</text>
 <text x="1544.0" y="468.5" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="25.6">İ</text>
 <text x="1544.0" y="495.5" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="25.6">K</text>
-<rect x="0" y="516" width="1600" height="124" fill="url(#ground)"/>
+<rect x="0" y="516" width="1760" height="124" fill="url(#ground)"/>
 <rect x="20" y="510" width="1560" height="22" fill="url(#stone)"/>
 <rect x="86" y="532" width="250" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="76" y="548" width="270" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
@@ -545,7 +568,19 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <rect x="1268" y="532" width="258" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="1258" y="548" width="278" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
 <rect x="1248" y="564" width="298" height="16" fill="url(#stone)" stroke="#a9a397" stroke-width="1"/>
-</svg>
+<g transform="translate(1572 378) skewY(14)">
+<rect x="0" y="-340" width="170" height="14" fill="#2c3c5c"/>
+<rect x="0" y="-326" width="170" height="150" fill="#1f3a6b"/>
+<rect x="0" y="-316" width="170" height="6" fill="#d9dde3"/>
+<rect x="0" y="-194" width="170" height="8" fill="#d9dde3"/>
+<rect x="0" y="-176" width="170" height="300" fill="#1f3a6b"/>
+<rect x="12" y="-168" width="146" height="286" fill="url(#inside)"/>
+<g><rect x="18" y="-130" width="134" height="4" fill="#b8b2a6"/><rect x="26" y="-156" width="24" height="18" rx="3" fill="#d23b2f"/><rect x="34" y="-138" width="8" height="8" fill="#3b4049"/><rect x="68" y="-156" width="24" height="18" rx="3" fill="#f2b705"/><rect x="76" y="-138" width="8" height="8" fill="#3b4049"/><rect x="110" y="-156" width="24" height="18" rx="3" fill="#2563c9"/><rect x="118" y="-138" width="8" height="8" fill="#3b4049"/><rect x="18" y="-68" width="134" height="4" fill="#b8b2a6"/><rect x="26" y="-94" width="24" height="18" rx="3" fill="#f2b705"/><rect x="34" y="-76" width="8" height="8" fill="#3b4049"/><rect x="68" y="-94" width="24" height="18" rx="3" fill="#2563c9"/><rect x="76" y="-76" width="8" height="8" fill="#3b4049"/><rect x="110" y="-94" width="24" height="18" rx="3" fill="#d23b2f"/><rect x="118" y="-76" width="8" height="8" fill="#3b4049"/><rect x="18" y="-6" width="134" height="4" fill="#b8b2a6"/><rect x="26" y="-32" width="24" height="18" rx="3" fill="#2563c9"/><rect x="34" y="-14" width="8" height="8" fill="#3b4049"/><rect x="68" y="-32" width="24" height="18" rx="3" fill="#d23b2f"/><rect x="76" y="-14" width="8" height="8" fill="#3b4049"/><rect x="110" y="-32" width="24" height="18" rx="3" fill="#f2b705"/><rect x="118" y="-14" width="8" height="8" fill="#3b4049"/><rect x="18" y="56" width="134" height="4" fill="#b8b2a6"/><rect x="26" y="30" width="24" height="18" rx="3" fill="#d23b2f"/><rect x="34" y="48" width="8" height="8" fill="#3b4049"/><rect x="68" y="30" width="24" height="18" rx="3" fill="#f2b705"/><rect x="76" y="48" width="8" height="8" fill="#3b4049"/><rect x="110" y="30" width="24" height="18" rx="3" fill="#2563c9"/><rect x="118" y="48" width="8" height="8" fill="#3b4049"/></g>
+<rect x="12" y="-168" width="146" height="286" fill="url(#glass)" opacity=".48"/>
+<line x1="85" y1="-168" x2="85" y2="118" stroke="#3a404a" stroke-width="6"/>
+<rect x="12" y="-168" width="146" height="286" fill="none" stroke="#3a404a" stroke-width="7"/>
+<text x="85" y="-238" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed','Arial Narrow',sans-serif" font-weight="800" font-size="34" textLength="140" lengthAdjust="spacingAndGlyphs">EL ALETLERİ</text>
+</g></svg>
         <div id="doors"></div>
       </div>
     </div>
@@ -672,9 +707,19 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
         </div>
         <div class="room-svcs" id="roomSvcs"></div>
       </div>
+      <section class="works"><h3 data-i="works_title"></h3><div id="roomWorks"></div></section>
     </div>
   </div>
 </div>
+<div class="svc-modal" id="svcModal" hidden role="dialog" aria-labelledby="svcTitle">
+  <div class="svc-box">
+    <div class="svc-box-top"><div><p class="eyebrow" id="svcDept"></p><h3 id="svcTitle"></h3></div><button class="x" type="button" id="svcClose" data-i-aria="close">×</button></div>
+    <p id="svcInfo"></p>
+    <div id="svcGal"></div>
+    <button class="btn btn-signal" type="button" id="svcAppt" style="justify-self:start"><span data-i="appt_btn"></span></button>
+  </div>
+</div>
+<div class="lightbox" id="lightbox" hidden><div><img id="lbImg" alt=""><p id="lbCap"></p></div></div>
 
 <button class="fab" id="fab" type="button" data-open-chat>
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
@@ -697,6 +742,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 </div>
 
 <script src="/i18n.js"></script>
+<script src="/galeri.js"></script>
 <script>
 const T = window.T;
 const PHONES = { office:"0533 854 07 07", elec:"0546 997 99 11", p3d:"0546 997 99 11", gen:"0542 863 36 77", auto:"0533 845 41 96", elecw:"0533 845 41 96", bob:"0546 993 99 11" };
@@ -827,11 +873,11 @@ $("#q").addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey)
 
 /* ---------- storefront rooms ---------- */
 const ROOMS = [
-  { id:"ofis", depts:["auto","elecw"], box:[6.0,34,14.375,45.5] },
-  { id:"gen",  depts:["gen"],  box:[23.875,34,16.875,45.5] },
-  { id:"bob",  depts:["bob"],  box:[44.25,34,19.875,45.5] },
-  { id:"p3d",  depts:["p3d"],  box:[67.625,34,12.25,45.5] },
-  { id:"elec", depts:["elec"], box:[79.875,34,14.875,45.5] }
+  { id:"ofis", depts:["auto","elecw"], box:[5.455,34,13.068,45.5] },
+  { id:"gen",  depts:["gen"],  box:[21.705,34,15.341,45.5] },
+  { id:"bob",  depts:["bob"],  box:[40.227,34,18.068,45.5] },
+  { id:"p3d",  depts:["p3d"],  box:[61.477,34,11.136,45.5] },
+  { id:"elec", depts:["elec"], box:[72.614,34,13.523,45.5] }
 ];
 let curRoom = null, roomDept = null;
 function roomName(r){ const t = T[lang]; return r.id === "ofis" ? t.office_room + " · " + r.depts.map(k=>t.svc[k].n).join(" & ") : t.svc[r.depts[0]].n; }
@@ -840,10 +886,15 @@ function fillRoom(r){
   const dn = r.id === "ofis" ? t.office_room : t.svc[r.depts[0]].n;
   $("#roomTitle").textContent = roomName(r);
   $("#gateSign").textContent = dn;
-  $("#roomEyebrow").textContent = t.room_eyebrow;
+  { const tg = t.tags[r.id]; $("#roomEyebrow").textContent = t.inside_lbl.replace("{d}", tg[1] || tg[0]); }
   $("#roomStaff").textContent = t.staff_lbl.replace("{d}", dn);
-  $("#roomGreet").textContent = t.greet.replace("{d}", dn);
-  $("#roomSvcs").innerHTML = r.depts.map(k => { const s = t.svc[k]; return `<article class="room-svc"><span class="eyebrow">${SPEC[k]}</span><h3>${esc(s.n)}</h3><p>${esc(s.d)}</p><ul>${s.i.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></article>`; }).join("");
+  $("#roomGreet").textContent = greetFor(r).replace("{d}", dn);
+  $("#roomSvcs").innerHTML = r.depts.map(k => { const s = t.svc[k]; return `<article class="room-svc"><span class="eyebrow">${SPEC[k]}</span><h3>${esc(s.n)}</h3><p>${esc(s.d)}</p><ul>${s.i.map((x,ix)=>`<li><button type="button" class="svc-item" data-k="${k}" data-ix="${ix}"><span>${esc(x)}</span><b>›</b></button></li>`).join("")}</ul><p class="tap-hint">${esc(t.tap_hint)}</p></article>`; }).join("");
+  const G = (window.GALERI||{})[r.id] || {};
+  $("#roomWorks").innerHTML = galHtml(G.works);
+  const bg = $("#roomBg");
+  if (G.bg) { bg.classList.add("photo"); bg.style.backgroundImage = `linear-gradient(180deg,rgba(13,21,38,.55),rgba(13,21,38,.92)),url("${G.bg}")`; }
+  else { bg.classList.remove("photo"); bg.style.backgroundImage = ""; };
 }
 function resetChat(text){
   try { ctl?.abort(); } catch(_) {}
@@ -851,10 +902,36 @@ function resetChat(text){
   addMsg("bot", text); convo.push({ role:"assistant", content:text });
   chat.hidden = true; fab.hidden = false;
 }
+function galHtml(list){
+  const t = T[lang];
+  if (!list || !list.length) return `<p class="gal-empty">${esc(t.gal_empty)}</p>`;
+  return `<div class="gal">${list.map(g => `<figure data-src="${esc(g.src)}" data-cap="${esc(g.cap||"")}"><img src="${esc(g.src)}" alt="${esc(g.cap||"")}" loading="lazy">${g.cap ? `<figcaption>${esc(g.cap)}</figcaption>` : ""}</figure>`).join("")}</div>`;
+}
+let svcCur = null;
+function openSvc(k, ix){
+  const t = T[lang], s = t.svc[k]; svcCur = k;
+  $("#svcDept").textContent = s.n;
+  $("#svcTitle").textContent = s.i[ix];
+  $("#svcInfo").textContent = (t.info && t.info[k] && t.info[k][ix]) || s.d;
+  const G = (window.GALERI||{})[curRoom ? curRoom.id : k] || {};
+  $("#svcGal").innerHTML = galHtml(G.items && G.items[k + ":" + ix]);
+  $("#svcModal").hidden = false; $("#svcClose").focus();
+}
+function closeSvc(){ $("#svcModal").hidden = true; }
+document.addEventListener("click", e => {
+  const it = e.target.closest(".svc-item"); if (it) { openSvc(it.dataset.k, +it.dataset.ix); return; }
+  if (e.target.id === "svcModal" || e.target.closest("#svcClose")) { closeSvc(); return; }
+  if (e.target.closest("#svcAppt")) { const k = svcCur; closeSvc(); openChat(); openAppt(k); return; }
+  const fg = e.target.closest(".gal figure");
+  if (fg) { $("#lbImg").src = fg.dataset.src; $("#lbCap").textContent = fg.dataset.cap; $("#lightbox").hidden = false; return; }
+  if (e.target.closest("#lightbox")) { $("#lightbox").hidden = true; }
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("#lightbox").hidden) $("#lightbox").hidden = true; else if (!$("#svcModal").hidden) closeSvc(); } }, true);
+function greetFor(r){ const t = T[lang]; return (r && r.id === "p3d" && t.greet_p3d) || t.greet; }
 function enterRoom(id){
   const r = ROOMS.find(x => x.id === id); if (!r) return;
   curRoom = r; roomDept = r.depts[0];
-  resetChat(T[lang].greet);
+  resetChat(greetFor(r));
   fillRoom(r);
   const room = $("#room"); room.classList.remove("in"); room.hidden = false;
   document.body.style.overflow = "hidden";
@@ -869,6 +946,7 @@ function openDoor(id){
   setTimeout(() => { enterRoom(id); setTimeout(() => bay.classList.remove("open"), 400); }, 750);
 }
 function leaveRoom(){
+  closeSvc();
   $("#room").hidden = true; $("#room").classList.remove("in");
   document.body.style.overflow = ""; curRoom = null; roomDept = null;
   resetChat(T[lang].ai_hello);
@@ -880,7 +958,7 @@ document.addEventListener("keydown", e => { if (e.key === "Escape" && curRoom &&
 $("#roomAsk").onclick = () => {
   openChat();
   const t = T[lang], dn = curRoom.id === "ofis" ? t.office_room : t.svc[curRoom.depts[0]].n;
-  const g = t.greet.replace("{d}", dn);
+  const g = greetFor(curRoom).replace("{d}", dn);
   if (convo[convo.length-1]?.content !== g) { addMsg("bot", g); convo.push({ role:"assistant", content:g }); }
 };
 $("#roomAppt").onclick = () => { openChat(); openAppt(roomDept); };
