@@ -188,9 +188,9 @@ html[lang="fa"] .kv dt{letter-spacing:0;font-family:var(--f-body)}
 .entry h1 em{font-style:normal;color:var(--signal)}
 .entry .lead{color:var(--muted);font-size:1.05rem;max-width:56ch}
 @media (max-width:880px){.entry-head{grid-template-columns:1fr}}
-.facade-scroll{overflow-x:auto;border-radius:12px;border:1px solid var(--line);-webkit-overflow-scrolling:touch}
+.facade-scroll{overflow:hidden;border-radius:12px;border:1px solid var(--line)}
 .facade-scroll,.facade{direction:ltr}
-.facade{position:relative;min-width:680px;line-height:0}
+.facade{position:relative;line-height:0}
 .shop{width:100%;height:auto;display:block}
 .shop .leaf{transition:transform .7s cubic-bezier(.6,.05,.3,1)}
 .shop .bay.open .leaf{transform:scaleX(.08)}
@@ -201,9 +201,14 @@ html[lang="fa"] .kv dt{letter-spacing:0;font-family:var(--f-body)}
 .door:nth-child(2)::after{animation-delay:.6s}.door:nth-child(3)::after{animation-delay:1.2s}.door:nth-child(4)::after{animation-delay:1.8s}
 @keyframes pulse{0%,100%{opacity:0}50%{opacity:.85}}
 .door:hover,.door:focus-visible{background:color-mix(in srgb,var(--signal) 14%,transparent);border-color:var(--signal)}
-.door-tag{position:absolute;left:50%;bottom:-6px;transform:translate(-50%,100%);white-space:nowrap;line-height:1.2;background:var(--signal);color:var(--signal-ink);font:600 .82rem var(--f-body);padding:6px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
+.door-tag{position:absolute;left:50%;bottom:6%;transform:translate(-50%,0);white-space:nowrap;line-height:1.2;background:var(--signal);color:var(--signal-ink);font:600 .82rem var(--f-body);padding:6px 10px;border-radius:6px;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;align-items:center;gap:6px}
 .door-tag small{display:block;font-weight:500;font-size:.72rem;opacity:.85;margin-top:2px}
-.door-tag{text-align:center;white-space:normal;width:max-content;max-width:150px}
+.door-tag{text-align:center;white-space:normal;width:max-content;max-width:92%;font-size:clamp(.58rem,1.05vw,.82rem)!important;padding:4px 7px!important}
+.door-tag::before{display:none}
+.door-list{display:none;gap:8px;flex-wrap:wrap}
+.door-list button{background:var(--signal);color:var(--signal-ink);border:0;border-radius:8px;padding:9px 12px;font:600 .88rem var(--f-body);cursor:pointer}
+@media (max-width:720px){.door-tag{display:none!important}.door-list{display:flex}}
+.door-tag small{font-size:.85em!important}
 .door-tag::before{content:"";border:5px solid transparent;border-bottom-color:var(--signal);position:absolute;top:-10px;left:50%;transform:translateX(-50%)}
 .door[data-pos="top"] .door-tag{bottom:auto;top:-6px;transform:translate(-50%,-100%)}
 .door[data-pos="top"] .door-tag::before{top:auto;bottom:-10px;border-bottom-color:transparent;border-top-color:var(--signal)}
@@ -566,7 +571,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 <text x="1600.0" y="496.1" text-anchor="middle" fill="#f1f3f6" font-family="'Fira Sans Extra Condensed',sans-serif" font-weight="800" font-size="23.3">İ</text>
 <g class="bay" id="bay-ela">
 <rect x="1628" y="218" width="160" height="292" fill="url(#inside)"/>
-<rect x="1638" y="260" width="140" height="4" fill="#b8b2a6"/><rect x="1646" y="238" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1680" y="238" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1714" y="238" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1748" y="238" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1782" y="238" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1638" y="318" width="140" height="4" fill="#b8b2a6"/><rect x="1646" y="296" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1680" y="296" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1714" y="296" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1748" y="296" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1782" y="296" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1638" y="376" width="140" height="4" fill="#b8b2a6"/><rect x="1646" y="354" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1680" y="354" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1714" y="354" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1748" y="354" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1782" y="354" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1638" y="434" width="140" height="4" fill="#b8b2a6"/><rect x="1646" y="412" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1680" y="412" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1714" y="412" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1748" y="412" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1782" y="412" width="22" height="22" rx="3" fill="#2563c9"/>
+<rect x="1638" y="260" width="140" height="4" fill="#b8b2a6"/><rect x="1644" y="238" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1679" y="238" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1714" y="238" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1749" y="238" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1638" y="318" width="140" height="4" fill="#b8b2a6"/><rect x="1644" y="296" width="22" height="22" rx="3" fill="#f2b705"/><rect x="1679" y="296" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1714" y="296" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1749" y="296" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1638" y="376" width="140" height="4" fill="#b8b2a6"/><rect x="1644" y="354" width="22" height="22" rx="3" fill="#2563c9"/><rect x="1679" y="354" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1714" y="354" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1749" y="354" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1638" y="434" width="140" height="4" fill="#b8b2a6"/><rect x="1644" y="412" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1679" y="412" width="22" height="22" rx="3" fill="#3b4049"/><rect x="1714" y="412" width="22" height="22" rx="3" fill="#d23b2f"/><rect x="1749" y="412" width="22" height="22" rx="3" fill="#f2b705"/>
 <rect x="1628.0" y="218" width="80.0" height="292" fill="url(#glass)" opacity=".48"/>
 <polygon points="1636.0,230 1668.0,230 1636.0,380" fill="#fff" opacity=".07"/>
 <rect x="1628.0" y="218" width="80.0" height="292" fill="none" stroke="#3a404a" stroke-width="7"/>
@@ -595,6 +600,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
         <div id="doors"></div>
       </div>
     </div>
+    <div class="door-list" id="doorList"></div>
     <p class="hint"><span class="led"></span><span data-i="enter_hint"></span></p>
     <div class="ctas">
       <button class="btn btn-signal" type="button" data-open-chat><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg><span data-i="cta_ask"></span></button>
@@ -785,6 +791,7 @@ function render(){
   if (prev) $("#dirFrom").value = prev;
   setDir();
   $("#dirGoogle").href = "https://www.google.com/maps/dir/?api=1&destination=" + DEST;
+  $("#doorList").innerHTML = ROOMS.map(r => `<button type="button" data-room="${r.id}">${esc(t.tags[r.id].join(" · "))}</button>`).join("");
   if (curRoom) fillRoom(curRoom);
   if (typeof drawMine === "function" && myAppt) drawMine();
   $("#services").innerHTML = SVC_KEYS.map(k => {
