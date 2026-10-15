@@ -165,7 +165,7 @@ const DB={
   {id:1,ajanda_id:2,yazan_id:'u2',metin:'Otelden ölçüleri aldım, yarın fiyatı çıkarıyorum.',tarih:iso(gun(0))}],
  teklifler:[
   {id:113,no:'TKL-2026-0113',musteri:'Alsancak Belediyesi',ilgili:'Fen İşleri · 0533 000 00 00',adres:'Alsancak, Girne',konu:'Su pompası için otomatik kumanda panosu',proje_adi:'Su pompası kumanda panosu',departman_id:1,para_birimi:'TRY',kdv:16,gecerlilik:ds(15),sartlar:'',kalemler:[{ad:'Su pompası için otomatik kumanda panosu',miktar:1,birim:'iş',fiyat:0}],durum:'istendi',olusturan:'u1',tarih:iso(gun(0))},
-  {id:112,no:'TKL-2026-0112',musteri:'Lefkoşa Palace Otel',ilgili:'Teknik Müdürlük',adres:'Lefkoşa, KKTC',konu:'250 kVA dizel jeneratör periyodik bakım teklifi',proje_adi:'Otel 250 kVA jeneratör bakımı',departman_id:2,para_birimi:'EUR',kdv:16,gecerlilik:ds(15),sartlar:'Teklif 15 gün geçerlidir.\nÖdeme: %50 sipariş onayında, %50 iş tesliminde.\nİşçiliğe 6 ay garanti verilir.',kalemler:[{ad:'Periyodik bakım işçiliği ve genel kontrol',miktar:1,birim:'iş',fiyat:280},{ad:'Motor yağı 15W-40',miktar:40,birim:'litre',fiyat:6.5},{ad:'Yağ filtresi',miktar:2,birim:'adet',fiyat:24},{ad:'Yakıt filtresi',miktar:2,birim:'adet',fiyat:32},{ad:'Hava filtresi',miktar:1,birim:'adet',fiyat:85}],durum:'gonderildi',gonderim_kanal:'WhatsApp',gonderim_tarih:iso(gun(-1)),gonderen:'u7',tarih:iso(gun(-1))}],
+  {id:112,no:'TKL-2026-0112',olusturan:'u1',acan:'u7',acilma_tarih:iso(gun(-1)),musteri:'Lefkoşa Palace Otel',ilgili:'Teknik Müdürlük',adres:'Lefkoşa, KKTC',konu:'250 kVA dizel jeneratör periyodik bakım teklifi',proje_adi:'Otel 250 kVA jeneratör bakımı',departman_id:2,para_birimi:'EUR',kdv:16,gecerlilik:ds(15),sartlar:'Teklif 15 gün geçerlidir.\nÖdeme: %50 sipariş onayında, %50 iş tesliminde.\nİşçiliğe 6 ay garanti verilir.',kalemler:[{ad:'Periyodik bakım işçiliği ve genel kontrol',miktar:1,birim:'iş',fiyat:280},{ad:'Motor yağı 15W-40',miktar:40,birim:'litre',fiyat:6.5},{ad:'Yağ filtresi',miktar:2,birim:'adet',fiyat:24},{ad:'Yakıt filtresi',miktar:2,birim:'adet',fiyat:32},{ad:'Hava filtresi',miktar:1,birim:'adet',fiyat:85}],durum:'gonderildi',gonderim_kanal:'WhatsApp',gonderim_tarih:iso(gun(-1)),gonderen:'u7',tarih:iso(gun(-1))}],
  malzemeler:[
   {id:1,proje_id:1,tur:'alinan',ad:'2.5mm NYA kablo',miktar:300,birim:'metre',birim_fiyat:9.5},
   {id:2,proje_id:1,tur:'alinan',ad:'Otomatik sigorta 16A',miktar:24,birim:'adet',birim_fiyat:85},
@@ -208,13 +208,15 @@ function run(st){
    return{data:{...r},error:null}}
  if(st.op==='update'){for(const r of tab.filter(fl)){
    if(t==='projeler'&&meP().rol!=='patron'&&['patronda','onaylandi'].includes(r.durum))return{data:null,error:{message:'Bu iş işverende, değiştirilemez'}};
-   const eski=r.durum;Object.assign(r,st.payload);
+   const eski=r.durum,eskiA=r.acilma_tarih;Object.assign(r,st.payload);
    if(t==='gorevler'&&st.payload.durum)r.bitis_tarihi=r.durum==='bitti'?(eski==='bitti'?r.bitis_tarihi:new Date().toISOString()):null;
    if(t==='gorevler'&&r.durum==='bitti'&&eski!=='bitti'){const p=DB.projeler.find(x=>x.id===r.proje_id);DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===p.departman_id)||x.id===p.takipci_id).forEach(x=>bildir(x.id,kis(r).map(pAd).join(', ')+' bitirdi: '+r.baslik+' · '+p.ad,p.id,null,'bitti'))}
    if(t==='gorevler'&&eski==='bekliyor'&&r.durum!=='bekliyor'&&!DB.gorevler.some(x=>x.proje_id===r.proje_id&&kis(x).includes(r.atanan_id)&&x.durum==='bekliyor'))DB.bildirimler.filter(x=>kis(r).includes(x.alici_id)&&x.proje_id===r.proje_id&&x.tur==='gorev').forEach(x=>x.islem_yapildi=true);
    if(t==='ajanda'&&r.durum==='planlandi'&&eski!=='planlandi'&&r.sahip_id!==CUR)DB.bildirimler.push({id:nid++,alici_id:r.sahip_id,metin:pAd(r.atanan_id)+' planladı: '+r.baslik+' · proje açıldı, ekibine dağıtıldı',tur:'ajanda_plan',ajanda_id:r.id,islem_yapildi:false,tarih:new Date().toISOString()});
    if(t==='teklifler'&&r.durum==='red'&&eski!=='red')DB.profiller.filter(y=>y.rol==='patron'||y.id===r.olusturan).forEach(y=>bildir(y.id,'Teklif reddedildi: '+r.musteri+' · '+r.no,null,null,'teklif_red'));
-   if(t==='teklifler'&&eski==='istendi'&&r.durum!=='istendi'){DB.bildirimler.filter(x=>x.tur==='teklif'&&x.metin.includes('teklif istedi: '+r.musteri)).forEach(x=>x.islem_yapildi=true);bildir(r.olusturan,'Teklif hazır: '+r.musteri+' · '+r.no,null,null,'teklif_hazir')}
+   if(t==='teklifler'&&eski==='istendi'&&r.durum!=='istendi'){DB.bildirimler.filter(x=>x.tur==='teklif'&&x.metin.includes('teklif istedi: '+r.musteri)).forEach(x=>x.islem_yapildi=true);bildir(r.olusturan,(pAd(CUR)||'Ofis')+' teklifi hazırlıyor: '+r.musteri+' · '+r.no,null,null,'teklif_hazir')}
+   if(t==='teklifler'&&r.durum==='istendi'&&!eskiA&&r.acilma_tarih)bildir(r.olusturan,(pAd(CUR)||'Ofis')+' teklif isteğini açtı, inceliyor: '+r.musteri,null,null,'teklif_acildi');
+   if(t==='teklifler'&&r.durum==='gonderildi'&&eski!=='gonderildi')DB.profiller.filter(y=>y.rol==='patron'||y.id===r.olusturan).forEach(y=>bildir(y.id,'Teklif müşteriye gönderildi: '+r.musteri+' · '+r.no+(r.gonderim_kanal?' · '+r.gonderim_kanal:''),null,null,'teklif_gonderildi'));
    if(t==='projeler'&&r.durum==='patronda'&&eski!=='patronda')DB.ajanda.filter(a=>a.proje_id===r.id&&a.durum!=='bitti').forEach(a=>a.durum='bitti');
    if(t==='ajanda'&&eski==='bekliyor'&&r.durum!=='bekliyor')DB.bildirimler.filter(x=>x.ajanda_id===r.id&&x.tur==='ajanda').forEach(x=>x.islem_yapildi=true);
    if(t==='ajanda'&&r.durum==='bitti'&&eski!=='bitti'){DB.bildirimler.filter(x=>x.ajanda_id===r.id&&x.tur==='ajanda').forEach(x=>x.islem_yapildi=true);if(r.sahip_id!==r.atanan_id&&r.sahip_id!==CUR)DB.bildirimler.push({id:nid++,alici_id:r.sahip_id,metin:pAd(r.atanan_id)+' bitirdi: '+r.baslik+(r.ucret!=null?' · Ücret: '+r.ucret+' '+r.para_birimi:''),tur:'ajanda_bitti',ajanda_id:r.id,islem_yapildi:false,tarih:new Date().toISOString()})}
@@ -464,7 +466,7 @@ async function bildirimKontrol(){
 // Bildirimin türü ve hangi sekmede olduğu
 function bTurAd(t){const P=me.rol==='patron',ana=P?'Ana Sayfa':me.rol==='ds'?'Bugün':'Görevlerim';
   return({mesaj:'💬 Mesaj · Mesajlar sekmesi',ajanda_not:'📝 İş hakkında geri bildirim · '+ana,onay:'✅ Onay bekleyen iş · Ana Sayfa',fatura:'🧾 Fatura · Fatura sekmesi',teklif:'📄 Teklif isteği · Teklif sekmesi',
-    teklif_hazir:'📄 Teklif hazır · Ana Sayfa',teklif_kabul:'📄 Teklif kabul edildi · Projeler',teklif_red:'📄 Teklif reddedildi · Ana Sayfa',gorev:'🛠️ Yeni görev · '+(me.rol==='ds'?'Görevlerim':ana),ajanda:'📌 Verilen iş · '+ana,
+    teklif_hazir:'📄 Ofis teklifi hazırlıyor · Ana Sayfa',teklif_acildi:'👀 Ofis teklif isteğini açtı · Ana Sayfa',teklif_gonderildi:'📤 Teklif müşteriye gönderildi · Ana Sayfa',teklif_kabul:'📄 Teklif kabul edildi · Projeler',teklif_red:'📄 Teklif reddedildi · Ana Sayfa',gorev:'🛠️ Yeni görev · '+(me.rol==='ds'?'Görevlerim':ana),ajanda:'📌 Verilen iş · '+ana,
     ajanda_bitti:'📌 Verilen iş bitti · '+ana,ajanda_plan:'📋 İş planlandı · '+ana,bitti:'✔️ Görev bitti · Projeler',takip:'📁 Proje · Projeler',iade:'↩ İşveren iade etti · Projeler',onaylandi:'✅ İşveren onayladı · Projeler',
     kesildi:'🧾 Fatura kesildi · Ana Sayfa',odeme:'💰 Ödeme · '+(P?'Ana Sayfa':'Projeler'),rapor:'📊 Aylık rapor · Departman',kayit:'👤 Yeni personel · Ekip'})[t]||'🔔 Bildirim'}
 async function vBildirim(m){
@@ -851,9 +853,10 @@ async function teklifKarti(){
   const {data}=await sb.from('teklifler').select('*').order('tarih',{ascending:false});
   const once=Date.now()-14*864e5;
   const L=(data||[]).filter(t=>!['kabul','red'].includes(t.durum)||new Date(t.tarih).getTime()>once).slice(0,8);
-  const TD={istendi:'Ofiste hazırlanıyor',taslak:'Hazır',gonderildi:'Müşteriye gönderildi',kabul:'✓ Kabul edildi',red:'✕ Reddedildi'};
+  const TD={istendi:'Ofise gönderildi · açılmadı',taslak:'Ofis hazırlıyor',gonderildi:'Müşteriye gönderildi',kabul:'✓ Kabul edildi',red:'✕ Reddedildi'};
+  const tdy=t=>t.durum==='istendi'&&t.acilma_tarih?'Ofis inceliyor':TD[t.durum];
   return`<div class="card" style="padding-block:4px"><div class="row sp" style="margin:8px 0 2px"><h3 style="margin:0">Teklifler</h3><button class="btn s" onclick="vTeklifIste()">📝 Teklif iste</button></div>
-   ${L.map(t=>{const h=bHesap({kalemler:t.kalemler||[],kdv:t.kdv});return`<div class="row sp click" onclick="${t.durum==='kabul'&&t.proje_id?`openP(${t.proje_id},'gorev')`:`teklifAc(${t.id})`}" style="padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>${esc(t.musteri)}</b><div class="muted">${ic(t.konu||'')}${h.gen?' · '+bPara(h.gen,t.para_birimi):''}</div>${t.durum==='kabul'?`<div style="font-size:12px;color:var(--green);font-weight:700">Müşteri kabul etti → ${esc(dname(t.departman_id))} departmanında proje açıldı ›</div>`:t.durum==='red'?'<div class="muted" style="font-size:12px">Müşteri kabul etmedi</div>':''}${t.durum==='gonderildi'&&t.gonderim_kanal?`<div class="muted" style="font-size:12px">${esc(pname(t.gonderen))} · ${esc(t.gonderim_kanal)} ile · ${saat(t.gonderim_tarih)}</div>`:t.durum==='taslak'?'<div class="muted" style="font-size:12px">Hazır, henüz müşteriye gönderilmedi</div>':''}</div><span class="chip ${t.durum==='istendi'?'c-devam':t.durum==='taslak'?'c-bitti':t.durum==='kabul'?'c-onaylandi':t.durum==='red'?'c-iade':'c-acik'}">${TD[t.durum]||t.durum}</span></div>`}).join('')||'<div class="muted" style="padding:8px 0">Açık teklif yok. Müşteri bilgilerini yaz, Ofis teklifi hazırlasın.</div>'}</div>`;
+   ${L.map(t=>{const h=bHesap({kalemler:t.kalemler||[],kdv:t.kdv});return`<div class="row sp click" onclick="${t.durum==='kabul'&&t.proje_id?`openP(${t.proje_id},'gorev')`:`${ofisMi()?'teklifAc':'teklifGor'}(${t.id})`}" style="padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>${esc(t.musteri)}</b><div class="muted">${ic(t.konu||'')}${h.gen?' · '+bPara(h.gen,t.para_birimi):''}</div>${t.durum==='kabul'?`<div style="font-size:12px;color:var(--green);font-weight:700">Müşteri kabul etti → ${esc(dname(t.departman_id))} departmanında proje açıldı ›</div>`:t.durum==='red'?'<div class="muted" style="font-size:12px">Müşteri kabul etmedi</div>':''}${t.durum==='gonderildi'&&t.gonderim_kanal?`<div class="muted" style="font-size:12px">${esc(pname(t.gonderen))} · ${esc(t.gonderim_kanal)} ile · ${saat(t.gonderim_tarih)}</div>`:t.durum==='taslak'?`<div class="muted" style="font-size:12px">${esc(pname(t.acan)||'Ofis')} hazırlıyor, henüz müşteriye gönderilmedi</div>`:t.durum==='istendi'?(t.acilma_tarih?`<div class="muted" style="font-size:12px">${esc(pname(t.acan))} açtı · ${saat(t.acilma_tarih)}</div>`:`<div class="muted" style="font-size:12px">Gönderildi · ${saat(t.tarih)} · Ofis henüz açmadı</div>`):''}</div><span class="chip ${t.durum==='istendi'?(t.acilma_tarih?'c-devam':'c-bekliyor'):t.durum==='taslak'?'c-devam':t.durum==='kabul'?'c-onaylandi':t.durum==='red'?'c-iade':'c-acik'}">${tdy(t)||t.durum}</span></div>`}).join('')||'<div class="muted" style="padding:8px 0">Açık teklif yok. Müşteri bilgilerini yaz, Ofis teklifi hazırlasın.</div>'}</div>`;
 }
 function vTeklifIste(){
   const m=$('#m');
@@ -874,14 +877,41 @@ function vTeklifIste(){
 // --- Teklifler ---
 async function vTeklifler(m){
   const {data,error}=await sb.from('teklifler').select('*').order('tarih',{ascending:false});if(hata(error))return;
-  const TD={istendi:'Doğuş istedi · hazırla',taslak:'Hazır',gonderildi:'Gönderildi',kabul:'Kabul edildi',red:'Reddedildi'},TC={istendi:'c-iade',taslak:'c-bekliyor',gonderildi:'c-acik',kabul:'c-bitti',red:'c-iade'};
+  const TD={istendi:'Doğuş gönderdi · hazırlanacak',taslak:'Hazırlanıyor',gonderildi:'Gönderildi',kabul:'Kabul edildi',red:'Reddedildi'},TC={istendi:'c-iade',taslak:'c-bekliyor',gonderildi:'c-acik',kabul:'c-bitti',red:'c-iade'};
   m.innerHTML=`<div class="row sp"><h2>Teklifler</h2><button class="btn s" onclick="teklifAc()">+ Yeni teklif</button></div>
-   ${(data||[]).map(t=>{const h=bHesap({kalemler:(t.kalemler||[]),kdv:t.kdv});return`<div class="card click" onclick="teklifAc(${t.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(t.musteri)}</h3><span class="chip ${TC[t.durum]}">${TD[t.durum]}</span></div>
+   ${(data||[]).map(t=>{const h=bHesap({kalemler:(t.kalemler||[]),kdv:t.kdv});return`<div class="card click" onclick="teklifAc(${t.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(t.musteri)}</h3><span class="chip ${TC[t.durum]}">${t.durum==='istendi'?esc((pname(t.olusturan)||'Doğuş').split(' ')[0])+' gönderdi · hazırlanacak':TD[t.durum]}</span></div>
      <div class="muted">${esc(t.no||'')} · ${esc(t.konu||'')}${t.departman_id?' · '+esc(dname(t.departman_id)):''}</div><div style="margin-top:6px;font-weight:800;color:var(--green)">${bPara(h.gen,t.para_birimi)}</div></div>`}).join('')||'<div class="card muted">Henüz teklif yok. "+ Yeni teklif" ile başla.</div>'}`;
+}
+const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:t.kalemler||[],notlar:(t.sartlar||'').split('\n'),imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
+// İşveren ve sorumlular teklifi sadece izler: aşamalar + hazırsa önizleme (düzenleme Ofis'te)
+async function teklifGor(id){
+  const r=await sb.from('teklifler').select('*').eq('id',id).single();if(hata(r.error))return;const t=r.data,m=$('#m');
+  const haz=['taslak','gonderildi','kabul','red'].includes(t.durum),gon=['gonderildi','kabul','red'].includes(t.durum),h=bHesap({kalemler:t.kalemler||[],kdv:t.kdv});
+  const adim=(ok,baslik,alt)=>`<div class="row" style="gap:10px;padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap;align-items:flex-start"><span style="width:22px;height:22px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:13px;font-weight:800;${ok?'background:var(--green);color:#fff':'border:2px solid var(--line);color:var(--muted)'}">${ok?'✓':''}</span><div style="min-width:0"><b style="${ok?'':'color:var(--muted)'}">${baslik}</b>${alt?`<div class="muted">${alt}</div>`:''}</div></div>`;
+  m.innerHTML=`<button class="btn s l" onclick="render()">← Geri</button>
+   <div class="card" style="margin-top:10px"><div class="row sp" style="flex-wrap:nowrap"><h2 style="margin:0;min-width:0">${esc(t.musteri)}</h2><span class="muted" style="white-space:nowrap">${esc(t.no||'')}</span></div>
+    <div class="muted" style="margin-top:4px">${ic(t.konu||'')}${t.departman_id?' · '+esc(dname(t.departman_id)):''}</div>
+    ${t.ilgili||t.adres?`<div class="muted">${esc([t.ilgili,t.adres].filter(Boolean).join(' · '))}</div>`:''}
+    ${h.gen?`<div class="big" style="margin-top:6px">${bPara(h.gen,t.para_birimi)}</div><div class="muted">KDV dahil</div>`:''}</div>
+   <div class="card"><h3 style="margin:0 0 4px">Teklif nerede?</h3>
+    ${adim(true,'Ofise gönderildi',[pname(t.olusturan),saat(t.tarih)].filter(Boolean).map(esc).join(' · '))}
+    ${adim(!!t.acilma_tarih||haz,'Ofis açtı, inceliyor',t.acilma_tarih?[pname(t.acan),saat(t.acilma_tarih)].filter(Boolean).map(esc).join(' · '):haz?'':'Ofis henüz açmadı')}
+    ${adim(haz,'Ofis hazırlıyor',haz&&pname(t.acan)?esc(pname(t.acan))+' teklifi yazdı':'')}
+    ${adim(gon,'Müşteriye gönderildi',gon?[t.gonderim_kanal,saat(t.gonderim_tarih),pname(t.gonderen)].filter(Boolean).map(esc).join(' · '):'')}
+    ${t.durum==='red'?adim(true,'✕ Müşteri reddetti',''):adim(t.durum==='kabul','Müşteri kabul etti',t.proje_id?'Projeye dönüştürüldü':'')}
+    ${t.proje_id?`<button class="btn l w" style="margin-top:8px" onclick="openP(${t.proje_id},'gorev')">Projeyi aç ›</button>`:''}</div>
+   ${haz?`<div class="card"><div class="row sp"><h3 style="margin:0">Teklifin kendisi</h3><div class="durumlar"><button class="btn s l" id="tgp">📄 PDF</button><button class="btn s l" id="tgf">🖼 Fotoğraf</button></div></div>
+    <div id="tgk" style="margin-top:10px;overflow:hidden;border:1px solid var(--line);border-radius:10px"><div id="tgi" data-nocevir style="width:794px;transform-origin:0 0">${belgeHTML(teklifBelge(t))}</div></div>
+    <div class="muted" style="margin-top:6px">Düzenleme Ofis'te yapılır. Değişiklik istersen Mesajlar'dan Ofis'e yaz.</div></div>`
+   :'<div class="card muted">Ofis teklifi yazınca burada görünecek.</div>'}`;
+  scrollTo(0,0);
+  if(haz){const k=$('#tgk'),i=$('#tgi'),olc=()=>{const z=k.clientWidth/794;i.style.transform='scale('+z+')';k.style.height=(i.offsetHeight*z)+'px'};olc();addEventListener('resize',olc);
+    $('#tgp').onclick=()=>indirPDF(teklifBelge(t));$('#tgf').onclick=()=>indirPNG(teklifBelge(t))}
 }
 async function teklifAc(id){
   let t=null;if(id){const r=await sb.from('teklifler').select('*').eq('id',id).single();if(hata(r.error))return;t=r.data}
-  const d=t?{tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:t.kalemler||[],notlar:(t.sartlar||'').split('\n'),imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]}
+  if(t&&t.durum==='istendi'&&!t.acilma_tarih&&ofisMi()){const u=await sb.from('teklifler').update({acilma_tarih:new Date().toISOString(),acan:me.id}).eq('id',t.id);if(!u.error){t.acilma_tarih=new Date().toISOString();t.acan=me.id}}
+  const d=t?teklifBelge(t)
     :{tur:'FİYAT TEKLİFİ',no:'',tarih:bugunStr(),son:gunEkle(15),musteri:{ad:'',ilgili:'',adres:''},proje:'',konu:'',pb:'TRY',kdv:16,kalemler:[{ad:'',miktar:1,birim:'adet',fiyat:0}],
       notlar:['Teklif geçerlilik tarihine kadar geçerlidir.','Ödeme: %50 sipariş onayında, %50 iş tesliminde.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'],imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]};
   const durum=t?t.durum:'taslak';
@@ -892,7 +922,7 @@ async function teklifAc(id){
     ${t.proje_id?'<div class="muted" style="margin-top:8px">✓ Kabul edildi, projeye dönüştürüldü.</div>':`<button class="btn g w" style="margin-top:8px" onclick="teklifKabul(${t.id})">✓ Kabul edildi → Projeye dönüştür</button>`}</div>`:'';
   vBelgeAc(d,async()=>{const x=BELGE.d;if(!x.musteri.ad.trim())return toast('Müşteri adını yaz');
     const row={musteri:x.musteri.ad.trim(),ilgili:x.musteri.ilgili||null,adres:x.musteri.adres||null,konu:x.konu||null,proje_adi:x.konu||null,para_birimi:x.pb,kdv:x.kdv,gecerlilik:x.son||null,sartlar:(x.notlar||[]).join('\n'),kalemler:x.kalemler,departman_id:Number(($('#tdp')||{}).value)||(t&&t.departman_id)||null};
-    if(t&&t.durum==='istendi')row.durum='taslak';
+    if(t&&t.durum==='istendi'){row.durum='taslak';if(!t.acan){row.acan=me.id;row.acilma_tarih=new Date().toISOString()}}
     const r=t?await sb.from('teklifler').update(row).eq('id',t.id):await sb.from('teklifler').insert(row).select().single();
     if(hata(r.error))return;toast('Teklif kaydedildi');if(!t&&r.data)return teklifAc(r.data.id);teklifAc(t.id)},()=>{S.tab='teklif';render()},ekstra);
 }
