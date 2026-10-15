@@ -1169,9 +1169,11 @@ async function vProjeler(m){
   const list=data.filter(flt[S.f]);
   const tk=await takvim(true);
   const {data:GG}=await sb.from('gorevler').select('*').order('plan_tarih',{ascending:true,nullsFirst:false});
-  const SIRA=me.rol==='patron'?['devam','acik','iade','bitti','patronda']:['devam','acik','iade','bitti','patronda','onaylandi'];
-  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:'İş bitti · fiyat bekliyor',patronda:'İşverene gönderildi · onay bekliyor',onaylandi:'Onaylandı · Ofis / fatura'};
-  const grup=SIRA.map(d=>{const l=list.filter(p=>p.durum===d);return l.length?`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${BASLIK[d]} (${l.length})</h3>${l.map(p=>projeKart(p,GG||[])).join('')}`:''}).join('');
+  const SIRA=me.rol==='patron'?['devam','acik','iade','bitti','patronda']:['devam','acik','iade','bitti','patronda','ofis','odeme','odendi'];
+  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:'İş bitti · fiyat bekliyor',patronda:'İşverene gönderildi · onay bekliyor',ofis:'Onaylandı · Ofiste fatura bekliyor',odeme:'Fatura kesildi · ödeme bekleniyor',odendi:'Ödendi · arşiv'};
+  const gk=p=>p.durum!=='onaylandi'?p.durum:p.fatura_durum!=='kesildi'?'ofis':p.odeme_durum==='alindi'?'odendi':'odeme';
+  const grup=SIRA.map(d=>{const l=list.filter(p=>gk(p)===d);if(!l.length)return'';const h=`${BASLIK[d]} (${l.length})`,k=l.map(p=>projeKart(p,GG||[])).join('');
+    return d==='odendi'?`<details style="margin-top:14px"><summary style="font-size:14px;font-weight:700">${h}</summary>${k}</details>`:`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${h}</h3>${k}`}).join('');
   m.innerHTML=tk+`<div class="row sp"><h2>${me.rol==='calisan'?'Projelerim':'Tüm projeler'}</h2>${me.rol!=='calisan'?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
   <div class="tabs">${[['hepsi','Hepsi'],['aktif','Aktif'],['patronda','İşverende']].map(([k,t])=>`<button class="${S.f===k?'on':''}" onclick="S.f='${k}';render()">${t} (${data.filter(flt[k]).length})</button>`).join('')}</div>
   ${grup||'<div class="card muted">Kayıt yok.</div>'}
