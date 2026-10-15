@@ -85,7 +85,7 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .msg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;max-width:85%;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.ben{align-self:flex-end;background:#e8f0fe;border-color:#c9dafb}
 </style>
-<div id="demo" data-nocevir><b>DEMO · Kim olarak bak:</b><button class="on" onclick="demoRol('u1',this)">Doğuş (Patron)</button><button onclick="demoRol('u2',this)">Esat (Elektrik)</button><button onclick="demoRol('u5',this)">İbrahim (Jeneratör)</button><button onclick="demoRol('u8',this)">Tolga (Elektronik)</button><button onclick="demoRol('u7',this)">Gökçe (Ofis)</button><button onclick="demoRol('u3',this)">Michael (EN)</button><button onclick="demoRol('u11',this)">Said (اردو)</button></div>
+<div id="demo" data-nocevir><b>DEMO · Kim olarak bak:</b><button class="on" onclick="demoRol('u1',this)">Doğuş (İşveren)</button><button onclick="demoRol('u2',this)">Esat (Elektrik)</button><button onclick="demoRol('u5',this)">İbrahim (Jeneratör)</button><button onclick="demoRol('u8',this)">Tolga (Elektronik)</button><button onclick="demoRol('u7',this)">Gökçe (Ofis)</button><button onclick="demoRol('u3',this)">Michael (EN)</button><button onclick="demoRol('u11',this)">Said (اردو)</button></div>
 <div id="app"></div><div id="toast"></div>
 <script>
 window.confirm=()=>true;
@@ -176,7 +176,7 @@ const takipEder=pid=>{const p=DB.projeler.find(x=>x.id==pid);if(!p)return false;
 const bildir=(a,metin,proje_id,departman_id,tur)=>{if(!a||a===CUR)return;DB.bildirimler.push({id:nid++,alici_id:a,metin,proje_id:proje_id??null,departman_id:departman_id??null,tur,islem_yapildi:false,tarih:new Date().toISOString()})};
 const pAd=id=>(DB.profiller.find(p=>p.id===id)||{}).ad||'';
 const ekli=ad=>{const a=(ad||'Biri').split(' ')[0],son=a.slice(-1).toLowerCase(),v=(a.match(/[aeıioöuüAEIİOÖUÜ]/g)||['a']).pop().toLocaleLowerCase('tr');return a+"'"+('fstkçşhp'.includes(son)?'t':'d')+('eiöü'.includes(v)?'en':'an')};
-// Patron bir departman sorumlusuna iş verince proje otomatik açılır (SQL: ajanda_proje_ac)
+// İşveren bir departman sorumlusuna iş verince proje otomatik açılır (SQL: ajanda_proje_ac)
 function ajProje(r){const k=DB.profiller.find(p=>p.id===r.atanan_id);if(r.proje_id||!k||k.rol!=='ds'||r.atanan_id===r.sahip_id)return;const d=DB.departmanlar.find(x=>x.id===k.departman_id);if(!d||d.ofis)return;
  const p={id:nid++,departman_id:d.id,ad:r.baslik,aciklama:r.aciklama||(pAd(r.sahip_id)+' tarafından verildi'),takipci_id:k.id,durum:'acik',iscilik:0,para_birimi:'TRY',baslangic:r.tarih||null,olusturan:r.sahip_id,olusturma:new Date().toISOString()};DB.projeler.push(p);r.proje_id=p.id}
 DB.ajanda.forEach(ajProje);
@@ -195,7 +195,7 @@ function run(st){
    if(t==='mesajlar'){DB.bildirimler.filter(x=>x.alici_id===r.gonderen_id&&x.tur==='mesaj'&&x.departman_id==(r.departman_id||0)).forEach(x=>x.islem_yapildi=true);const k=(DB.departmanlar.find(d=>d.id===r.departman_id)||{}).ad||'Genel';DB.profiller.filter(p=>['patron','ds','calisan'].includes(p.rol)&&(!r.departman_id||p.departman_id===r.departman_id||DB.mesajlar.some(x=>x!==r&&(x.departman_id||0)===(r.departman_id||0)&&x.gonderen_id===p.id))).forEach(p=>bildir(p.id,pAd(r.gonderen_id)+' mesaj yazdı ('+k+'): '+r.metin.slice(0,80),null,r.departman_id||0,'mesaj'))}
    return{data:{...r},error:null}}
  if(st.op==='update'){for(const r of tab.filter(fl)){
-   if(t==='projeler'&&meP().rol!=='patron'&&['patronda','onaylandi'].includes(r.durum))return{data:null,error:{message:'Bu iş patronda, değiştirilemez'}};
+   if(t==='projeler'&&meP().rol!=='patron'&&['patronda','onaylandi'].includes(r.durum))return{data:null,error:{message:'Bu iş işverende, değiştirilemez'}};
    const eski=r.durum;Object.assign(r,st.payload);
    if(t==='gorevler'&&st.payload.durum)r.bitis_tarihi=r.durum==='bitti'?(eski==='bitti'?r.bitis_tarihi:new Date().toISOString()):null;
    if(t==='gorevler'&&r.durum==='bitti'&&eski!=='bitti'){const p=DB.projeler.find(x=>x.id===r.proje_id);DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===p.departman_id)||x.id===p.takipci_id).forEach(x=>bildir(x.id,kis(r).map(pAd).join(', ')+' bitirdi: '+r.baslik+' · '+p.ad,p.id,null,'bitti'))}
@@ -211,7 +211,7 @@ function run(st){
    if(t==='projeler'&&r.durum!==eski){
      if(r.durum==='patronda')DB.profiller.filter(x=>x.rol==='patron').forEach(x=>bildir(x.id,'Onayını bekleyen iş: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'onay'));
      if(r.durum==='onaylandi'){r.fatura_durum='bekliyor';DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis).forEach(x=>bildir(x.id,'Fatura için bekliyor: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'fatura'))}
-     if(['onaylandi','iade'].includes(r.durum))DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===r.departman_id)||x.id===r.takipci_id).forEach(x=>bildir(x.id,(r.durum==='onaylandi'?'Patron onayladı: ':'Patron iade etti: ')+r.ad+(r.patron_notu?' — '+r.patron_notu:''),r.id,null,r.durum))}
+     if(['onaylandi','iade'].includes(r.durum))DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===r.departman_id)||x.id===r.takipci_id).forEach(x=>bildir(x.id,(r.durum==='onaylandi'?'İşveren onayladı: ':'İşveren iade etti: ')+r.ad+(r.patron_notu?' — '+r.patron_notu:''),r.id,null,r.durum))}
    if(t==='gorevler'&&['bakiyor','basladi'].includes(st.payload.durum)){const p=DB.projeler.find(x=>x.id===r.proje_id);if(p&&p.durum==='acik')p.durum='devam'}}
    return{data:null,error:null}}
  if(st.op==='delete'){DB[t]=tab.filter(r=>!fl(r));return{data:null,error:null}}
@@ -278,7 +278,7 @@ const sumPB=(a,f)=>{const g={};a.forEach(p=>{const c=p.para_birimi||'TRY';g[c]=(
 const tarih=d=>d?new Date(d).toLocaleDateString('tr-TR'):'';
 const saat=d=>d?new Date(d).toLocaleString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}):'';
 const toplam=a=>a.reduce((s,x)=>s+Number(x.miktar||0)*Number(x.birim_fiyat||0),0);
-const DURUM={acik:'Açık',devam:'Devam ediyor',bitti:'İş bitti',patronda:'Patronda',onaylandi:'Onaylandı',iade:'İade edildi'};
+const DURUM={acik:'Açık',devam:'Devam ediyor',bitti:'İş bitti',patronda:'İşverende',onaylandi:'Onaylandı',iade:'İade edildi'};
 const GDURUM={bekliyor:'Bekliyor',bakiyor:'Bakıyorum',basladi:'Devam ediyor',bitti:'Bitti'};
 const gKisi=t=>[...new Set([t.atanan_id,...(t.ekip||[])].filter(Boolean))];
 const kisiAd=t=>gKisi(t).map(pname).join(', ')||'—';
@@ -286,12 +286,12 @@ const bende=t=>gKisi(t).includes(me.id);
 function kisiSec(liste,ad){return`<div style="display:grid;gap:4px">${liste.map(p=>`<label style="display:flex;align-items:center;gap:10px;margin:0;padding:9px 10px;border:1px solid var(--line);border-radius:9px;color:var(--text);font-size:15px"><input type="checkbox" name="${ad}" value="${p.id}" style="width:20px;height:20px;flex:none"> ${esc(p.ad)} <span class="muted">· ${p.rol==='ds'?'Sorumlu':'Çalışan'}${p.departman_id&&p.departman_id!==me.departman_id?' · '+esc(dname(p.departman_id)):''}</span></label>`).join('')}</div>`}
 const secilenler=(f,ad)=>[...f.querySelectorAll(`input[name=${ad}]:checked`)].map(x=>x.value);
 const calisiyorMu=d=>d==='bakiyor'||d==='basladi';
-const ROL={patron:'Patron',ds:'Departman Sorumlusu',calisan:'Çalışan',bekliyor:'Onay bekliyor',pasif:'Pasif (giremez)'};
+const ROL={patron:'İşveren',ds:'Departman Sorumlusu',calisan:'Çalışan',bekliyor:'Onay bekliyor',pasif:'Pasif (giremez)'};
 const chip=(k,map)=>`<span class="chip c-${k}">${esc(map[k]||k)}</span>`;
 // ---------------- Dil ve otomatik çeviri ----------------
 const DILLER={tr:{ad:'Türkçe',k:'TR'},en:{ad:'English',k:'EN'},fa:{ad:'فارسی',k:'FA',rtl:1},ur:{ad:'اردو',k:'UR',rtl:1}};
 const GM={
- tr:{baslik:'Giriş yap',kayitBaslik:'Yeni hesap aç',ad:'Ad Soyad',kadi:'Kullanıcı adı (Latin harfleri)',sifre:'Şifre (en az 6 karakter)',giris:'Giriş',hesapAc:'Hesap aç',var:'Hesabım var, giriş yap',yok:'Hesabım yok, kayıt ol',gecersiz:'Geçerli bir kullanıcı adı girin',hatali:'Kullanıcı adı veya şifre hatalı',alinmis:'Bu kullanıcı adı alınmış',merhaba:'Merhaba',bekle:'Hesabın açıldı. Patron sana rol ve departman verince sistemi kullanabilirsin.',pasif:'Hesabın pasif durumda.',yenile:'Yenile',cikis:'Çıkış',dil:'Dilini seç'},
+ tr:{baslik:'Giriş yap',kayitBaslik:'Yeni hesap aç',ad:'Ad Soyad',kadi:'Kullanıcı adı (Latin harfleri)',sifre:'Şifre (en az 6 karakter)',giris:'Giriş',hesapAc:'Hesap aç',var:'Hesabım var, giriş yap',yok:'Hesabım yok, kayıt ol',gecersiz:'Geçerli bir kullanıcı adı girin',hatali:'Kullanıcı adı veya şifre hatalı',alinmis:'Bu kullanıcı adı alınmış',merhaba:'Merhaba',bekle:'Hesabın açıldı. İşveren sana rol ve departman verince sistemi kullanabilirsin.',pasif:'Hesabın pasif durumda.',yenile:'Yenile',cikis:'Çıkış',dil:'Dilini seç'},
  en:{baslik:'Sign in',kayitBaslik:'Create account',ad:'Full name',kadi:'Username (Latin letters)',sifre:'Password (at least 6 characters)',giris:'Sign in',hesapAc:'Create account',var:'I have an account, sign in',yok:'No account? Register',gecersiz:'Enter a valid username',hatali:'Wrong username or password',alinmis:'This username is taken',merhaba:'Hello',bekle:'Your account is created. You can use the system once the boss assigns your role and department.',pasif:'Your account is inactive.',yenile:'Refresh',cikis:'Sign out',dil:'Choose your language'},
  fa:{baslik:'ورود',kayitBaslik:'ایجاد حساب',ad:'نام و نام خانوادگی',kadi:'نام کاربری (حروف لاتین)',sifre:'رمز عبور (حداقل ۶ کاراکتر)',giris:'ورود',hesapAc:'ایجاد حساب',var:'حساب دارم، ورود',yok:'حساب ندارم، ثبت‌نام',gecersiz:'یک نام کاربری معتبر وارد کنید',hatali:'نام کاربری یا رمز عبور اشتباه است',alinmis:'این نام کاربری قبلاً گرفته شده است',merhaba:'سلام',bekle:'حساب شما ایجاد شد. وقتی مدیر نقش و بخش شما را تعیین کند، می‌توانید از سیستم استفاده کنید.',pasif:'حساب شما غیرفعال است.',yenile:'تازه‌سازی',cikis:'خروج',dil:'زبان خود را انتخاب کنید'},
  ur:{baslik:'لاگ اِن',kayitBaslik:'نیا اکاؤنٹ بنائیں',ad:'پورا نام',kadi:'یوزر نیم (لاطینی حروف)',sifre:'پاس ورڈ (کم از کم 6 حروف)',giris:'لاگ اِن',hesapAc:'اکاؤنٹ بنائیں',var:'میرا اکاؤنٹ ہے، لاگ اِن کریں',yok:'اکاؤنٹ نہیں ہے؟ رجسٹر کریں',gecersiz:'درست یوزر نیم درج کریں',hatali:'یوزر نیم یا پاس ورڈ غلط ہے',alinmis:'یہ یوزر نیم پہلے سے لیا جا چکا ہے',merhaba:'سلام',bekle:'آپ کا اکاؤنٹ بن گیا ہے۔ جب باس آپ کا کردار اور شعبہ مقرر کرے گا تو آپ سسٹم استعمال کر سکیں گے۔',pasif:'آپ کا اکاؤنٹ غیر فعال ہے۔',yenile:'ریفریش',cikis:'لاگ آؤٹ',dil:'اپنی زبان منتخب کریں'}};
@@ -329,7 +329,7 @@ const pname=id=>(people.find(p=>p.id===id)||{}).ad||'—';
 const dname=id=>(deps.find(d=>d.id===id)||{}).ad||'—';
 const ofisMi=()=>!!(deps.find(d=>d.id===me.departman_id)||{}).ofis;
 const aktifler=()=>people.filter(p=>['patron','ds','calisan'].includes(p.rol));
-// Patron herkese iş verebilir; sorumlu sadece kendi departmanındakilere
+// İşveren herkese iş verebilir; sorumlu sadece kendi departmanındakilere
 function ekipOf(dep){const a=aktifler().filter(p=>p.rol!=='patron');if(me.rol!=='patron')return a.filter(p=>p.departman_id===me.departman_id);return[...a.filter(p=>p.departman_id==dep),...a.filter(p=>p.departman_id!=dep)]}
 function opts(list,sel,dep){return '<option value="">— seçin —</option>'+list.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.ad)} (${p.rol==='ds'?'DS':'Çalışan'}${dep&&p.departman_id!=dep?' · '+esc(dname(p.departman_id)):''})</option>`).join('')}
 
@@ -453,7 +453,7 @@ async function bildirimKontrol(){
 function bTurAd(t){const P=me.rol==='patron',ana=P?'Ana Sayfa':me.rol==='ds'?'Bugün':'Görevlerim';
   return({mesaj:'💬 Mesaj · Mesajlar sekmesi',ajanda_not:'📝 İş hakkında geri bildirim · '+ana,onay:'✅ Onay bekleyen iş · Ana Sayfa',fatura:'🧾 Fatura · Fatura sekmesi',teklif:'📄 Teklif isteği · Teklif sekmesi',
     teklif_hazir:'📄 Teklif hazır · Ana Sayfa',teklif_kabul:'📄 Teklif kabul edildi · Projeler',teklif_red:'📄 Teklif reddedildi · Ana Sayfa',gorev:'🛠️ Yeni görev · '+(me.rol==='ds'?'Görevlerim':ana),ajanda:'📌 Verilen iş · '+ana,
-    ajanda_bitti:'📌 Verilen iş bitti · '+ana,ajanda_plan:'📋 İş planlandı · '+ana,bitti:'✔️ Görev bitti · Projeler',takip:'📁 Proje · Projeler',iade:'↩ Patron iade etti · Projeler',onaylandi:'✅ Patron onayladı · Projeler',
+    ajanda_bitti:'📌 Verilen iş bitti · '+ana,ajanda_plan:'📋 İş planlandı · '+ana,bitti:'✔️ Görev bitti · Projeler',takip:'📁 Proje · Projeler',iade:'↩ İşveren iade etti · Projeler',onaylandi:'✅ İşveren onayladı · Projeler',
     kesildi:'🧾 Fatura kesildi · Ana Sayfa',rapor:'📊 Aylık rapor · Departman',kayit:'👤 Yeni personel · Ekip'})[t]||'🔔 Bildirim'}
 async function vBildirim(m){
   const {data,error}=await sb.from('bildirimler').select('*').order('tarih',{ascending:false});if(hata(error))return;
@@ -487,7 +487,7 @@ async function vFatura(m){
   const kart=p=>`<div class="card"><div class="row sp"><h3 style="margin:0">${esc(p.ad)}</h3>${p.fatura_durum==='kesildi'?'<span class="chip c-bitti">Fatura kesildi</span>':'<span class="chip c-iade">Fatura bekliyor</span>'}</div>
     <div class="muted" style="margin-top:4px">${esc(dname(p.departman_id))}${p.musteri?' · Müşteri: <b>'+esc(p.musteri)+'</b>':''}${p.adres?' · '+esc(p.adres):''}</div>
     <div class="big" style="margin-top:6px">${tl(p.fiyat,p.para_birimi)}</div>
-    <div class="muted">İşçilik: ${tl(p.iscilik,p.para_birimi)} · Patron onayı: ${saat(p.onay_tarihi)}</div>
+    <div class="muted">İşçilik: ${tl(p.iscilik,p.para_birimi)} · İşveren onayı: ${saat(p.onay_tarihi)}</div>
     ${p.fiyat_notu?`<div class="muted" style="margin-top:4px">Not: ${esc(p.fiyat_notu)}</div>`:''}
     <button class="btn l w" style="margin-top:10px" onclick="proformaAc(${p.id})">📄 ${p.proforma_no?'Proforma '+esc(p.proforma_no)+' · aç / indir':'Proforma oluştur (PDF · Word · Fotoğraf)'}</button>
     ${p.fatura_durum==='kesildi'?`<div class="muted" style="margin-top:8px">Fatura No: <b>${esc(p.fatura_no||'—')}</b> · ${saat(p.fatura_tarihi)}</div>`
@@ -497,7 +497,7 @@ async function vFatura(m){
    ${kes.length?`<details><summary>Kesilen faturalar (${kes.length})</summary>${kes.map(kart).join('')}</details>`:''}`;
   m.querySelectorAll('.ff2').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
     const {error}=await sb.rpc('fatura_kes',{p:Number(f.dataset.id),no:f.no.value});if(hata(error))return;
-    toast('Fatura kesildi, patrona bildirildi');render()});
+    toast('Fatura kesildi, işverene bildirildi');render()});
 }
 
 // ---------------- Ajanda (planlar) ----------------
@@ -946,9 +946,9 @@ function projeKart(p,G){
   const T=G.filter(t=>t.proje_id===p.id),bit=T.filter(t=>t.durum==='bitti').length,yz=T.length?Math.round(bit*100/T.length):0;
   const acik=T.filter(t=>t.durum!=='bitti').sort((a,b)=>(calisiyorMu(a.durum)?0:1)-(calisiyorMu(b.durum)?0:1));
   const simdi=acik.find(t=>calisiyorMu(t.durum));
-  const asama=p.durum==='patronda'?'Patrona gönderildi · onayını bekliyor'
-    :p.durum==='onaylandi'?(p.fatura_durum==='kesildi'?'Fatura edildi ✓'+(p.fatura_no?' · No: '+p.fatura_no:''):'Patron onayladı · Ofiste fatura bekliyor')
-    :p.durum==='iade'?'Patron iade etti, düzeltiliyor'
+  const asama=p.durum==='patronda'?'İşverene gönderildi · onayını bekliyor'
+    :p.durum==='onaylandi'?(p.fatura_durum==='kesildi'?'Fatura edildi ✓'+(p.fatura_no?' · No: '+p.fatura_no:''):'İşveren onayladı · Ofiste fatura bekliyor')
+    :p.durum==='iade'?'İşveren iade etti, düzeltiliyor'
     :p.durum==='bitti'?'İş bitti, fiyat bekleniyor'
     :simdi?'Şu an: '+simdi.baslik:acik.length?'Sırada: '+acik[0].baslik:'Henüz görev planlanmadı';
   const yon=me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id);
@@ -963,7 +963,7 @@ function projeKart(p,G){
   </div>`;
 }
 
-// ---------------- Patron: Onay kartı ----------------
+// ---------------- İşveren: Onay kartı ----------------
 function onayKart(p){
   const ds=people.filter(x=>x.rol==='ds'&&x.departman_id===p.departman_id).map(x=>x.ad).join(', ')||'Sorumlu';
   return`<div class="card" style="border-color:#c9b6f0">
@@ -978,7 +978,7 @@ function onayKart(p){
   </div>`;
 }
 
-// ---------------- Patron: Onay ----------------
+// ---------------- İşveren: Onay ----------------
 async function vOnay(m){
   const {data,error}=await sb.from('projeler').select('*').order('gonderim',{ascending:false,nullsFirst:false});
   if(hata(error))return;
@@ -1100,7 +1100,7 @@ async function vMesajlar(m){
   await loadBase();
   const {data,error}=await sb.from('mesajlar').select('*').order('tarih',{ascending:true});if(hata(error))return;
   const kanallar=[{id:0,ad:'Genel (herkes)'},...deps];
-  const kim=id=>{const g=people.find(p=>p.id===id)||{};return esc(g.ad||'—')+(g.rol==='patron'?' · Patron':g.departman_id?' · '+esc(dname(g.departman_id)):'')};
+  const kim=id=>{const g=people.find(p=>p.id===id)||{};return esc(g.ad||'—')+(g.rol==='patron'?' · İşveren':g.departman_id?' · '+esc(dname(g.departman_id)):'')};
   if(S.kanal===null){
     m.innerHTML=`<h2>Mesajlar</h2><div class="muted" style="margin-bottom:10px">Bir departmana yaz, o departman ve sana cevap verilir. Genel kanal herkese gider.</div>`+kanallar.map(k=>{
       const ms=data.filter(x=>(x.departman_id||0)===k.id),son=ms[ms.length-1];
@@ -1126,16 +1126,16 @@ async function vProjeler(m){
   const tk=await takvim(true);
   const {data:GG}=await sb.from('gorevler').select('*').order('plan_tarih',{ascending:true,nullsFirst:false});
   const SIRA=me.rol==='patron'?['devam','acik','iade','bitti','patronda']:['devam','acik','iade','bitti','patronda','onaylandi'];
-  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'Patron iade etti',bitti:'İş bitti · fiyat bekliyor',patronda:'Patrona gönderildi · onay bekliyor',onaylandi:'Onaylandı · Ofis / fatura'};
+  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:'İş bitti · fiyat bekliyor',patronda:'İşverene gönderildi · onay bekliyor',onaylandi:'Onaylandı · Ofis / fatura'};
   const grup=SIRA.map(d=>{const l=list.filter(p=>p.durum===d);return l.length?`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${BASLIK[d]} (${l.length})</h3>${l.map(p=>projeKart(p,GG||[])).join('')}`:''}).join('');
   m.innerHTML=tk+`<div class="row sp"><h2>${me.rol==='calisan'?'Projelerim':'Tüm projeler'}</h2>${me.rol!=='calisan'?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
-  <div class="tabs">${[['hepsi','Hepsi'],['aktif','Aktif'],['patronda','Patronda']].map(([k,t])=>`<button class="${S.f===k?'on':''}" onclick="S.f='${k}';render()">${t} (${data.filter(flt[k]).length})</button>`).join('')}</div>
+  <div class="tabs">${[['hepsi','Hepsi'],['aktif','Aktif'],['patronda','İşverende']].map(([k,t])=>`<button class="${S.f===k?'on':''}" onclick="S.f='${k}';render()">${t} (${data.filter(flt[k]).length})</button>`).join('')}</div>
   ${grup||'<div class="card muted">Kayıt yok.</div>'}
   ${me.rol==='patron'&&data.some(p=>p.durum==='onaylandi')?`<div class="muted" style="margin-top:10px">Onaylanan ${data.filter(p=>p.durum==='onaylandi').length} iş faturalanmak üzere Ofis'e geçti.</div>`:''}`;
 }
 function vYeni(){
   const m=$('#m');const isP=me.rol==='patron';
-  if(!isP&&!me.departman_id) return toast('Önce patron sana departman vermeli');
+  if(!isP&&!me.departman_id) return toast('Önce işveren sana departman vermeli');
   m.innerHTML=`<button class="btn s l" onclick="render()">← Geri</button><h2 style="margin-top:10px">Yeni Proje</h2><form id="f" class="card">
    <label>Proje adı *</label><input name="ad" required placeholder="Örn: Villa elektrik tesisatı">
    <label>Müşteri</label><input name="musteri">
@@ -1180,7 +1180,7 @@ async function vProje(m){
    <div class="muted" style="margin-top:4px">${esc(dname(p.departman_id))}${p.musteri?' · Müşteri: '+esc(p.musteri):''}${p.adres?' · '+esc(p.adres):''}</div>
    <div class="muted">Takip eden: <b>${esc(pname(p.takipci_id))}</b>${p.baslangic?' · '+tarih(p.baslangic):''}${p.bitis?' → '+tarih(p.bitis):''}</div>
    ${p.aciklama?`<p style="margin:8px 0 0;white-space:pre-wrap">${esc(p.aciklama)}</p>`:''}
-   ${p.durum==='iade'&&p.patron_notu?`<p style="color:var(--red);margin:8px 0 0"><b>Patron notu:</b> ${esc(p.patron_notu)}</p>`:''}
+   ${p.durum==='iade'&&p.patron_notu?`<p style="color:var(--red);margin:8px 0 0"><b>İşveren notu:</b> ${esc(p.patron_notu)}</p>`:''}
    ${duz?`<div class="row" style="margin-top:10px">
      <div style="flex:1;min-width:140px"><label>Durum</label><select onchange="pSet(${id},{durum:this.value})">${['acik','devam','bitti'].map(k=>`<option value="${k}" ${p.durum===k?'selected':''}>${DURUM[k]}</option>`).join('')}${p.durum==='iade'?'<option value="iade" selected>İade edildi</option>':''}</select></div>
      <div style="flex:1;min-width:140px"><label>Takip eden</label><select onchange="pSet(${id},{takipci_id:this.value||null})">${opts(ekipOf(p.departman_id),p.takipci_id,p.departman_id)}</select></div></div>`:''}
@@ -1248,16 +1248,16 @@ async function vProje(m){
         <div class="muted" style="margin-top:6px">Önerilen: kullanılan malzeme + işçilik = <b id="on">${tl(kT+Number(p.iscilik||0),pb)}</b>
         <button type="button" class="btn s l" onclick="const f=$('#ff');f.fiyat.value=(${kT}+Number(f.isc.value||0)).toFixed(2)">Öneriyi kullan</button></div>
         <label>Müşteriye fiyat (${pb}) *</label><input name="fiyat" type="number" step="0.01" min="0" value="${p.fiyat??''}">
-        <label>Not (patron görür)</label><textarea name="not" rows="2">${esc(p.fiyat_notu||'')}</textarea>
+        <label>Not (işveren görür)</label><textarea name="not" rows="2">${esc(p.fiyat_notu||'')}</textarea>
         <div class="row" style="margin-top:12px"><button type="button" class="btn l" onclick="fiyatKaydet(${id},false)">Kaydet</button>
-        <button type="button" class="btn g" style="flex:1" onclick="fiyatKaydet(${id},true)">İş bitti → Patrona gönder</button></div></form>`;
+        <button type="button" class="btn g" style="flex:1" onclick="fiyatKaydet(${id},true)">İş bitti → İşverene gönder</button></div></form>`;
     }else{
       body+=`<div class="card"><div class="muted">Müşteriye fiyat</div><div class="big">${p.fiyat!=null?tl(p.fiyat,p.para_birimi):'—'}</div>
         <div class="muted">İşçilik: ${tl(p.iscilik,p.para_birimi)}${p.gonderim?' · Gönderim: '+saat(p.gonderim):''}${p.onay_tarihi?' · Onay: '+saat(p.onay_tarihi):''}</div>
         ${p.fiyat_notu?`<p style="margin:8px 0 0;white-space:pre-wrap"><b>DS notu:</b> ${esc(p.fiyat_notu)}</p>`:''}
         ${p.durum==='onaylandi'?`<div style="margin-top:8px">${p.fatura_durum==='kesildi'?`<span class="chip c-bitti">Fatura kesildi</span> <span class="muted">No: ${esc(p.fatura_no||'—')} · ${saat(p.fatura_tarihi)}</span>`:'<span class="chip c-iade">Fatura bekliyor</span> <span class="muted">Ofiste</span>'}</div>`:''}</div>`;
       if(me.rol==='patron'&&p.durum==='patronda'){
-        body+=`<div class="card"><h3>Patron kararı</h3>
+        body+=`<div class="card"><h3>İşveren kararı</h3>
           <button class="btn g w" onclick="onayla(${id})">✓ Onayla</button>
           <label>İade nedeni</label><textarea id="iadeNot" rows="2" placeholder="Örn: İşçilik yüksek, tekrar bak"></textarea>
           <button class="btn r w" style="margin-top:8px" onclick="iade(${id})">İade et (DS'ye geri gönder)</button></div>`;
@@ -1292,11 +1292,11 @@ async function fiyatKaydet(id,gonder){
   const o={iscilik:Number(f.isc.value||0),fiyat,fiyat_notu:f.not.value.trim()||null};
   if(gonder){
     if(!(fiyat>0))return toast('Önce müşteriye fiyatı girin');
-    if(!confirm('İş bitti olarak patrona gönderilsin mi? Gönderince değiştiremezsin.'))return;
+    if(!confirm('İş bitti olarak işverene gönderilsin mi? Gönderince değiştiremezsin.'))return;
     Object.assign(o,{durum:'patronda',gonderim:new Date().toISOString(),patron_notu:null});
   }
   const {error}=await sb.from('projeler').update(o).eq('id',id);if(hata(error))return;
-  toast(gonder?'Patrona gönderildi':'Kaydedildi');render();
+  toast(gonder?'İşverene gönderildi':'Kaydedildi');render();
 }
 async function onayla(id){if(!confirm('Bu iş ve fiyat onaylansın mı?'))return;
   const {error}=await sb.from('projeler').update({durum:'onaylandi',onay_tarihi:new Date().toISOString()}).eq('id',id);if(hata(error))return;toast('Onaylandı, Ofis\'e fatura için gönderildi');render()}
