@@ -517,7 +517,7 @@ function ajSatir(a){
   return`<div class="gunis" onclick="ajAc(${a.id})"><span class="ic a"></span><div style="min-width:0;flex:1"><b style="${a.durum==='bitti'?'text-decoration:line-through;color:var(--muted)':''}">${ic(a.baslik)}</b>
    <div class="muted">${a.saat?esc(a.saat.slice(0,5))+' · ':''}${kendi?'Kendi işi: <b>'+esc(pname(a.sahip_id))+'</b>':'Veren: '+esc(pname(a.sahip_id))+' → Yapan: <b>'+esc(pname(a.atanan_id))+'</b>'}</div>
    ${a.aciklama?`<div class="muted">${ic(a.aciklama)}</div>`:''}</div>
-   ${a.durum==='bitti'?'<span class="chip c-bitti">Bitti</span>':a.atanan_id===me.id&&!kendi&&a.durum==='bekliyor'?'<span class="chip c-iade">Aç ›</span>':kendi&&a.atanan_id===me.id?`<button class="btn s g" onclick="event.stopPropagation();ajBitti(${a.id})">✓ Bitti</button>`:chip(a.durum,AJD)}</div>`;
+   ${a.durum==='bitti'?'<span class="chip c-bitti">Bitti</span>':a.atanan_id===me.id&&!kendi&&a.durum==='bekliyor'?'<span class="chip c-iade">Aç ›</span>':kendi&&a.atanan_id===me.id?`<span style="display:flex;gap:6px;align-items:center;flex-shrink:0"><span class="chip c-bekliyor">Yapılacak</span><button class="btn s l" title="İşi bitirdiysen bas" onclick="event.stopPropagation();ajBitti(${a.id})">Bitirdim</button></span>`:chip(a.durum,AJD)}</div>`;
 }
 function ajAc(id){S.aj=id;S.pid=null;render();scrollTo(0,0)}
 async function vAjanda(m){
@@ -550,7 +550,7 @@ async function vAjanda(m){
     <div class="row"><div style="flex:2;min-width:0"><label for="bu">Ücret</label><input id="bu" name="u" type="number" step="0.01" min="0" placeholder="Örn: 1500"></div>
     <div style="flex:1;min-width:0"><label for="bp">Döviz</label><select id="bp" name="p">${pbSec('TRY')}</select></div></div>
     <button class="btn g w" style="margin-top:12px">✓ İş bitti, ücreti ${esc(pname(x.sahip_id))} Bey'e gönder</button></form>`:''}
-  ${ben&&x.durum!=='bitti'&&kendi?`<button class="btn g w" style="margin-top:14px" onclick="ajBitti(${x.id})">✓ Bitti</button>`:''}`;
+  ${ben&&x.durum!=='bitti'&&kendi?`<button class="btn g w" style="margin-top:14px" onclick="ajBitti(${x.id})">✓ Bitirdim, işi kapat</button>`:''}`;
   const nf=$('#nf');if(nf)nf.onsubmit=async e=>{e.preventDefault();const t=nf.t.value.trim();if(!t)return;
     const {error}=await sb.from('ajanda_notlar').insert({ajanda_id:x.id,yazan_id:me.id,metin:t});if(hata(error))return;toast('Geri bildirim gönderildi');render()};
   const bf=$('#bf');if(bf)bf.onsubmit=async e=>{e.preventDefault();const u=bf.u.value===''?null:Number(bf.u.value);
@@ -563,7 +563,7 @@ async function planKarti(){
   return`<div class="card" style="padding-block:4px"><div class="row sp" style="margin:8px 0 2px"><h3 style="margin:0">İşler</h3><button class="btn s" onclick="vPlanEkle()">+ İş ekle</button></div>
    ${ac.map(a=>`<div class="row sp click" onclick="ajAc(${a.id})" style="padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0;flex:1"><b>${ic(a.baslik)}</b>
      <div class="muted">${a.tarih?tarih(a.tarih)+(a.saat?' '+esc(a.saat.slice(0,5)):''):'Tarihsiz'} · ${a.atanan_id===me.id?'Kendim':'→ '+esc(pname(a.atanan_id))}</div></div>
-     ${a.atanan_id===me.id?`<button class="btn s g" aria-label="Bitti" onclick="event.stopPropagation();ajBitti(${a.id})">✓</button>`:chip(a.durum,AJD)}</div>`).join('')||'<div class="muted" style="padding:8px 0">Açık iş yok. "+ İş ekle" ile kendine ya da birine iş yaz.</div>'}
+     ${a.atanan_id===me.id?`<span style="display:flex;gap:6px;align-items:center;flex-shrink:0"><span class="chip c-bekliyor">Yapılacak</span><button class="btn s l" title="İşi bitirdiysen bas" onclick="event.stopPropagation();ajBitti(${a.id})">Bitirdim</button></span>`:chip(a.durum,AJD)}</div>`).join('')||'<div class="muted" style="padding:8px 0">Açık iş yok. "+ İş ekle" ile kendine ya da birine iş yaz.</div>'}
    ${bt.length?`<details style="margin-bottom:8px"><summary>Biten işler (${bt.length})</summary>${bt.map(a=>`<div class="row sp click" onclick="ajAc(${a.id})" style="padding:7px 0;flex-wrap:nowrap"><span style="min-width:0">${ic(a.baslik)}<span class="muted"> · ${a.atanan_id===me.id?'Kendim':esc(pname(a.atanan_id))}</span></span><b style="white-space:nowrap">${a.ucret!=null?tl(a.ucret,a.para_birimi):'✓'}</b></div>`).join('')}</details>`:''}
   </div>`;
 }
