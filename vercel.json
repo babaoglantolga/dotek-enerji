@@ -18,6 +18,22 @@
           "value": "noindex"
         }
       ]
+    },
+    {
+      "source": "/saha",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/istakip",
+      "destination": "/saha",
+      "permanent": false
     }
   ]
 }
