@@ -639,14 +639,14 @@ async function vAjanda(m){
   const x=a.data,N=n.data||[],ben=x.atanan_id===me.id,kendi=x.sahip_id===x.atanan_id;
   let pj=null,PG=[];if(x.proje_id){const r1=await sb.from('projeler').select('*').eq('id',x.proje_id).single();pj=r1.data;const r2=await sb.from('gorevler').select('*').eq('proje_id',x.proje_id);PG=r2.data||[]}
   m.innerHTML=`<button class="btn s l" onclick="S.aj=null;render()">← Geri</button>
-  <div class="card" style="margin-top:10px"><div class="row sp" style="flex-wrap:nowrap"><h2 style="margin:0;min-width:0">${ic(x.baslik)}</h2>${chip(x.durum,AJD)}</div>
+  <div class="card" style="margin-top:10px"><div class="row sp" style="flex-wrap:nowrap"><h2 style="margin:0;min-width:0">${ic(x.baslik)}</h2>${pj&&pj.durum==='bitti'&&x.durum!=='bitti'?chip('bitti',DURUM):chip(x.durum,AJD)}</div>
    <div class="muted" style="margin-top:6px">${kendi?'Kendi işi: <b>'+esc(pname(x.sahip_id))+'</b>':'Veren: <b>'+esc(pname(x.sahip_id))+'</b> → Yapan: <b>'+esc(pname(x.atanan_id))+'</b>'}</div>
    <div class="muted">${x.tarih?tarih(x.tarih):'Tarihsiz'}${x.saat?' · '+esc(x.saat.slice(0,5)):''}</div>
    ${x.aciklama?`<p style="margin:8px 0 0;white-space:pre-wrap">${ic(x.aciklama)}</p>`:''}
    ${x.durum==='bitti'&&x.ucret!=null?`<div style="margin-top:10px"><div class="muted">Gönderilen ücret</div><div class="big">${tl(x.ucret,x.para_birimi)}</div></div>`:''}
   </div>
-  ${pj?`<div class="card" style="border-color:#c9b6f0"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0">📋 ${PG.length?'Planlandı':'Proje açıldı'}</h3>${chip(pj.durum,DURUM)}</div>
-    <div class="muted" style="margin-top:4px">${PG.length?esc(pname(x.atanan_id))+' ekibine dağıttı.':ben?'Bu iş Projeler\'e düştü. Ekibine görev ata, '+esc(pname(x.sahip_id))+' "Planlandı" olarak görecek.':esc(pname(x.atanan_id))+' henüz ekibine görev atamadı.'}</div>${ben?'<div class="muted" style="margin-top:4px">İş bitince fiyatı projeden '+esc(pname(x.sahip_id))+'\'a gönderirsin; bu iş de otomatik kapanır.</div>':''}
+  ${pj?`<div class="card" style="border-color:#c9b6f0"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0">${pj.durum==='bitti'?'✔️ İş bitti':'📋 '+(PG.length?'Planlandı':'Proje açıldı')}</h3>${chip(pj.durum,DURUM)}</div>
+    <div class="muted" style="margin-top:4px">${pj.durum==='bitti'?esc(pname(x.atanan_id))+' ve ekibi işi bitirdi. Yapılanlar:':PG.length?esc(pname(x.atanan_id))+' ekibine dağıttı.':ben?'Bu iş Projeler\'e düştü. Ekibine görev ata, '+esc(pname(x.sahip_id))+' "Planlandı" olarak görecek.':esc(pname(x.atanan_id))+' henüz ekibine görev atamadı.'}</div>${ben?'<div class="muted" style="margin-top:4px">İş bitince fiyatı projeden '+esc(pname(x.sahip_id))+'\'a gönderirsin; bu iş de otomatik kapanır.</div>':''}
     ${PG.length?PG.map(t=>`<div class="row sp" style="padding:6px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><span style="min-width:0"><b style="font-weight:600">${esc(kisiAd(t))}</b><span class="muted"> · ${ic(t.baslik)}${t.plan_tarih?' · '+tarih(t.plan_tarih):''}</span></span>${chip(t.durum,GDURUM)}</div>`).join(''):'<div class="muted" style="margin-top:6px">Henüz görev atanmadı.</div>'}
     <div class="durumlar" style="margin-top:8px"><button class="btn l" onclick="openP(${pj.id},'gorev')">Projeyi aç ›</button>${ben&&pj&&['acik','devam','iade'].includes(pj.durum)?`<button class="btn" onclick="vGorevEkle(${pj.id})">+ Görev ata</button>`:''}</div></div>`
    :ben&&!kendi&&me.rol==='ds'&&x.durum!=='bitti'?`<div class="card" style="border-color:#c9b6f0"><h3>📋 Planla</h3><div class="muted">Bu işi projeye çevir, ekibine görev ver. ${esc(pname(x.sahip_id))} "Planlandı" olarak görür ve ilerlemeyi takip eder.</div>
@@ -681,7 +681,7 @@ async function planKarti(){
     if(d==='iade')return'<span class="chip c-iade">İade edildi</span>';
     return chip(a.durum,AJD)};
   return`<div class="card" style="padding-block:4px"><div class="row sp" style="margin:8px 0 2px"><h3 style="margin:0">İşler</h3><button class="btn s" onclick="vPlanEkle()">+ İş ekle</button></div>
-   ${ac.map(a=>`<div class="row sp click" onclick="${a.proje_id&&PJ[a.proje_id]==='bitti'?`openP(${a.proje_id},'gorev')`:`ajAc(${a.id})`}" style="padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0;flex:1"><b>${ic(a.baslik)}</b>
+   ${ac.map(a=>`<div class="row sp click" onclick="ajAc(${a.id})" style="padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0;flex:1"><b>${ic(a.baslik)}</b>
      <div class="muted">${a.tarih?tarih(a.tarih)+(a.saat?' '+esc(a.saat.slice(0,5)):''):'Tarihsiz'} · ${a.atanan_id===me.id?'Kendim':'→ '+esc(pname(a.atanan_id))}</div></div>
      ${a.atanan_id===me.id?`<span style="display:flex;gap:6px;align-items:center;flex-shrink:0"><span class="chip c-bekliyor">Yapılacak</span><button class="btn s l" title="İşi bitirdiysen bas" onclick="event.stopPropagation();ajBitti(${a.id})">Bitirdim</button></span>`:ajChip(a)}</div>`).join('')||'<div class="muted" style="padding:8px 0">Açık iş yok. "+ İş ekle" ile kendine ya da birine iş yaz.</div>'}
    ${bt.length?`<details style="margin-bottom:8px"><summary>Biten işler (${bt.length})</summary>${bt.map(a=>`<div class="row sp click" onclick="ajAc(${a.id})" style="padding:7px 0;flex-wrap:nowrap"><span style="min-width:0">${ic(a.baslik)}<span class="muted"> · ${a.atanan_id===me.id?'Kendim':esc(pname(a.atanan_id))}</span></span><b style="white-space:nowrap">${a.ucret!=null?tl(a.ucret,a.para_birimi):'✓'}</b></div>`).join('')}</details>`:''}
@@ -1523,7 +1523,7 @@ async function vProje(m){
   const yon=me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id);
   const kilit=['patronda','onaylandi'].includes(p.durum);
   const duz=yon&&!kilit;
-  const para=me.rol!=='calisan';
+  const para=me.rol!=='calisan'&&!(p.durum==='bitti'&&!prfGor(p));
   const pb=p.para_birimi||'TRY';
   const takip=yon||p.takipci_id===me.id;
   const sek=[['gorev',`${takip?'Plan / Görevler':'Bana verilen işler'} (${G.length})`],['islem',`${takip?'Yapılanlar':'Yaptıklarım'} (${I.length})`]];
