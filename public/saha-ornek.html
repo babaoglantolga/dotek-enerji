@@ -252,7 +252,7 @@ function run(st){
    if(t==='projeler'&&r.durum!==eski){
      if(eski==='bitti')DB.bildirimler.filter(x=>x.proje_id===r.id&&x.tur==='is_bitti').forEach(x=>x.islem_yapildi=true);
      if(r.durum==='bitti')isBittiBildir(r);
-     if(r.durum==='patronda')DB.profiller.filter(x=>x.rol==='patron').forEach(x=>bildir(x.id,'Onayını bekleyen iş: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'onay'));
+     if(r.durum==='patronda')DB.profiller.filter(x=>x.rol==='patron').forEach(x=>bildir(x.id,(pAd(r.takipci_id)||'Sorumlu')+' faturayı hazırladı: '+r.ad+' · onayın bekleniyor',r.id,null,'onay'));
      if(r.durum==='onaylandi'){r.fatura_durum='bekliyor';DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis).forEach(x=>bildir(x.id,'Fatura için bekliyor: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'fatura'))}
      if(['onaylandi','iade'].includes(r.durum))DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===r.departman_id)||x.id===r.takipci_id).forEach(x=>bildir(x.id,(r.durum==='onaylandi'?'İşveren onayladı: ':'İşveren iade etti: ')+r.ad+(r.patron_notu?' — '+r.patron_notu:''),r.id,null,r.durum))}
    if(t==='gorevler'&&r.durum==='bitti'&&eski!=='bitti'){const p=DB.projeler.find(x=>x.id===r.proje_id);if(p&&['acik','devam'].includes(p.durum)&&!DB.gorevler.some(g=>g.proje_id===p.id&&g.durum!=='bitti')){p.durum='bitti';isBittiBildir(p)}}
@@ -1296,6 +1296,15 @@ function kimNerede(kisiler,G){
   return grup('SORUMLULAR',ds)+grup('ÇALIŞANLAR',cal);
 }
 
+// ---------------- İşveren için biten işin aşamaları (belge yok, sadece nerede olduğu) ----------------
+function asamaTakip(p){
+  const kim=esc(pname(p.takipci_id)||'Sorumlu'),kes=p.fatura_durum==='kesildi',od=p.odeme_durum==='alindi';
+  const n=p.durum==='bitti'||p.durum==='iade'?1:p.durum==='patronda'?2:p.durum==='onaylandi'?(od?5:kes?4:3):0;
+  const A=[['İş bitti',kim+' ve ekibi bitirdi'],[p.durum==='iade'?'Fatura düzeltiliyor':'Fatura hazırlanıyor',n>1?kim+' hazırladı':p.proforma_no?kim+' hazırlıyor':kim+' hazırlayacak, sen henüz görmezsin'],['Fatura hazırlandı','Onayın bekleniyor'],['Onaylandı','Ofis faturayı kesiyor'],['Müşteriye verildi','Ödeme bekleniyor'],['Ödeme alındı','İş kapandı']];
+  return`<div style="margin-top:8px">${A.map((a,i)=>{const d=i<n||(i===5&&od),c=i===n&&!od;return`<div class="row" style="flex-wrap:nowrap;gap:8px;padding:4px 0;align-items:flex-start;${!d&&!c?'opacity:.45':''}"><span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;${d?'background:var(--green);color:#fff':c?'background:#f5a524;color:#fff':'background:#e3e7ef;color:#5b667a'}">${d?'✓':i+1}</span><div style="min-width:0;line-height:1.25"><b style="font-size:14px;${c?'color:#b26a00':''}">${a[0]}</b>${c||d?`<div class="muted" style="font-size:12px">${a[1]}</div>`:''}</div></div>`}).join('')}</div>`;
+}
+const salt=p=>me.rol==='patron'&&!prfGor(p)&&['bitti','iade','onaylandi'].includes(p.durum);
+
 // ---------------- Proje kartı (kim yapıyor, ne aşamada) ----------------
 function projeKart(p,G){
   const T=G.filter(t=>t.proje_id===p.id),bit=T.filter(t=>t.durum==='bitti').length,yz=T.length?Math.round(bit*100/T.length):0;
@@ -1310,6 +1319,7 @@ function projeKart(p,G){
   return`<div class="card click" onclick="openP(${p.id},'gorev')">
    <div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3>${p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'<span class="chip c-bitti">Ödendi</span>':p.fatura_durum==='kesildi'?'<span class="chip c-onaylandi">Ödeme bekleniyor</span>':'<span class="chip c-patronda">Ofiste</span>'):chip(p.durum,DURUM)}</div>
    <div class="muted" style="margin-top:3px">${esc(dname(p.departman_id))}${p.musteri?' · '+esc(p.musteri):''} · Takip: ${esc(pname(p.takipci_id))}</div>
+   ${me.rol==='patron'&&!prfGor(p)&&['bitti','iade','patronda','onaylandi'].includes(p.durum)?asamaTakip(p)+(p.durum==='patronda'?`<button class="btn g w" style="margin-top:8px" onclick="event.stopPropagation();go('onay')">📄 Faturayı gör · onayla</button>`:'')+'<div hidden>':''}
    <div class="ilerle" aria-label="İlerleme %${yz}"><span style="width:${yz}%"></span></div>
    <div class="row sp" style="margin-top:4px;flex-wrap:nowrap"><b style="font-size:14px;min-width:0">${esc(asama)}</b><span class="muted" style="white-space:nowrap">${T.length?bit+'/'+T.length+' görev':''}</span></div>
    ${acik.length&&!['patronda','onaylandi'].includes(p.durum)?`<div style="margin-top:6px">${acik.map(t=>`<div class="row sp" style="padding:6px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><span style="font-weight:600">${esc(kisiAd(t))}</span><span class="muted"> · ${ic(t.baslik)}${t.plan_tarih?' · '+tarih(t.plan_tarih):''}</span></div>${chip(t.durum,GDURUM)}</div>`).join('')}</div>`:''}
@@ -1318,6 +1328,7 @@ function projeKart(p,G){
      :yon&&p.durum==='bitti'?`<div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:8px"><button class="btn g" style="flex:2" onclick="event.stopPropagation();proformaHazirla(${p.id})">📄 Proforma hazırla</button><button class="btn s l" style="flex:1" onclick="event.stopPropagation();vGorevEkle(${p.id})">+ Görev</button></div>`
      :yon&&['acik','devam','iade'].includes(p.durum)?`<button class="btn s l w" style="margin-top:8px" onclick="event.stopPropagation();vGorevEkle(${p.id})">+ Görev planla</button>`:''}
    ${me.rol!=='calisan'&&p.proforma_no&&['patronda','onaylandi','iade'].includes(p.durum)?`<button class="btn s l w" style="margin-top:6px" onclick="event.stopPropagation();${proformaBtn(p)}">📄 Proforma ${esc(p.proforma_no)}</button>`:''}
+   ${me.rol==='patron'&&!prfGor(p)&&['bitti','iade','patronda','onaylandi'].includes(p.durum)?'</div>':''}
   </div>`;
 }
 
@@ -1327,10 +1338,10 @@ function onayKart(p){
   return`<div class="card" style="border-color:#c9b6f0">
    <div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3><span class="chip c-patronda">Onayını bekliyor</span></div>
    <div class="muted" style="margin-top:3px">${esc(dname(p.departman_id))}${p.musteri?' · Müşteri: '+esc(p.musteri):''}</div>
-   <p style="margin:10px 0 4px"><b>${esc(ds)}</b> işi bitirdi ve müşteriye fiyatı belirledi. Fiyatı kontrol et:</p>
+   <p style="margin:10px 0 4px"><b>${esc(ds)}</b> faturayı hazırladı. Kontrol et, onaylarsan Ofis'e geçer:</p>
    <div class="big">${tl(p.fiyat,p.para_birimi)}</div>
    <div class="muted">İşçilik: ${tl(p.iscilik,p.para_birimi)}${p.fiyat_notu?' · Not: '+esc(p.fiyat_notu):''}</div>
-   <div class="durumlar" style="margin-top:10px"><button class="btn g" onclick="onayla(${p.id})">✓ Onayla → Ofise fatura</button><button class="btn l" onclick="this.closest('.card').querySelector('.iadeK').hidden=false;this.closest('.card').querySelector('.iadeK').style.display='block'">↩ İade et</button></div>
+   <div class="durumlar" style="margin-top:10px"><button class="btn g" onclick="onayla(${p.id})">✓ Onayla · devam et</button><button class="btn l" onclick="this.closest('.card').querySelector('.iadeK').hidden=false;this.closest('.card').querySelector('.iadeK').style.display='block'">↩ İade et</button></div>
    <div class="iadeK" style="display:none;margin-top:8px"><textarea rows="2" aria-label="İade nedeni" placeholder="Neden iade? Örn: İşçilik yüksek, tekrar bak"></textarea><button class="btn r w" style="margin-top:6px" onclick="iade(${p.id},this)">İade et, sorumluya geri gönder</button></div>
    <button class="btn s l w" style="margin-top:8px" onclick="openP(${p.id},'fiyat')">Detayları gör (malzeme, işçilik, yapılanlar) ›</button>
   </div>`;
@@ -1523,7 +1534,7 @@ async function vProje(m){
   const yon=me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id);
   const kilit=['patronda','onaylandi'].includes(p.durum);
   const duz=yon&&!kilit;
-  const para=me.rol!=='calisan'&&!(p.durum==='bitti'&&!prfGor(p));
+  const para=me.rol!=='calisan'&&!salt(p);
   const pb=p.para_birimi||'TRY';
   const takip=yon||p.takipci_id===me.id;
   const sek=[['gorev',`${takip?'Plan / Görevler':'Bana verilen işler'} (${G.length})`],['islem',`${takip?'Yapılanlar':'Yaptıklarım'} (${I.length})`]];
@@ -1537,7 +1548,7 @@ async function vProje(m){
    <div class="muted">Takip eden: <b>${esc(pname(p.takipci_id))}</b>${p.baslangic?' · '+tarih(p.baslangic):''}${p.bitis?' → '+tarih(p.bitis):''}</div>
    ${p.aciklama?`<p style="margin:8px 0 0;white-space:pre-wrap">${esc(p.aciklama)}</p>`:''}
    ${p.durum==='iade'&&p.patron_notu?`<p style="color:var(--red);margin:8px 0 0"><b>İşveren notu:</b> ${esc(p.patron_notu)}</p>`:''}
-   ${!prfGor(p)&&p.durum==='bitti'?''
+   ${salt(p)?asamaTakip(p)
    :proformaDuzenler(p)&&['bitti','iade'].includes(p.durum)?`<div style="margin-top:10px;padding:12px;border-radius:12px;background:#e6f6ec"><b>${p.durum==='iade'?'İade edildi, düzeltip tekrar gönder':'İş bitti 👍 Sıradaki adım: proforma'}</b><div class="muted">Yapılan işler ve kullanılan malzemeler otomatik yazılır, sen kontrol edip gönderirsin.</div><button class="btn g w" style="margin-top:8px" onclick="proformaHazirla(${id})">📄 Proforma ${p.proforma_no?'aç ('+esc(p.proforma_no)+')':'hazırla'}</button></div>`
      :me.rol!=='calisan'&&p.proforma_no?`<button class="btn l w" style="margin-top:10px" onclick="${proformaBtn(p)}">📄 Proforma ${esc(p.proforma_no)} · ${proformaDuzenler(p)?'aç / düzelt':'gör / indir'}</button>`:''}
    ${duz?`<div class="row" style="margin-top:10px">
