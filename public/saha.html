@@ -1228,7 +1228,7 @@ async function takvim(aylik){
      return`<button class="${k===S.gun?'sec':''} ${k===bugun?'bug':''}" onclick="S.gun='${k}';render()"><span class="gn">${ad[i]}</span><span class="gs">${d.getDate()}</span><span class="nk">${l.slice(0,3).map(x=>`<i class="${x.p?'t':x.a?'a':''}"></i>`).join('')}</span></button>`}).join('')}</div>`}
    <h3 style="margin:14px 0 2px">${S.gun===bugun?'Bugün · ':''}${secD.toLocaleDateString('tr-TR',{day:'numeric',month:'long',weekday:'long'})}</h3>
    ${sec.length?sec.map(satir).join(''):'<div class="muted" style="padding:8px 0">Bu güne planlanmış iş yok.</div>'}
-   ${geciken.length?`<div style="margin-top:10px;padding:10px;border-radius:10px;background:#fde8e8;color:#9b1c1c"><b>${geciken.length} geciken iş var</b>${geciken.slice(0,3).map(t=>`<div class="click" style="margin-top:4px" onclick="openP(${t.proje_id},'gorev')">• ${ic(t.baslik)} · ${esc(kisiAd(t))} · ${tarih(t.plan_tarih)}</div>`).join('')}</div>`:''}
+   ${geciken.length&&me.rol!=='patron'?`<div style="margin-top:10px;padding:10px;border-radius:10px;background:#fde8e8;color:#9b1c1c"><b>${geciken.length} geciken iş var</b>${geciken.slice(0,3).map(t=>`<div class="click" style="margin-top:4px" onclick="openP(${t.proje_id},'gorev')">• ${ic(t.baslik)} · ${esc(kisiAd(t))} · ${tarih(t.plan_tarih)}</div>`).join('')}</div>`:''}
   </div>`;
 }
 
