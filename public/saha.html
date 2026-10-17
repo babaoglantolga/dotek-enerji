@@ -308,6 +308,10 @@ const rpc=async(n,a)=>{const r=await rpc0(n,a);kaydet();return r};
 const KAYIT='dotek_demo_v3';
 function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
+// Kişiye özel ekran: ?kim=esat → o kişi olarak açılır, kişi seçme şeridi gizlenir
+try{const kim=new URLSearchParams(location.search).get('kim');if(kim){const u=DB.profiller.find(x=>x.kullanici_adi===kim.toLowerCase());if(u){CUR=u.id;window.KIM_SABIT=true;const d0=document.getElementById('demo');if(d0)d0.style.display='none';else document.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById('demo');if(d)d.style.display='none'})}}}catch(e){}
+// Başka sekmede yapılan işlem bu sekmeye de yansır (aynı cihazda Doğuş ve Esat ekranları yan yana)
+addEventListener('storage',e=>{if(e.key!==KAYIT||!e.newValue)return;try{const k=JSON.parse(e.newValue);Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira;if(!S.belge&&!document.querySelector('form:focus-within'))render();else if(typeof bildirimKontrol==='function')bildirimKontrol()}catch(x){}});
 window.demoSifirla=()=>{if(!confirm('Demo baştan başlasın mı? Girdiğin örnek işler silinir.'))return;try{localStorage.removeItem(KAYIT)}catch(e){}location.reload()};
 window.supabase={createClient:()=>({from,auth,rpc,functions})};
 window.demoRol=(id,btn)=>{CUR=id;document.querySelectorAll('#demo button').forEach(b=>b.classList.toggle('on',b===btn));S.tab='';S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;init()};
