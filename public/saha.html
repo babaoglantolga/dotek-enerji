@@ -1349,7 +1349,6 @@ async function vPlanlama(m){
   const ekip=people.filter(x=>x.departman_id===me.departman_id&&['ds','calisan'].includes(x.rol));
   m.innerHTML=`<div class="durumlar" style="margin-bottom:10px"><button class="btn" onclick="vGorevEkle()">+ Görev planla</button><button class="btn g" onclick="fisOku()">📷 Fiş okut</button><button class="btn l" onclick="teklifAc()">+ Teklif ekle</button></div>`+tk+`
    <h2>Ekibim bugün</h2><div>${kimNerede(ekip,G.filter(t=>t.durum!=='bitti').map(t=>({...t,projeler:P.find(p=>p.id===t.proje_id)||{}})))}</div>
-   ${await teklifKarti()}
    <div class="muted" style="margin-top:8px">Tüm projeler ve aylık takvim için <span class="click" style="color:var(--blue);font-weight:700" onclick="go('projeler')">Projeler ›</span></div>`;
 }
 async function vGorevEkle(pid){
