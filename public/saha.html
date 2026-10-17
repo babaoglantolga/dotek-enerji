@@ -728,6 +728,15 @@ function basKalem(d){
   const t=Math.round(mal.reduce((a,k)=>a+Number(k.miktar||0)*Number(k.fiyat||0),0)*100)/100;
   return[{ad:'Malzeme bedeli (ayrıntısı ek malzeme listesinde)',miktar:1,birim:'',fiyat:t},...isc];
 }
+// Proforma tablosu: önce yapılan işler (miktarsız), altında işçilik ve hizmet bedeli, sonra malzeme bedeli
+const isTemiz=x=>String(x||'').replace(/\s*\((?:[\d.,]+\s*(?:kişi|gün)(?:\s*·\s*)?)+\)\s*$/,'').trim();
+function tabloSatir(d){
+  const K=basKalem(d);if(d.tur!=='PROFORMA FATURA')return K.map(k=>({...k,tip:'k'}));
+  const isl=(d.isler||[]).map(isTemiz).filter(Boolean);
+  const isc=K.filter(iscMi),dig=K.filter(k=>!iscMi(k));
+  const sade=k=>({...k,tip:'k',sade:Number(k.miktar)===1&&(!k.birim||k.birim==='iş')});
+  return[...(isl.length?[{tip:'b',ad:'YAPILAN İŞLER'},...isl.map(ad=>({tip:'i',ad}))]:[]),...isc.map(sade),...dig.map(sade)];
+}
 function bHesap(d){const ara=d.kalemler.reduce((t,k)=>t+Number(k.miktar||0)*Number(k.fiyat||0),0);const kdv=Math.round(ara*Number(d.kdv||0))/100;return{ara,kdv,gen:Math.round((ara+kdv)*100)/100}}
 const BELGE_CSS=`
 .blg{width:794px;min-height:1123px;background:#fff;color:#1b2433;font:12.6px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;text-align:left}
@@ -773,14 +782,16 @@ const kdvNot=d=>d.ek?'':Number(d.kdv)>0?'Faturaya %'+String(d.kdv).replace('.','
 function belgeHTML(d){
   if(d.ek)return ekHTML(d);
   const h=bHesap(d),pb=d.pb;
-  const tr=basKalem(d).map((k,i)=>`<tr><td class="s">${String(i+1).padStart(2,'0')}</td><td>${esc(k.ad)}</td><td class="n">${String(k.miktar).replace('.',',')} ${esc(k.birim||'')}</td><td class="n">${bPara(k.fiyat,pb)}</td><td class="n"><b>${bPara(k.miktar*k.fiyat,pb)}</b></td></tr>`).join('');
+  let no=0;const tr=tabloSatir(d).map(k=>k.tip==='b'?`<tr><td class="s"></td><td colspan="4" style="font-size:8pt;font-weight:800;letter-spacing:.12em;color:#5b667a">${esc(k.ad)}</td></tr>`
+    :k.tip==='i'?`<tr><td class="s"></td><td colspan="4">•&nbsp; ${esc(k.ad)}</td></tr>`
+    :`<tr><td class="s">${String(++no).padStart(2,'0')}</td><td>${k.sade?'<b>'+esc(k.ad)+'</b>':esc(k.ad)}</td><td class="n">${k.sade?'':String(k.miktar).replace('.',',')+' '+esc(k.birim||'')}</td><td class="n">${k.sade?'':bPara(k.fiyat,pb)}</td><td class="n"><b>${bPara(k.miktar*k.fiyat,pb)}</b></td></tr>`).join('');
   const m=d.musteri||{};
   return`<div class="blg"><div class="u"><div class="mk"><img src="${LOGO_BASKI}" alt=""><div><b>DOTEK</b><span>ENERJİ SİSTEMLERİ</span></div></div><div class="tr"><small>${esc(d.tur)}</small><strong>${esc(d.no||'—')}</strong></div></div>
   <div class="sr"></div><div class="hz">${FIRMA.hizmet.join(' · ')}</div>
   <div class="ic"><div class="iki"><div class="kt"><h4>SAYIN</h4><div class="ad">${esc(m.ad||'')}</div>${m.ilgili?`<div class="k">${esc(m.ilgili)}</div>`:''}${m.adres?`<div class="k">${esc(m.adres)}</div>`:''}</div>
   <div class="kt"><dl><dt>Belge no</dt><dd>${esc(d.no||'—')}</dd><dt>Tarih</dt><dd>${bTar(d.tarih)}</dd><dt>${d.tur==='FİYAT TEKLİFİ'?'Geçerlilik':'Vade'}</dt><dd>${bTar(d.son)}</dd>${d.proje?`<dt>Proje</dt><dd>${esc(d.proje)}</dd>`:''}${d.sure?`<dt>İş süresi</dt><dd>${String(d.sure).replace('.',',')} gün</dd>`:''}${d.kisi?`<dt>Çalışan</dt><dd>${d.kisi} kişi</dd>`:''}<dt>Para birimi</dt><dd>${esc(pb)}</dd></dl></div></div>
   ${d.konu?`<div class="kn">Konu: <b>${esc(d.konu)}</b></div>`:'<div class="kn"></div>'}
-  ${(d.isler||[]).filter(Boolean).length?`<div class="yi"><h4>YAPILAN İŞLER</h4><ul>${d.isler.filter(Boolean).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+  ${d.tur!=='PROFORMA FATURA'&&(d.isler||[]).filter(Boolean).length?`<div class="yi"><h4>YAPILAN İŞLER</h4><ul>${d.isler.filter(Boolean).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
   <table><thead><tr><th>NO</th><th>AÇIKLAMA</th><th class="n">MİKTAR</th><th class="n">BİRİM FİYAT</th><th class="n">TUTAR</th></tr></thead><tbody>${tr}</tbody></table>
   <div class="al"><div class="nt"><h4>${d.tur==='FİYAT TEKLİFİ'?'ŞARTLAR':'NOTLAR'}</h4><ul>${(d.notlar||[]).filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
    ${d.tur==='FİYAT TEKLİFİ'?'':`<div class="bk"><h4>ÖDEME BİLGİLERİ</h4><dl><dt>Banka</dt><dd>${esc(FIRMA.banka)}</dd><dt>Hesap adı</dt><dd>${esc(FIRMA.ad)}</dd><dt>IBAN</dt><dd>${esc(FIRMA.iban)}</dd></dl></div>`}</div>
@@ -842,8 +853,8 @@ async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('doc
   const cols=[600,4906,1500,1600,1600];
   const hr=new TableRow({tableHeader:true,children:['NO','AÇIKLAMA','MİKTAR','BİRİM FİYAT','TUTAR'].map((x,i)=>C([P(T(x,{size:15,bold:true,color:NAVY,sp:20}),{al:i>=2?R:undefined})],cols[i],{fill:'F1F3F7',borders:{left:nb,right:nb,top:{style:BorderStyle.SINGLE,size:12,color:NAVY},bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY}},m:{top:110,bottom:110,left:120,right:120}}))});
   const bb={top:nb,left:nb,right:nb,bottom:ln};
-  const rows=basKalem(d).map((k,i)=>{const v=[String(i+1).padStart(2,'0'),k.ad,String(k.miktar).replace('.',',')+' '+(k.birim||''),bPara(k.fiyat,pb),bPara(k.miktar*k.fiyat,pb)];
-    return new TableRow({children:v.map((x,j)=>C([P(T(x,{color:j==0?LG:undefined,bold:j==4}),{al:j>=2?R:undefined})],cols[j],{fill:i%2?ZEB:undefined,borders:bb,m:{top:120,bottom:120,left:120,right:120}}))})});
+  let wno=0;const rows=tabloSatir(d).map((k,i)=>{const v=k.tip==='b'?['',k.ad,'','','']:k.tip==='i'?['','•  '+k.ad,'','','']:[String(++wno).padStart(2,'0'),k.ad,k.sade?'':String(k.miktar).replace('.',',')+' '+(k.birim||''),k.sade?'':bPara(k.fiyat,pb),bPara(k.miktar*k.fiyat,pb)];
+    return new TableRow({children:v.map((x,j)=>C([P(T(x,{color:j==0||k.tip==='b'?LG:undefined,bold:j==4||(k.tip==='k'&&k.sade&&j==1)||k.tip==='b',size:k.tip==='b'?15:undefined}),{al:j>=2?R:undefined})],cols[j],{fill:k.tip==='k'&&i%2?ZEB:undefined,borders:bb,m:{top:k.tip==='k'?120:50,bottom:k.tip==='k'?120:50,left:120,right:120}}))})});
   const tot=TB([new TableRow({children:[C([P(T('Ara toplam'))],2100,{borders:{top:ln,left:ln,right:nb,bottom:ln}}),C([P(T(bPara(h.ara,pb)),{al:R})],1900,{borders:{top:ln,right:ln,left:nb,bottom:ln}})]}),
     new TableRow({children:[C([P(T('KDV %'+d.kdv))],2100,{borders:{left:ln,bottom:ln,top:nb,right:nb}}),C([P(T(bPara(h.kdv,pb)),{al:R})],1900,{borders:{right:ln,bottom:ln,top:nb,left:nb}})]}),
     new TableRow({children:[C([P(T('GENEL TOPLAM',{bold:true,color:NAVY,size:21}))],2100,{fill:'FFF8D6',m:{top:160,bottom:160,left:120,right:120}}),C([P(T(bPara(h.gen,pb),{bold:true,color:NAVY,size:23}),{al:R})],1900,{fill:'FFF8D6',m:{top:160,bottom:160,left:120,right:120}})]})],[2100,1900]);
@@ -858,7 +869,7 @@ async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('doc
     sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:0,bottom:900,left:850,right:850,footer:400}}},
       footers:{default:new Footer({children:[P([T(FIRMA.ad,{bold:true,size:15,color:NAVY}),T(' · '+FIRMA.adres+'   ·   Ofis: '+FIRMA.tel+'   ·   '+FIRMA.saat,{size:15,color:GRAY})],{al:AlignmentType.CENTER,border:{top:{style:BorderStyle.SINGLE,size:6,color:LINE,space:6}}})]})},
       children:[P(T(' ',{size:2}),{b:500}),head,P(T(' ',{size:4}),{border:{bottom:{style:BorderStyle.SINGLE,size:24,color:AMB,space:1}}}),P(T(FIRMA.hizmet.join('  ·  '),{size:15,color:GRAY}),{b:120,a:200}),info,
-        P(d.konu?[T('Konu: '),T(d.konu,{bold:true,color:NAVY})]:[T(' ')],{b:240,a:120}),...((d.isler||[]).filter(Boolean).length?[P(T('YAPILAN İŞLER',{size:14,bold:true,color:LG,sp:30}),{a:60}),...d.isler.filter(Boolean).map(x=>P([T('•  ',{color:LG}),T(x)],{a:20})),P(T(' '),{a:60})]:[]),TB([hr,...rows],cols),P(T(' '),{a:120}),alt,P(T(' '),{a:500}),im]}]});
+        P(d.konu?[T('Konu: '),T(d.konu,{bold:true,color:NAVY})]:[T(' ')],{b:240,a:120}),...(d.tur!=='PROFORMA FATURA'&&(d.isler||[]).filter(Boolean).length?[P(T('YAPILAN İŞLER',{size:14,bold:true,color:LG,sp:30}),{a:60}),...d.isler.filter(Boolean).map(x=>P([T('•  ',{color:LG}),T(x)],{a:20})),P(T(' '),{a:60})]:[]),TB([hr,...rows],cols),P(T(' '),{a:120}),alt,P(T(' '),{a:500}),im]}]});
   indir(await Packer.toBlob(doc),dosyaAdi(d)+'.docx')}catch(e){console.error(e);toast('Word hazırlanamadı: '+e.message)}}
 
 // --- Döviz kurları (Avrupa Merkez Bankası, günlük) ---
@@ -945,7 +956,7 @@ function vBelge(m){
    <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="bt1">Tarih</label><input id="bt1" type="date" value="${d.tarih}" oninput="BELGE.d.tarih=this.value;belgeOnizle()"></div><div style="flex:1;min-width:0"><label for="bt2">${teklif?'Geçerlilik':'Vade'}</label><input id="bt2" type="date" value="${d.son||''}" oninput="BELGE.d.son=this.value;belgeOnizle()"></div></div>
    <div class="row" style="flex-wrap:nowrap"><div style="flex:2;min-width:0"><label for="bp1">Döviz</label><select id="bp1" onchange="BELGE.d.pb=this.value;belgeOnizle()">${pbSec(d.pb)}</select></div><div style="flex:1;min-width:0"><label for="bv1">KDV %</label><input id="bv1" type="number" step="1" value="${d.kdv}" oninput="BELGE.d.kdv=Number(this.value)||0;belgeOnizle()"></div></div></div>
   ${d.tur==='PROFORMA FATURA'?`<div class="card"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="bsu" style="margin-top:0">İşin süresi (gün)</label><input id="bsu" type="number" min="0" step="0.5" value="${d.sure??''}" placeholder="Örn: 3" oninput="BELGE.d.sure=Number(this.value)||null;belgeOnizle()"></div><div style="flex:1;min-width:0"><label for="bks" style="margin-top:0">Çalışan kişi</label><input id="bks" type="number" min="0" step="1" value="${d.kisi??''}" placeholder="Örn: 3" oninput="BELGE.d.kisi=Number(this.value)||null;belgeOnizle()"></div></div><div class="muted" style="font-size:12px">Planlamadan otomatik hesaplandı; değiştirebilirsin. Kâğıtta "İş süresi" ve "Çalışan" olarak çıkar.</div></div>`:''}
-  ${Array.isArray(d.isler)?`<div class="card"><label for="bi1" style="margin-top:0">Yapılan işler (her satır bir iş · kâğıtta liste olarak çıkar)</label><textarea id="bi1" rows="${Math.max(3,d.isler.length+1)}" oninput="BELGE.d.isler=this.value.split('\n');belgeOnizle()">${esc(d.isler.join('\n'))}</textarea></div>`:''}
+  ${Array.isArray(d.isler)?`<div class="card"><label for="bi1" style="margin-top:0">Yapılan işler (her satır bir iş · kâğıtta tabloda, işçilik bedelinin üstünde çıkar)</label><textarea id="bi1" rows="${Math.max(3,d.isler.length+1)}" oninput="BELGE.d.isler=this.value.split('\n');belgeOnizle()">${esc(d.isler.join('\n'))}</textarea></div>`:''}
   <h3 style="margin:14px 0 8px">Kalemler</h3>${d.tur==='PROFORMA FATURA'?`<label class="row" style="flex-wrap:nowrap;gap:8px;align-items:center;margin:0 0 8px;padding:10px;border:1px solid #9fd3b2;background:#eefaf2;border-radius:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;flex-shrink:0" ${d.malzemeTek!==false?'checked':''} onchange="BELGE.d.malzemeTek=this.checked;belgeOnizle()"> Kâğıtta malzemeler tek satır "Malzeme bedeli" olarak toplansın (ayrıntı ek listede)</label>`:''}${d.tur==='PROFORMA FATURA'?`<div class="muted" style="font-size:12px;margin:-4px 0 8px">Her satır: miktar · birim · birim fiyat. 🧾 Firma sadece sende görünür, müşteri kâğıdına çıkmaz.</div><datalist id="tdkl">${(window._tdk||[]).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}${d.kalemler.map(kalem).join('')}
   <button class="btn l w" onclick="BELGE.d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0});render()">+ Kalem ekle</button>
   <div class="card" style="margin-top:10px"><label for="bn1" style="margin-top:0">${teklif?'Şartlar':'Notlar'} (her satır bir madde)</label><textarea id="bn1" rows="4" oninput="BELGE.d.notlar=this.value.split('\\n');belgeOnizle()">${esc((d.notlar||[]).join('\n'))}</textarea></div>
@@ -998,7 +1009,7 @@ async function proformaHazirla(pid){
   if(!d){await kurAl();const ppb=p.para_birimi||'TRY';
     const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,firma:x.tedarikci||'',miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
     const GB=(gr.data||[]).filter(t=>t.durum==='bitti');
-    window._aktar=[...GB.map(t=>{const n=t.kisi_sayisi||gKisi(t).length,g=Number(t.gun_sayisi)||0;return t.baslik+(t.aciklama?' — '+t.aciklama:'')+(n||g?' ('+[n?n+' kişi':'',g?String(g).replace('.',',')+' gün':''].filter(Boolean).join(' · ')+')':'')}),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,16);
+    window._aktar=[...GB.map(t=>{const n=t.kisi_sayisi||gKisi(t).length,g=Number(t.gun_sayisi)||0;return t.baslik+(t.aciklama?' — '+t.aciklama:'')}),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,16);
     const isler=[];
     const gTop=GB.reduce((t,x)=>t+(Number(x.gun_sayisi)||0),0);
     const tar=[...GB.map(x=>x.plan_tarih),...GB.map(x=>(x.bitis_tarihi||'').slice(0,10))].filter(Boolean).sort();
@@ -1007,7 +1018,7 @@ async function proformaHazirla(pid){
       kalemler:[...ku,{ad:'İşçilik ve hizmet bedeli',miktar:1,birim:'iş',fiyat:Number(p.iscilik||0)}],
       notlar:['Bu belge proforma faturadır; resmi fatura ödeme sonrasında düzenlenir.','Ödeme, vade tarihine kadar aşağıdaki banka hesabına yapılabilir.','Açıklamaya belge numarasını yazmanız rica olunur.'],
       imza:[['Hazırlayan','Dotek '+(me.rol==='patron'?'Enerji Sistemleri':dname(me.departman_id)+' Bölümü')],['Onaylayan',(people.find(x=>x.rol==='patron')||{}).ad||'']]}}
-  if(!Array.isArray(d.isler))d.isler=[];
+  if(!Array.isArray(d.isler))d.isler=[];d.isler=d.isler.map(isTemiz);
   window._prfPid=pid;window._tdk=[...new Set((ml.data||[]).map(x=>x.tedarikci).filter(Boolean))];
   (d.kalemler||[]).forEach(k=>{if(!k.firma){const x=(ml.data||[]).find(y=>y.ad===k.ad&&y.tedarikci);if(x)k.firma=x.tedarikci}});
   {const E=isEkip(gr.data||[]);if(d.kisi==null&&E.kisi)d.kisi=E.kisi;if(d.sure==null&&E.gun)d.sure=E.gun}
