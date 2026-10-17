@@ -134,8 +134,8 @@ const DB={
   {id:9,proje_id:3,baslik:'Akü ve şarj testi',atanan_id:'u9',plan_tarih:ds(2),durum:'bekliyor'},
   {id:10,proje_id:5,baslik:'Kart arıza tespiti',atanan_id:'u11',plan_tarih:ds(0),durum:'basladi'},
   {id:11,proje_id:6,baslik:'Motor sökümü ve sarım',atanan_id:'u10',plan_tarih:ds(1),durum:'bekliyor'},
-  {id:40,proje_id:24,baslik:'Atölye ana pano montajı',aciklama:'3 faz dağıtım, 36 modül pano',kisi_sayisi:2,atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-2),durum:'bitti',bitis_tarihi:iso(gun(-2))},
-  {id:41,proje_id:24,baslik:'Makine besleme hatları',aciklama:'Torna ve kaynak makinesi',kisi_sayisi:3,atanan_id:'u4',ekip:['u4','u13'],plan_tarih:ds(-1),durum:'bitti',bitis_tarihi:iso(gun(-1))},
+  {id:40,proje_id:24,baslik:'Atölye ana pano montajı',aciklama:'3 faz dağıtım, 36 modül pano',kisi_sayisi:2,gun_sayisi:1,atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-2),durum:'bitti',bitis_tarihi:iso(gun(-2))},
+  {id:41,proje_id:24,baslik:'Makine besleme hatları',aciklama:'Torna ve kaynak makinesi',kisi_sayisi:3,gun_sayisi:1.5,atanan_id:'u4',ekip:['u4','u13'],plan_tarih:ds(-1),durum:'bitti',bitis_tarihi:iso(gun(-1))},
   {id:42,proje_id:24,baslik:'Aydınlatma ve son kontrol',atanan_id:'u3',plan_tarih:ds(0),durum:'bitti',bitis_tarihi:iso(gun(0))},
   {id:30,proje_id:23,baslik:'Soğuk oda panosu montajı',atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-4),durum:'bitti',bitis_tarihi:iso(gun(-4))},
   {id:31,proje_id:23,baslik:'Besleme hattı çekimi (25 m)',atanan_id:'u4',plan_tarih:ds(-3),durum:'bitti',bitis_tarihi:iso(gun(-3))},
@@ -730,7 +730,7 @@ function belgeHTML(d){
   return`<div class="blg"><div class="u"><div class="mk"><img src="${LOGO_BASKI}" alt=""><div><b>DOTEK</b><span>ENERJİ SİSTEMLERİ</span></div></div><div class="tr"><small>${esc(d.tur)}</small><strong>${esc(d.no||'—')}</strong></div></div>
   <div class="sr"></div><div class="hz">${FIRMA.hizmet.join(' · ')}</div>
   <div class="ic"><div class="iki"><div class="kt"><h4>SAYIN</h4><div class="ad">${esc(m.ad||'')}</div>${m.ilgili?`<div class="k">${esc(m.ilgili)}</div>`:''}${m.adres?`<div class="k">${esc(m.adres)}</div>`:''}</div>
-  <div class="kt"><dl><dt>Belge no</dt><dd>${esc(d.no||'—')}</dd><dt>Tarih</dt><dd>${bTar(d.tarih)}</dd><dt>${d.tur==='FİYAT TEKLİFİ'?'Geçerlilik':'Vade'}</dt><dd>${bTar(d.son)}</dd>${d.proje?`<dt>Proje</dt><dd>${esc(d.proje)}</dd>`:''}<dt>Para birimi</dt><dd>${esc(pb)}</dd></dl></div></div>
+  <div class="kt"><dl><dt>Belge no</dt><dd>${esc(d.no||'—')}</dd><dt>Tarih</dt><dd>${bTar(d.tarih)}</dd><dt>${d.tur==='FİYAT TEKLİFİ'?'Geçerlilik':'Vade'}</dt><dd>${bTar(d.son)}</dd>${d.proje?`<dt>Proje</dt><dd>${esc(d.proje)}</dd>`:''}${d.sure?`<dt>İş süresi</dt><dd>${String(d.sure).replace('.',',')} gün</dd>`:''}<dt>Para birimi</dt><dd>${esc(pb)}</dd></dl></div></div>
   ${d.konu?`<div class="kn">Konu: <b>${esc(d.konu)}</b></div>`:'<div class="kn"></div>'}
   ${(d.isler||[]).filter(Boolean).length?`<div class="yi"><h4>YAPILAN İŞLER</h4><ul>${d.isler.filter(Boolean).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
   <table><thead><tr><th>NO</th><th>AÇIKLAMA</th><th class="n">MİKTAR</th><th class="n">BİRİM FİYAT</th><th class="n">TUTAR</th></tr></thead><tbody>${tr}</tbody></table>
@@ -767,7 +767,7 @@ async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('doc
     C([P(T(d.tur,{size:17,bold:true,color:'A88600',sp:36}),{al:R}),P(T(d.no||'—',{size:34,bold:true,color:NAVY}),{al:R,b:60})],4000,{m:{top:360,bottom:300,left:120,right:400},va:VerticalAlign.CENTER})]})],[6206,4000]);
   const bi=(k,v)=>P([T(k,{color:LG,size:18}),T('\t'+v,{bold:true,size:18})],{tabs:[{type:TabStopType.RIGHT,position:3900}],a:40});
   const info=TB([new TableRow({children:[C([P(T('SAYIN',{size:14,bold:true,color:LG,sp:30}),{a:60}),P(T(m.ad||'',{size:26,bold:true,color:NAVY}),{a:40}),P(T(m.ilgili||'',{color:GRAY})),P(T(m.adres||'',{color:GRAY}))],5800,{borders:BOX,m:{top:160,bottom:160,left:200,right:200}}),C([P(T(' '))],206),
-    C([bi('Belge no',d.no||'—'),bi('Tarih',bTar(d.tarih)),bi(teklif?'Geçerlilik':'Vade',bTar(d.son)),...(d.proje?[bi('Proje',d.proje)]:[]),bi('Para birimi',pb)],4200,{borders:BOX,m:{top:160,bottom:160,left:200,right:200}})]})],[5800,206,4200]);
+    C([bi('Belge no',d.no||'—'),bi('Tarih',bTar(d.tarih)),bi(teklif?'Geçerlilik':'Vade',bTar(d.son)),...(d.proje?[bi('Proje',d.proje)]:[]),...(d.sure?[bi('İş süresi',String(d.sure).replace('.',',')+' gün')]:[]),bi('Para birimi',pb)],4200,{borders:BOX,m:{top:160,bottom:160,left:200,right:200}})]})],[5800,206,4200]);
   const cols=[600,4906,1500,1600,1600];
   const hr=new TableRow({tableHeader:true,children:['NO','AÇIKLAMA','MİKTAR','BİRİM FİYAT','TUTAR'].map((x,i)=>C([P(T(x,{size:15,bold:true,color:NAVY,sp:20}),{al:i>=2?R:undefined})],cols[i],{fill:'F1F3F7',borders:{left:nb,right:nb,top:{style:BorderStyle.SINGLE,size:12,color:NAVY},bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY}},m:{top:110,bottom:110,left:120,right:120}}))});
   const bb={top:nb,left:nb,right:nb,bottom:ln};
@@ -872,6 +872,7 @@ function vBelge(m){
    <label for="bk1">Konu</label><input id="bk1" value="${esc(d.konu||'')}" oninput="BELGE.d.konu=this.value;belgeOnizle()">
    <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="bt1">Tarih</label><input id="bt1" type="date" value="${d.tarih}" oninput="BELGE.d.tarih=this.value;belgeOnizle()"></div><div style="flex:1;min-width:0"><label for="bt2">${teklif?'Geçerlilik':'Vade'}</label><input id="bt2" type="date" value="${d.son||''}" oninput="BELGE.d.son=this.value;belgeOnizle()"></div></div>
    <div class="row" style="flex-wrap:nowrap"><div style="flex:2;min-width:0"><label for="bp1">Döviz</label><select id="bp1" onchange="BELGE.d.pb=this.value;belgeOnizle()">${pbSec(d.pb)}</select></div><div style="flex:1;min-width:0"><label for="bv1">KDV %</label><input id="bv1" type="number" step="1" value="${d.kdv}" oninput="BELGE.d.kdv=Number(this.value)||0;belgeOnizle()"></div></div></div>
+  ${d.tur==='PROFORMA FATURA'?`<div class="card"><label for="bsu" style="margin-top:0">İşin süresi (gün)</label><input id="bsu" type="number" min="0" step="0.5" value="${d.sure??''}" placeholder="Örn: 3" oninput="BELGE.d.sure=Number(this.value)||null;belgeOnizle()"><div class="muted" style="font-size:12px">Planlamadan otomatik hesaplandı; değiştirebilirsin. Kâğıtta "İş süresi" olarak çıkar.</div></div>`:''}
   ${Array.isArray(d.isler)?`<div class="card"><label for="bi1" style="margin-top:0">Yapılan işler (her satır bir iş · kâğıtta liste olarak çıkar)</label><textarea id="bi1" rows="${Math.max(3,d.isler.length+1)}" oninput="BELGE.d.isler=this.value.split('\n');belgeOnizle()">${esc(d.isler.join('\n'))}</textarea></div>`:''}
   <h3 style="margin:14px 0 8px">Kalemler</h3>${d.kalemler.map(kalem).join('')}
   <button class="btn l w" onclick="BELGE.d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0});render()">+ Kalem ekle</button>
@@ -908,9 +909,12 @@ async function proformaHazirla(pid){
   if(!d){await kurAl();const ppb=p.para_birimi||'TRY';
     const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
     const GB=(gr.data||[]).filter(t=>t.durum==='bitti');
-    window._aktar=[...GB.map(t=>{const n=t.kisi_sayisi||gKisi(t).length;return t.baslik+(t.aciklama?' — '+t.aciklama:'')+(n?' ('+n+' kişi)':'')}),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,16);
+    window._aktar=[...GB.map(t=>{const n=t.kisi_sayisi||gKisi(t).length,g=Number(t.gun_sayisi)||0;return t.baslik+(t.aciklama?' — '+t.aciklama:'')+(n||g?' ('+[n?n+' kişi':'',g?String(g).replace('.',',')+' gün':''].filter(Boolean).join(' · ')+')':'')}),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,16);
     const isler=[];
-    d={tur:'PROFORMA FATURA',no:p.proforma_no,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:p.musteri||'',ilgili:'',adres:p.adres||''},proje:p.ad,konu:p.ad,pb:ppb,kdv:16,isler,
+    const gTop=GB.reduce((t,x)=>t+(Number(x.gun_sayisi)||0),0);
+    const tar=[...GB.map(x=>x.plan_tarih),...GB.map(x=>(x.bitis_tarihi||'').slice(0,10))].filter(Boolean).sort();
+    const sure=gTop||(tar.length?Math.round((new Date(tar[tar.length-1])-new Date(tar[0]))/864e5)+1:0);
+    d={tur:'PROFORMA FATURA',no:p.proforma_no,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:p.musteri||'',ilgili:'',adres:p.adres||''},proje:p.ad,konu:p.ad,pb:ppb,kdv:16,isler,sure:sure||null,
       kalemler:[...ku,{ad:'İşçilik ve hizmet bedeli',miktar:1,birim:'iş',fiyat:Number(p.iscilik||0)}],
       notlar:['Bu belge proforma faturadır; resmi fatura ödeme sonrasında düzenlenir.','Ödeme, vade tarihine kadar aşağıdaki banka hesabına yapılabilir.','Açıklamaya belge numarasını yazmanız rica olunur.'],
       imza:[['Hazırlayan',me.ad+' · '+(me.rol==='patron'?'İşveren':dname(me.departman_id))],['Onaylayan',(people.find(x=>x.rol==='patron')||{}).ad||'']]}}
@@ -1252,12 +1256,12 @@ async function vGorevEkle(pid){
    <label>Kim yapacak? (bir veya birkaç kişi seç) *</label><div id="gk">${kisiSec(ekipOf(sec.departman_id),'k')}</div>
    <label for="gt">Tarih</label><input id="gt" type="date" name="t" value="${S.gun||gunStr(new Date())}">
    <label for="ga">Yapılacak iş (detay)</label><textarea id="ga" name="a" rows="2" placeholder="Örn: 3 faz pano, 24 sigorta, topraklama"></textarea>
-   <label>Kaç kişi çalışacak?</label><input name="ks" type="number" min="1" step="1" placeholder="Boş bırakırsan seçilen kişi sayısı"><div class="muted" style="font-size:12px">Dışarıdan yardımcı gelecekse onları da say.</div>
+   <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label>Kaç kişi?</label><input name="ks" type="number" min="1" step="1" placeholder="Seçilenler"></div><div style="flex:1;min-width:0"><label>Kaç gün sürecek?</label><input name="gs" type="number" min="0.5" step="0.5" placeholder="Örn: 2"></div></div><div class="muted" style="font-size:12px">Dışarıdan yardımcı gelecekse onları da say.</div>
    <button class="btn w" style="margin-top:14px">Görevi ata</button></form>`;
   window.P_SEC=P;
   $('#gf2').onsubmit=async e=>{e.preventDefault();const f=e.target;
     const k=secilenler(f,'k');if(!k.length)return toast('En az bir kişi seç');
-    const {error}=await sb.from('gorevler').insert({proje_id:Number(f.p.value),baslik:f.b.value.trim(),aciklama:f.a.value.trim()||null,atanan_id:k[0],ekip:k,kisi_sayisi:Number(f.ks.value)||k.length,plan_tarih:f.t.value||null});
+    const {error}=await sb.from('gorevler').insert({proje_id:Number(f.p.value),baslik:f.b.value.trim(),aciklama:f.a.value.trim()||null,atanan_id:k[0],ekip:k,kisi_sayisi:Number(f.ks.value)||k.length,gun_sayisi:Number(f.gs.value)||null,plan_tarih:f.t.value||null});
     if(hata(error))return;toast('Görev atandı, bildirim gitti');render()};
 }
 
@@ -1424,7 +1428,7 @@ async function vProje(m){
       <label>Ne yapılacak *</label><input name="b" required placeholder="Örn: Ana pano montajı">
       <label>Yapılacak iş (detay)</label><textarea name="a" rows="2" placeholder="Örn: 3 faz pano, 24 sigorta, topraklama"></textarea>
       <label>Kim yapacak? (bir veya birkaç kişi seç) *</label>${kisiSec(ekipOf(p.departman_id),'k')}
-      <label>Kaç kişi çalışacak?</label><input name="ks" type="number" min="1" step="1" placeholder="Boş bırakırsan seçilen kişi sayısı"><div class="muted" style="font-size:12px">Dışarıdan yardımcı gelecekse onları da say.</div>
+      <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label>Kaç kişi?</label><input name="ks" type="number" min="1" step="1" placeholder="Seçilenler"></div><div style="flex:1;min-width:0"><label>Kaç gün sürecek?</label><input name="gs" type="number" min="0.5" step="0.5" placeholder="Örn: 2"></div></div><div class="muted" style="font-size:12px">Dışarıdan yardımcı gelecekse onları da say.</div>
       <label>Planlanan tarih</label><input type="date" name="t">
       <button class="btn w" style="margin-top:12px">Görevi ata</button></form>`;
   }
@@ -1498,7 +1502,7 @@ async function vProje(m){
 
   const gf=$('#gf');if(gf)gf.onsubmit=async e=>{e.preventDefault();
     const k=secilenler(gf,'k');if(!k.length)return toast('En az bir kişi seç');
-    const {error}=await sb.from('gorevler').insert({proje_id:id,baslik:gf.b.value.trim(),aciklama:gf.a.value.trim()||null,atanan_id:k[0],ekip:k,kisi_sayisi:Number(gf.ks.value)||k.length,plan_tarih:gf.t.value||null});
+    const {error}=await sb.from('gorevler').insert({proje_id:id,baslik:gf.b.value.trim(),aciklama:gf.a.value.trim()||null,atanan_id:k[0],ekip:k,kisi_sayisi:Number(gf.ks.value)||k.length,gun_sayisi:Number(gf.gs.value)||null,plan_tarih:gf.t.value||null});
     if(hata(error))return;toast('Görev atandı');render()};
   const iff=$('#if');if(iff)iff.onsubmit=async e=>{e.preventDefault();
     const {error}=await sb.from('islemler').insert({proje_id:id,gorev_id:Number(iff.g.value)||null,aciklama:iff.a.value.trim(),sure_saat:Number(iff.s.value)||null});
