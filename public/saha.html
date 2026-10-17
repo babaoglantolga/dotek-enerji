@@ -22,7 +22,7 @@ header.top{background:var(--navy);color:#fff;padding:12px 16px;display:flex;alig
 main{padding-block:12px 90px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:820px;margin:0 auto}
 nav.bottom{position:fixed;bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:5}
 nav.bottom button{flex:1;min-width:0;padding:14px 4px;border:0;background:none;font:inherit;font-size:clamp(11px,3.3vw,14px);white-space:nowrap;color:var(--muted);font-weight:700;cursor:pointer}
-nav.bottom.n7 button{font-size:clamp(9.5px,2.65vw,14px);letter-spacing:-.25px;padding-left:1px;padding-right:1px}nav.bottom button.on{color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
+nav.bottom.n7 button{font-size:clamp(9.5px,2.65vw,14px);letter-spacing:-.25px;padding-left:1px;padding-right:1px;white-space:normal;line-height:1.1;text-align:center;overflow:hidden}nav.bottom button.on{color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .sp{justify-content:space-between}
@@ -51,7 +51,7 @@ html{color-scheme:light}
 #demo b{margin-right:4px}#demo button{border:1px solid #e0b860;background:#fff;color:#5a3a00;border-radius:99px;padding:5px 11px;font:inherit;font-weight:700;cursor:pointer}
 #demo button.on{background:#a35f00;color:#fff;border-color:#a35f00}
 nav.bottom button{font-size:13px}
-button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.kareler{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.kare{background:#fff;border:1px solid var(--line);border-top:4px solid #c3cad6;border-radius:12px;padding:10px 11px;min-height:128px;display:flex;flex-direction:column}.kare .kis{margin-top:auto;padding-top:8px;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .cal-bas{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .cal-bas h2{margin:0;text-transform:capitalize}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
@@ -1253,13 +1253,16 @@ async function raporExcel(){toast('Excel hazırlanıyor…');try{const R=await a
 // ---------------- Kim hangi işte ----------------
 async function acikGorevler(){const {data}=await sb.from('gorevler').select('*, projeler(id,ad,musteri)');return (data||[]).filter(t=>t.durum!=='bitti')}
 function kimNerede(kisiler,G){
-  if(!kisiler.length)return'<div class="muted">Personel yok.</div>';
-  return kisiler.map(p=>{
-    const g=G.filter(t=>gKisi(t).includes(p.id)).sort((a,b)=>(calisiyorMu(a.durum)?0:1)-(calisiyorMu(b.durum)?0:1)),s=g[0];
-    return`<div class="row sp" style="padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0;flex:1">
-      <b>${esc(p.ad)}</b> <span class="muted">${p.rol==='ds'?'Sorumlu':'Çalışan'} · ${esc(dname(p.departman_id))}</span>
-      <div class="muted">${s?`${esc(s.baslik)} → <span class="click" style="color:var(--blue);font-weight:600" onclick="openP(${s.proje_id},'gorev')">${esc((s.projeler||{}).ad||'')}</span>${g.length>1?` · +${g.length-1} iş sırada`:''}`:'Şu an verilmiş görevi yok'}</div></div>
-      ${s?(calisiyorMu(s.durum)?'<span class="chip c-basladi">Çalışıyor</span>':'<span class="chip c-acik">Sırada</span>'):'<span class="chip c-bekliyor">Boşta</span>'}</div>`}).join('');
+  if(!kisiler.length)return'<div class="card muted">Personel yok.</div>';
+  const kare=p=>{const g=G.filter(t=>gKisi(t).includes(p.id)).sort((a,b)=>(calisiyorMu(a.durum)?0:1)-(calisiyorMu(b.durum)?0:1)),s=g[0];
+    const d=s?(calisiyorMu(s.durum)?['Çalışıyor','c-basladi','#1a9c55']:['Sırada','c-acik','#2f6fe0']):['Boşta','c-bekliyor','#c3cad6'];
+    return`<div class="kare${s?' click':''}" style="border-top-color:${d[2]}" ${s?`onclick="openP(${s.proje_id},'gorev')"`:''}>
+      <div class="row sp" style="flex-wrap:nowrap;gap:6px;align-items:flex-start"><b style="min-width:0;line-height:1.2">${esc(p.ad)}</b><span class="chip ${d[1]}" style="flex-shrink:0">${d[0]}</span></div>
+      <div class="muted" style="font-size:12px;margin-top:2px">${p.rol==='ds'?'Sorumlu':'Çalışan'} · ${esc(dname(p.departman_id))}</div>
+      <div class="kis">${s?`<b style="font-weight:600">${esc(s.baslik)}</b><br><span class="muted">${esc((s.projeler||{}).ad||'')}</span>${g.length>1?`<div class="muted" style="font-size:12px">+${g.length-1} iş sırada</div>`:''}`:'<span class="muted">Verilmiş görevi yok</span>'}</div></div>`};
+  const ds=kisiler.filter(p=>p.rol==='ds'),cal=kisiler.filter(p=>p.rol!=='ds');
+  const grup=(bas,a)=>a.length?`<div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.08em;margin:10px 0 6px">${bas} (${a.length})</div><div class="kareler">${a.map(kare).join('')}</div>`:'';
+  return grup('SORUMLULAR',ds)+grup('ÇALIŞANLAR',cal);
 }
 
 // ---------------- Proje kartı (kim yapıyor, ne aşamada) ----------------
@@ -1317,7 +1320,7 @@ async function vOnay(m){
   m.innerHTML=tk+pk+`<div class="row"><div class="stat"><span class="muted">Onay bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Süren iş</span><b>${devam}</b></div></div>
   <h2 style="margin-top:16px">Onayını bekleyen işler</h2>
   ${bek.length?bek.map(onayKart).join(''):'<div class="card muted">Şu an onayını bekleyen iş yok.</div>'}
-  <h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div class="card" style="padding-block:2px">${kimNerede(ekip,G)}</div>`;
+  <h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div>${kimNerede(ekip,G)}</div>`;
 }
 
 // ---------------- DS: Planlama ----------------
@@ -1334,7 +1337,7 @@ async function vPlanlama(m){
      <button class="btn s l w" style="margin-top:8px" onclick="vGorevEkle(${p.id})">+ Bu projeye görev ekle</button></div>`};
   const ekip=people.filter(x=>x.departman_id===me.departman_id&&['ds','calisan'].includes(x.rol));
   m.innerHTML=`<div class="durumlar" style="margin-bottom:10px"><button class="btn" onclick="vGorevEkle()">+ Görev planla</button><button class="btn g" onclick="fisOku()">📷 Fiş okut</button><button class="btn l" onclick="teklifAc()">+ Teklif ekle</button></div>`+tk+`
-   <h2>Ekibim bugün</h2><div class="card" style="padding-block:2px">${kimNerede(ekip,G.filter(t=>t.durum!=='bitti').map(t=>({...t,projeler:P.find(p=>p.id===t.proje_id)||{}})))}</div>
+   <h2>Ekibim bugün</h2><div>${kimNerede(ekip,G.filter(t=>t.durum!=='bitti').map(t=>({...t,projeler:P.find(p=>p.id===t.proje_id)||{}})))}</div>
    ${await teklifKarti()}
    <div class="muted" style="margin-top:8px">Tüm projeler ve aylık takvim için <span class="click" style="color:var(--blue);font-weight:700" onclick="go('projeler')">Projeler ›</span></div>`;
 }
@@ -1400,7 +1403,7 @@ async function vDepartmanlar(m){
      <div class="row" style="margin-top:8px"><span class="chip c-devam">${pr.filter(sur).length} süren iş</span><span class="chip c-patronda">${pr.filter(p=>p.durum==='patronda').length} onayda</span><span class="chip c-bitti">${pr.filter(p=>p.durum==='onaylandi').length} onaylandı</span></div></div>
     ${rapBas(R)}${rapKart(R.ozet(d.id),'Departman toplamı')}
     <div class="card"><h3>Kişi bazında</h3>${ekip.map(p=>{const k=R.kisi(p.id);return`<div class="row sp" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><span style="min-width:0"><b>${esc(p.ad)}</b> <span class="muted">${p.rol==='ds'?'Sorumlu':'Çalışan'}</span></span><span class="muted" style="white-space:nowrap">${k.gb} biten · ${Math.round(k.sa*10)/10} sa · ${k.acik} açık</span></div>`}).join('')||'<div class="muted">Personel yok.</div>'}</div>
-    <h2>Kim hangi işte</h2><div class="card" style="padding-block:2px">${kimNerede(ekip,await acikGorevler())}</div>
+    <h2>Kim hangi işte</h2><div>${kimNerede(ekip,await acikGorevler())}</div>
     <h2>Projeler (${pr.length})</h2>${pr.map(pCard).join('')||'<div class="card muted">Bu departmanda proje yok.</div>'}`;
     return;
   }
@@ -1671,7 +1674,7 @@ async function vEkip(m){
      <button class="btn s" onclick="kSet('${p.id}',this)">Kaydet</button></div></div>`
     :`<div class="card"><b>${esc(p.ad)}</b><div class="muted">${ROL[p.rol]} · ${esc(dname(p.departman_id))}</div></div>`;
   const bek=list.filter(p=>p.rol==='bekliyor'),dig=list.filter(p=>p.rol!=='bekliyor');
-  const kn=!isP?`<h2>Kim hangi işte</h2><div class="card" style="padding-block:2px">${kimNerede(dig.filter(p=>['ds','calisan'].includes(p.rol)),await acikGorevler())}</div>`:'';
+  const kn=!isP?`<h2>Kim hangi işte</h2><div>${kimNerede(dig.filter(p=>['ds','calisan'].includes(p.rol)),await acikGorevler())}</div>`:'';
   m.innerHTML=`${isP?`<div class="card muted">Yeni çalışan uygulamayı açıp <b>“Kayıt ol”</b> der. Burada ona rol ve departman verirsin.</div>`:''}
    ${bek.length?`<h2>Onay bekleyenler (${bek.length})</h2>${bek.map(satir).join('')}`:''}
    ${kn}<h2>${isP?'Ekip':'Ekibim'} (${dig.length})</h2>${dig.map(satir).join('')}
