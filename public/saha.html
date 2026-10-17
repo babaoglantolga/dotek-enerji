@@ -188,13 +188,13 @@ const DB={
   {id:41,proje_id:24,tur:'kullanilan',ad:'5x10 mm² NYY kablo',miktar:40,birim:'metre',birim_fiyat:95},
   {id:42,proje_id:24,tur:'kullanilan',ad:'Otomatik sigorta C32 3 faz',miktar:4,birim:'adet',birim_fiyat:240},
   {id:43,proje_id:24,tur:'kullanilan',ad:'LED etanj armatür 150 cm',miktar:8,birim:'adet',birim_fiyat:480},
-  {id:30,proje_id:23,tur:'alinan',ad:'4x6 mm² NYY kablo',miktar:30,birim:'metre',birim_fiyat:62},
+  {id:30,proje_id:23,tur:'alinan',ad:'4x6 mm² NYY kablo',miktar:30,birim:'metre',birim_fiyat:62,tedarikci:'Kıbrıs Elektrik Market'},
   {id:31,proje_id:23,tur:'kullanilan',ad:'4x6 mm² NYY kablo',miktar:25,birim:'metre',birim_fiyat:62},
   {id:32,proje_id:23,tur:'kullanilan',ad:'Sıva üstü pano 24 modül',miktar:1,birim:'adet',birim_fiyat:1450},
   {id:33,proje_id:23,tur:'kullanilan',ad:'Kaçak akım rölesi 40A 30mA',miktar:1,birim:'adet',birim_fiyat:1350},
   {id:34,proje_id:23,tur:'kullanilan',ad:'LED etanj armatür 120 cm',miktar:6,birim:'adet',birim_fiyat:420},
-  {id:1,proje_id:1,tur:'alinan',ad:'2.5mm NYA kablo',miktar:300,birim:'metre',birim_fiyat:9.5},
-  {id:2,proje_id:1,tur:'alinan',ad:'Otomatik sigorta 16A',miktar:24,birim:'adet',birim_fiyat:85},
+  {id:1,proje_id:1,tur:'alinan',ad:'2.5mm NYA kablo',miktar:300,birim:'metre',birim_fiyat:9.5,tedarikci:'Kıbrıs Elektrik Market'},
+  {id:2,proje_id:1,tur:'alinan',ad:'Otomatik sigorta 16A',miktar:24,birim:'adet',birim_fiyat:85,tedarikci:'Mağusa Yapı Market'},
   {id:3,proje_id:1,tur:'kullanilan',ad:'2.5mm NYA kablo',miktar:220,birim:'metre',birim_fiyat:9.5,tarih:iso(gun(-4))},
   {id:4,proje_id:1,tur:'kullanilan',ad:'Otomatik sigorta 16A',miktar:18,birim:'adet',birim_fiyat:85,tarih:iso(gun(-2))},
   {id:7,proje_id:1,tur:'alinan',ad:'Kaçak akım rölesi (ithal)',miktar:2,birim:'adet',birim_fiyat:38,para_birimi:'EUR'},
@@ -870,7 +870,7 @@ async function vFis(){
   const sec=FIS.kalemler.filter(k=>k.sec),pb=d.para_birimi&&/^[A-Z]{3}$/.test(d.para_birimi)?d.para_birimi:'TRY';
   m.innerHTML=`<button class="btn s l" onclick="FIS=null;render()">← Vazgeç</button><h2 style="margin-top:10px">Fişten okunan malzemeler</h2>
    <div class="card row" style="flex-wrap:nowrap;align-items:flex-start"><img src="${FIS.url}" alt="Fiş" style="width:84px;height:110px;object-fit:cover;border-radius:6px;flex:none">
-    <div style="min-width:0"><b>${esc(d.satici||'Satıcı okunamadı')}</b><div class="muted">${d.tarih?bTar(d.tarih):'Tarih yok'} · ${pb}</div>${d.toplam?`<div style="font-weight:800;margin-top:4px">Fiş toplamı: ${tl(d.toplam,pb)}</div>`:''}<div class="muted" style="margin-top:4px">Yanlış okunan varsa düzelt, istemediğinin işaretini kaldır.</div></div></div>
+    <div style="min-width:0;flex:1"><label for="fsat" style="margin-top:0">Kimden alındı (firma)</label><input id="fsat" value="${esc(d.satici||'')}" placeholder="Firma adı" oninput="FIS.sonuc.satici=this.value"><div class="muted">${d.tarih?bTar(d.tarih):'Tarih yok'} · ${pb}</div>${d.toplam?`<div style="font-weight:800;margin-top:4px">Fiş toplamı: ${tl(d.toplam,pb)}</div>`:''}<div class="muted" style="margin-top:4px">Yanlış okunan varsa düzelt, istemediğinin işaretini kaldır.</div></div></div>
    ${FIS.kalemler.map((k,i)=>`<div class="card" style="padding:10px;margin-bottom:8px;${k.sec?'':'opacity:.5'}"><div class="row" style="flex-wrap:nowrap"><input type="checkbox" aria-label="Ekle" ${k.sec?'checked':''} onchange="FIS.kalemler[${i}].sec=this.checked;vFis()" style="width:22px;height:22px;flex:none"><input aria-label="Malzeme adı" value="${esc(k.ad)}" oninput="FIS.kalemler[${i}].ad=this.value" style="flex:1;min-width:0"></div>
      <div class="row" style="margin-top:6px;flex-wrap:nowrap"><input aria-label="Miktar" type="number" step="0.01" value="${k.miktar}" oninput="FIS.kalemler[${i}].miktar=Number(this.value)||0" style="flex:1;min-width:0"><input aria-label="Birim" value="${esc(k.birim)}" oninput="FIS.kalemler[${i}].birim=this.value" style="flex:1;min-width:0"><input aria-label="Birim fiyat" type="number" step="0.01" value="${k.fiyat}" oninput="FIS.kalemler[${i}].fiyat=Number(this.value)||0" style="flex:1.3;min-width:0"></div></div>`).join('')}
    <div class="card"><label for="fp" style="margin-top:0">Hangi iş için? *</label><select id="fp">${P.map(p=>`<option value="${p.id}" ${p.id===FIS.pid?'selected':''}>${esc(p.ad)}${p.musteri?' · '+esc(p.musteri):''}</option>`).join('')||'<option value="">Aktif proje yok</option>'}</select>
@@ -883,7 +883,7 @@ async function fisKaydet(){
   if(!pid)return toast('Önce bir iş seç');if(!L.length)return toast('Eklenecek kalem yok');
   let yol=null;
   try{if(sb.storage){yol=me.id+'/'+Date.now()+'.jpg';const u=await sb.storage.from('fisler').upload(yol,FIS.blob,{contentType:'image/jpeg'});if(u.error)yol=null}}catch(e){yol=null}
-  for(const k of L){const {error}=await sb.from('malzemeler').insert({proje_id:pid,tur,ad:k.ad.trim(),miktar:k.miktar,birim:k.birim,birim_fiyat:k.fiyat,para_birimi:$('#fd').value,fis_yolu:yol});if(hata(error))return}
+  for(const k of L){const {error}=await sb.from('malzemeler').insert({proje_id:pid,tur,ad:k.ad.trim(),miktar:k.miktar,birim:k.birim,birim_fiyat:k.fiyat,para_birimi:$('#fd').value,fis_yolu:yol,tedarikci:((FIS.sonuc||{}).satici||'').trim()||null});if(hata(error))return}
   toast(L.length+' kalem işe eklendi');FIS=null;openP(pid,'malzeme');
 }
 async function fisGoster(yol){try{const {data,error}=await sb.storage.from('fisler').createSignedUrl(yol,600);if(error)throw error;window.open(data.signedUrl,'_blank')}catch(e){toast('Fiş açılamadı')}}
@@ -939,6 +939,12 @@ async function proformaAc(pid){
 const proformaDuzenler=p=>!ofisMi()&&(me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id))&&p.fatura_durum!=='kesildi'&&['acik','devam','bitti','iade','patronda','onaylandi'].includes(p.durum);
 const proformaBtn=p=>proformaDuzenler(p)?`proformaHazirla(${p.id})`:`proformaGor(${p.id})`;
 // İşte kaç kişi çalıştı, kaç gün sürdü (planlamadan)
+// Kimden ne kadar malzeme alındı (müşteriye gitmez, sadece içeride)
+function tedarikOzet(M,pb){const AL=M.filter(x=>x.tur==='alinan'||x.tedarikci);if(!AL.length)return'';const G={};AL.forEach(x=>{const k=(x.tedarikci||'').trim()||'Firma yazılmamış';(G[k]=G[k]||[]).push(x)});
+  const L=Object.entries(G).map(([k,a])=>({k,a,t:mToplamCevrik(a,pb)})).sort((x,y)=>y.t-x.t);
+  return`<div class="card" style="border-color:#c9d3e6"><h3 style="margin:0 0 2px">🧾 Kimden ne alındı?</h3><div class="muted" style="font-size:12px;margin-bottom:6px">Sadece içeride görünür; proformaya ve müşteriye gitmez.</div>
+   ${L.map(g=>`<div class="row sp" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:10px"><div style="min-width:0"><b style="${g.k==='Firma yazılmamış'?'color:var(--muted)':''}">${esc(g.k)}</b><div class="muted" style="font-size:12px">${g.a.length} kalem · ${esc(g.a.slice(0,3).map(x=>x.ad).join(', '))}${g.a.length>3?' …':''}</div></div><b style="white-space:nowrap">${tl(g.t,pb)}</b></div>`).join('')}
+   <div class="row sp" style="padding:7px 0;border-top:2px solid var(--text)"><b>Toplam alım</b><b>${tl(L.reduce((a,g)=>a+g.t,0),pb)}</b></div></div>`}
 function isEkip(G){const T=G.filter(t=>t.durum==='bitti').length?G.filter(t=>t.durum==='bitti'):G;const ids=new Set(T.flatMap(t=>gKisi(t)));
   const kisi=Math.max(ids.size,...T.map(t=>Number(t.kisi_sayisi)||0),0);
   const gTop=T.reduce((a,x)=>a+(Number(x.gun_sayisi)||0),0);const tar=[...T.map(x=>x.plan_tarih),...T.map(x=>(x.bitis_tarihi||'').slice(0,10))].filter(Boolean).sort();
@@ -1524,12 +1530,13 @@ async function vProje(m){
   if(S.ptab==='malzeme'){
     const al=M.filter(x=>x.tur==='alinan'),ku=M.filter(x=>x.tur==='kullanilan');
     const tbl=(arr,bas)=>`<div class="card"><h3>${bas}</h3>${arr.length?`<table><tr><th>Malzeme</th><th class="n">Miktar</th>${para?'<th class="n">B.Fiyat</th><th class="n">Tutar</th>':''}${duz?'<th></th>':''}</tr>
-      ${arr.map(x=>`<tr><td>${esc(x.ad)}${x.fis_yolu?` <a href="#" onclick="event.preventDefault();fisGoster('${esc(x.fis_yolu)}')" title="Fişi gör">📎</a>`:''}</td><td class="n">${x.miktar} ${esc(x.birim||'')}</td>${para?`<td class="n">${tl(x.birim_fiyat,mPb(x,pb))}</td><td class="n">${tl(mTutar(x),mPb(x,pb))}</td>`:''}${duz?`<td class="n"><button class="btn s r" onclick="sil('malzemeler',${x.id})">×</button></td>`:''}</tr>`).join('')}
+      ${arr.map(x=>`<tr><td>${esc(x.ad)}${x.tedarikci&&me.rol!=='calisan'?`<div class="muted" style="font-size:12px">${esc(x.tedarikci)}</div>`:''}${x.fis_yolu?` <a href="#" onclick="event.preventDefault();fisGoster('${esc(x.fis_yolu)}')" title="Fişi gör">📎</a>`:''}</td><td class="n">${x.miktar} ${esc(x.birim||'')}</td>${para?`<td class="n">${tl(x.birim_fiyat,mPb(x,pb))}</td><td class="n">${tl(mTutar(x),mPb(x,pb))}</td>`:''}${duz?`<td class="n"><button class="btn s r" onclick="sil('malzemeler',${x.id})">×</button></td>`:''}</tr>`).join('')}
       ${para?`<tr><th colspan="3">Toplam</th><th class="n">${mToplamYazi(arr,pb)}</th>${duz?'<th></th>':''}</tr>`:''}</table>`:'<div class="muted">Kayıt yok.</div>'}</div>`;
-    body=(duz?`<button class="btn g w" style="margin-bottom:10px" onclick="fisOku(${id})">📷 Fiş / fatura fotoğrafından ekle</button>`:'')+tbl(al,'Alınan malzeme')+tbl(ku,'Kullanılan malzeme')+farkTablo(M,pb,para);
+    body=(duz?`<button class="btn g w" style="margin-bottom:10px" onclick="fisOku(${id})">📷 Fiş / fatura fotoğrafından ekle</button>`:'')+tbl(al,'Alınan malzeme')+tbl(ku,'Kullanılan malzeme')+farkTablo(M,pb,para)+(para?tedarikOzet(M,pb):'');
     if(duz) body+=`<form id="mf" class="card"><h3>+ Malzeme gir</h3>
       <label>Tür</label><select name="tur"><option value="kullanilan">Kullanılan</option><option value="alinan">Alınan (satın alınan)</option></select>
       <label>Malzeme adı *</label><input name="ad" required placeholder="Örn: 2.5mm kablo">
+      <label>Kimden alındı (firma) <span class="muted" style="font-weight:400">· sadece içeride görünür</span></label><input name="td" list="tdl" placeholder="Örn: Kıbrıs Elektrik Market"><datalist id="tdl">${[...new Set(M.map(x=>x.tedarikci).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
       <div class="row"><div style="flex:1"><label>Miktar *</label><input name="mk" type="number" step="0.01" min="0" value="1" required></div>
       <div style="flex:1"><label>Birim</label><select name="br">${['adet','metre','kg','litre','paket','takım','saat'].map(b=>`<option>${b}</option>`).join('')}</select></div></div>
       <div class="row" style="flex-wrap:nowrap"><div style="flex:1.4;min-width:0"><label>Birim fiyat</label><input name="bf" type="number" step="0.01" min="0" value="0"></div><div style="flex:1;min-width:0"><label>Döviz</label><select name="pb">${pbSec(pb)}</select></div></div>
@@ -1546,7 +1553,7 @@ async function vProje(m){
       ${(()=>{const ar=malzemeFarki(M).filter(x=>x.fark>0);const v=ar.reduce((t,x)=>t+(paraCevir(x.fark*x.fiyat,x.pb||pb,pb)??0),0);return v?`<tr><td>Artan malzeme (depoya dönecek)</td><td class="n">${tl(v,pb)}</td></tr>`:''})()}
       <tr><td>Toplam çalışma süresi</td><td class="n">${sure} saat${isEkip(G).gun?' · '+String(isEkip(G).gun).replace('.',',')+' gün':''}</td></tr>
       <tr><td>Çalışan kişi</td><td class="n">${isEkip(G).kisi||'—'} kişi${isEkip(G).adlar.length?`<div class="muted" style="font-size:12px">${esc(isEkip(G).adlar.join(', '))}</div>`:''}</td></tr>
-      <tr><td>Görevler</td><td class="n">${G.filter(t=>t.durum==='bitti').length} / ${G.length} bitti</td></tr></table>${dvz?kurNotu(M.map(x=>mPb(x,pb)),pb):''}</div>`;
+      <tr><td>Görevler</td><td class="n">${G.filter(t=>t.durum==='bitti').length} / ${G.length} bitti</td></tr></table>${dvz?kurNotu(M.map(x=>mPb(x,pb)),pb):''}</div>`+tedarikOzet(M,pb);
     if(duz){
       body+=`<div class="card" style="border-color:#bfe3cc"><h3 style="margin:0 0 4px">📄 Proforma ile gönder</h3><div class="muted">İş bitince proformayı hazırla: yapılan işler ve malzemeler otomatik gelir, toplam işin fiyatı olur. ${me.rol==='patron'?'Gönderince onaylanmış olur ve Ofis\'e düşer.':'Doğuş\'a ve Ofis\'e birlikte gider.'}</div>
         <button class="btn g w" style="margin-top:8px" onclick="proformaHazirla(${id})">📄 Proforma ${p.proforma_no?'aç ('+esc(p.proforma_no)+')':'hazırla'}</button></div>
@@ -1583,7 +1590,7 @@ async function vProje(m){
     const {error}=await sb.from('islemler').insert({proje_id:id,gorev_id:Number(iff.g.value)||null,aciklama:iff.a.value.trim(),sure_saat:Number(iff.s.value)||null});
     if(hata(error))return;toast('İşlem kaydedildi');render()};
   const mf=$('#mf');if(mf)mf.onsubmit=async e=>{e.preventDefault();
-    const {error}=await sb.from('malzemeler').insert({proje_id:id,tur:mf.tur.value,ad:mf.ad.value.trim(),miktar:Number(mf.mk.value)||0,birim:mf.br.value,birim_fiyat:Number(mf.bf.value)||0,para_birimi:mf.pb.value});
+    const {error}=await sb.from('malzemeler').insert({proje_id:id,tur:mf.tur.value,ad:mf.ad.value.trim(),miktar:Number(mf.mk.value)||0,birim:mf.br.value,birim_fiyat:Number(mf.bf.value)||0,para_birimi:mf.pb.value,tedarikci:mf.td.value.trim()||null});
     if(hata(error))return;toast('Malzeme eklendi');render()};
 }
 
