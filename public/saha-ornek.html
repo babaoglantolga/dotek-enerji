@@ -922,7 +922,8 @@ function belgeOnizle(){const k=$('#onz');if(!k)return;const w=k.clientWidth,sc=w
 function vBelge(m){
   const d=BELGE.d,teklif=d.tur==='FİYAT TEKLİFİ';
   const kalem=(k,i)=>`<div class="card" style="padding:10px;margin-bottom:8px"><div class="row" style="flex-wrap:nowrap"><input aria-label="Açıklama" value="${esc(k.ad)}" oninput="BELGE.d.kalemler[${i}].ad=this.value;belgeOnizle()" style="flex:1;min-width:0" placeholder="Açıklama"><button type="button" class="btn s l" style="color:var(--red)" aria-label="Kalemi sil" onclick="BELGE.d.kalemler.splice(${i},1);render()">×</button></div>
-    <div class="row" style="margin-top:6px;flex-wrap:nowrap"><input aria-label="Miktar" type="number" step="0.01" value="${k.miktar}" oninput="BELGE.d.kalemler[${i}].miktar=Number(this.value)||0;belgeOnizle()" style="flex:1;min-width:0"><input aria-label="Birim" value="${esc(k.birim||'')}" oninput="BELGE.d.kalemler[${i}].birim=this.value;belgeOnizle()" style="flex:1;min-width:0" placeholder="adet"><input aria-label="Birim fiyat" type="number" step="0.01" value="${k.fiyat}" oninput="BELGE.d.kalemler[${i}].fiyat=Number(this.value)||0;belgeOnizle()" style="flex:1.4;min-width:0" placeholder="Birim fiyat"></div></div>`;
+    <div class="row" style="margin-top:6px;flex-wrap:nowrap"><input aria-label="Miktar" type="number" step="0.01" value="${k.miktar}" oninput="BELGE.d.kalemler[${i}].miktar=Number(this.value)||0;belgeOnizle()" style="flex:1;min-width:0"><input aria-label="Birim" value="${esc(k.birim||'')}" oninput="BELGE.d.kalemler[${i}].birim=this.value;belgeOnizle()" style="flex:1;min-width:0" placeholder="adet"><input aria-label="Birim fiyat" type="number" step="0.01" value="${k.fiyat}" oninput="BELGE.d.kalemler[${i}].fiyat=Number(this.value)||0;belgeOnizle()" style="flex:1.4;min-width:0" placeholder="Birim fiyat"></div>
+    ${d.tur==='PROFORMA FATURA'&&k.birim!=='iş'&&!/işçilik/i.test(k.ad||'')?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;align-items:center;gap:6px"><span style="font-size:12px;font-weight:700;color:#8a5a00;white-space:nowrap">🧾 Kimden alındı:</span><input aria-label="Kimden alındı (firma)" list="tdkl" value="${esc(k.firma||'')}" placeholder="Firma yaz (sadece sende görünür)" oninput="BELGE.d.kalemler[${i}].firma=this.value" onchange="kalemFirma(${i})" style="flex:1;min-width:0;background:#fff8e6;border-color:#f0d9a0"></div>`:''}</div>`;
   m.innerHTML=`<button class="btn s l" onclick="S.belge=false;BELGE.geri()">← Geri</button>
   <h2 style="margin-top:10px">${teklif?'Fiyat teklifi':'Proforma fatura'} <span class="muted" style="font-weight:600">${esc(d.no||'yeni')}</span></h2>
   <div class="card"><h3>İndir</h3><div class="durumlar"><button class="btn" onclick="indirPDF(BELGE.d)">📄 PDF</button><button class="btn" onclick="indirWord(BELGE.d)">📝 Word</button><button class="btn" onclick="indirPNG(BELGE.d)">🖼️ Fotoğraf</button></div>${d.tur==='PROFORMA FATURA'?'<button class="btn l w" style="margin-top:8px" onclick="ekGor(BELGE.d)">📎 Ek malzeme listesi (müşteriye ek)</button>':''}
@@ -937,7 +938,7 @@ function vBelge(m){
    <div class="row" style="flex-wrap:nowrap"><div style="flex:2;min-width:0"><label for="bp1">Döviz</label><select id="bp1" onchange="BELGE.d.pb=this.value;belgeOnizle()">${pbSec(d.pb)}</select></div><div style="flex:1;min-width:0"><label for="bv1">KDV %</label><input id="bv1" type="number" step="1" value="${d.kdv}" oninput="BELGE.d.kdv=Number(this.value)||0;belgeOnizle()"></div></div></div>
   ${d.tur==='PROFORMA FATURA'?`<div class="card"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="bsu" style="margin-top:0">İşin süresi (gün)</label><input id="bsu" type="number" min="0" step="0.5" value="${d.sure??''}" placeholder="Örn: 3" oninput="BELGE.d.sure=Number(this.value)||null;belgeOnizle()"></div><div style="flex:1;min-width:0"><label for="bks" style="margin-top:0">Çalışan kişi</label><input id="bks" type="number" min="0" step="1" value="${d.kisi??''}" placeholder="Örn: 3" oninput="BELGE.d.kisi=Number(this.value)||null;belgeOnizle()"></div></div><div class="muted" style="font-size:12px">Planlamadan otomatik hesaplandı; değiştirebilirsin. Kâğıtta "İş süresi" ve "Çalışan" olarak çıkar.</div></div>`:''}
   ${Array.isArray(d.isler)?`<div class="card"><label for="bi1" style="margin-top:0">Yapılan işler (her satır bir iş · kâğıtta liste olarak çıkar)</label><textarea id="bi1" rows="${Math.max(3,d.isler.length+1)}" oninput="BELGE.d.isler=this.value.split('\n');belgeOnizle()">${esc(d.isler.join('\n'))}</textarea></div>`:''}
-  <h3 style="margin:14px 0 8px">Kalemler</h3>${d.kalemler.map(kalem).join('')}
+  <h3 style="margin:14px 0 8px">Kalemler</h3>${d.tur==='PROFORMA FATURA'?`<div class="muted" style="font-size:12px;margin:-4px 0 8px">Her satır: miktar · birim · birim fiyat. 🧾 Firma sadece sende görünür, müşteri kâğıdına çıkmaz.</div><datalist id="tdkl">${(window._tdk||[]).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}${d.kalemler.map(kalem).join('')}
   <button class="btn l w" onclick="BELGE.d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0});render()">+ Kalem ekle</button>
   <div class="card" style="margin-top:10px"><label for="bn1" style="margin-top:0">${teklif?'Şartlar':'Notlar'} (her satır bir madde)</label><textarea id="bn1" rows="4" oninput="BELGE.d.notlar=this.value.split('\\n');belgeOnizle()">${esc((d.notlar||[]).join('\n'))}</textarea></div>
   <h3 style="margin:14px 0 8px">Önizleme</h3><div id="onz" style="border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff"></div>`;
@@ -951,7 +952,7 @@ async function proformaAc(pid){
   const [pr,ml]=await Promise.all([sb.from('projeler').select('*').eq('id',pid).single(),sb.from('malzemeler').select('*').eq('proje_id',pid)]);
   if(hata(pr.error))return;const p=pr.data;
   let d=p.proforma;
-  if(!d){await kurAl();const ppb=p.para_birimi||'TRY';const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
+  if(!d){await kurAl();const ppb=p.para_birimi||'TRY';const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,firma:x.tedarikci||'',miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
     const mt=ku.reduce((t,k)=>t+k.miktar*k.fiyat,0),fiyat=Number(p.fiyat||0);
     let kal=ku;if(fiyat-mt>0.004)kal=[...ku,{ad:'İşçilik ve hizmet bedeli',miktar:1,birim:'iş',fiyat:Math.round((fiyat-mt)*100)/100}];else if(fiyat>0&&Math.abs(fiyat-mt)>0.004)kal=[{ad:p.ad,miktar:1,birim:'iş',fiyat}];
     if(!kal.length)kal=[{ad:p.ad,miktar:1,birim:'iş',fiyat}];
@@ -979,12 +980,15 @@ function isEkip(G){const T=G.filter(t=>t.durum==='bitti').length?G.filter(t=>t.d
   const kisi=Math.max(ids.size,...T.map(t=>Number(t.kisi_sayisi)||0),0);
   const gTop=T.reduce((a,x)=>a+(Number(x.gun_sayisi)||0),0);const tar=[...T.map(x=>x.plan_tarih),...T.map(x=>(x.bitis_tarihi||'').slice(0,10))].filter(Boolean).sort();
   return{kisi,gun:gTop||(tar.length?Math.round((new Date(tar[tar.length-1])-new Date(tar[0]))/864e5)+1:0),adlar:[...ids].map(pname).filter(Boolean)}}
+// Proformadaki malzemenin firmasını malzeme kaydına da yazar ("Kimden ne alındı?" özeti için); müşteri kâğıdına çıkmaz
+async function kalemFirma(i){const k=BELGE.d.kalemler[i];if(!k||!window._prfPid||!k.ad)return;
+  const {error}=await sb.from('malzemeler').update({tedarikci:(k.firma||'').trim()||null}).eq('proje_id',window._prfPid).eq('ad',k.ad);if(!error)toast('Firma kaydedildi: '+(k.firma||'—'))}
 async function proformaHazirla(pid){
   const [pr,ml,gr,isl]=await Promise.all([sb.from('projeler').select('*').eq('id',pid).single(),sb.from('malzemeler').select('*').eq('proje_id',pid),sb.from('gorevler').select('*').eq('proje_id',pid),sb.from('islemler').select('*').eq('proje_id',pid).order('tarih',{ascending:true})]);
   if(hata(pr.error))return;const p=pr.data;
   let d=p.proforma?JSON.parse(JSON.stringify(p.proforma)):null;
   if(!d){await kurAl();const ppb=p.para_birimi||'TRY';
-    const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
+    const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,firma:x.tedarikci||'',miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
     const GB=(gr.data||[]).filter(t=>t.durum==='bitti');
     window._aktar=[...GB.map(t=>{const n=t.kisi_sayisi||gKisi(t).length,g=Number(t.gun_sayisi)||0;return t.baslik+(t.aciklama?' — '+t.aciklama:'')+(n||g?' ('+[n?n+' kişi':'',g?String(g).replace('.',',')+' gün':''].filter(Boolean).join(' · ')+')':'')}),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,16);
     const isler=[];
@@ -996,6 +1000,8 @@ async function proformaHazirla(pid){
       notlar:['Bu belge proforma faturadır; resmi fatura ödeme sonrasında düzenlenir.','Ödeme, vade tarihine kadar aşağıdaki banka hesabına yapılabilir.','Açıklamaya belge numarasını yazmanız rica olunur.'],
       imza:[['Hazırlayan','Dotek '+(me.rol==='patron'?'Enerji Sistemleri':dname(me.departman_id)+' Bölümü')],['Onaylayan',(people.find(x=>x.rol==='patron')||{}).ad||'']]}}
   if(!Array.isArray(d.isler))d.isler=[];
+  window._prfPid=pid;window._tdk=[...new Set((ml.data||[]).map(x=>x.tedarikci).filter(Boolean))];
+  (d.kalemler||[]).forEach(k=>{if(!k.firma){const x=(ml.data||[]).find(y=>y.ad===k.ad&&y.tedarikci);if(x)k.firma=x.tedarikci}});
   {const E=isEkip(gr.data||[]);if(d.kisi==null&&E.kisi)d.kisi=E.kisi;if(d.sure==null&&E.gun)d.sure=E.gun}
   if(p.proforma_no)d.no=p.proforma_no;
   const once=['patronda','onaylandi'].includes(p.durum),P=me.rol==='patron';
