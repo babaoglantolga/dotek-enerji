@@ -27,6 +27,15 @@
           "value": "noindex"
         }
       ]
+    },
+    {
+      "source": "/saha-yedek",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ],
   "redirects": [
