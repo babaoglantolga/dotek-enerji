@@ -287,7 +287,7 @@ let prfSira=47;const rpc0=async(n,a)=>{
   return{data:p.proforma_no,error:null}}
  if(n==='proforma_kaydet'){const p=DB.projeler.find(x=>x.id===a.p);if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma={...a.veri,no:p.proforma_no};return{data:p.proforma_no,error:null}}
  if(n==='teklif_projeye'){const x=DB.teklifler.find(y=>y.id===a.t);if(x.proje_id)return{data:x.proje_id,error:null};const ds=DB.profiller.find(y=>y.rol==='ds'&&y.departman_id===a.dep);const p={id:nid++,departman_id:a.dep,ad:x.proje_adi||x.konu||x.musteri,musteri:x.musteri,adres:x.adres,aciklama:'Teklif '+x.no+' kabul edildi.',para_birimi:x.para_birimi,takipci_id:ds&&ds.id,durum:'acik',iscilik:0,olusturma:new Date().toISOString()};DB.projeler.push(p);x.durum='kabul';x.proje_id=p.id;x.departman_id=a.dep;DB.profiller.filter(y=>y.rol==='ds'&&y.departman_id===a.dep).forEach(y=>bildir(y.id,'Yeni proje (teklif kabul edildi): '+x.musteri,p.id,null,'takip'));DB.profiller.filter(y=>y.rol==='patron'||y.id===x.olusturan).forEach(y=>bildir(y.id,'Teklif kabul edildi: '+x.musteri+' · '+x.no+' → '+((DB.departmanlar.find(d=>d.id===a.dep)||{}).ad||'')+' departmanında proje açıldı',p.id,null,'teklif_kabul'));return{data:p.id,error:null}}
-if(n==='fatura_kes'){const p=DB.projeler.find(x=>x.id===a.p);if(!p||p.durum!=='onaylandi')return{error:null};p.fatura_durum='kesildi';p.odeme_durum=p.odeme_durum||'bekliyor';p.odenen=p.odenen||0;p.fatura_no=(a.no||'').trim()||null;p.fatura_tarihi=new Date().toISOString();
+if(n==='fatura_kes'){const p=DB.projeler.find(x=>x.id===a.p);if(!p||p.durum!=='onaylandi')return{error:null};p.fatura_durum='kesildi';p.odeme_durum=p.odeme_durum||'bekliyor';p.odenen=p.odenen||0;p.fatura_no=(a.no||'').trim()||null;p.fatura_tarihi=new Date().toISOString();p.iletim=a.belge==='proforma'?'proforma':'fatura';
  DB.bildirimler.filter(x=>x.proje_id===p.id&&x.tur==='fatura').forEach(x=>x.islem_yapildi=true);
  DB.profiller.filter(x=>x.rol==='patron'||(x.rol==='ds'&&x.departman_id===p.departman_id)).forEach(x=>bildir(x.id,'Fatura kesildi: '+p.ad+' · '+p.fiyat+' '+(p.para_birimi||'TRY')+' tahsil edilecek'+(p.fatura_no?' · No: '+p.fatura_no:''),p.id,null,'kesildi'))}return{error:null}};
 let _smp;
@@ -585,10 +585,10 @@ async function vFatura(m){
     <div class="muted">İşçilik: ${tl(p.iscilik,p.para_birimi)} · İşveren onayı: ${saat(p.onay_tarihi)}</div>
     ${p.fiyat_notu?`<div class="muted" style="margin-top:4px">Not: ${esc(p.fiyat_notu)}</div>`:''}
     ${SALT?(p.proforma_no?`<button class="btn l w" style="margin-top:10px" onclick="proformaGor(${p.id})">📄 Proforma ${esc(p.proforma_no)}</button>`:''):`<button class="btn l w" style="margin-top:10px" onclick="proformaAc(${p.id})">📄 ${p.proforma_no?'Proforma '+esc(p.proforma_no)+' · aç / indir':'Proforma oluştur (PDF · Word · Fotoğraf)'}</button>`}
-    ${SALT?'<div class="muted" style="margin-top:8px">Faturayı Ofis keser.</div>':`<form class="ff2 row" data-id="${p.id}" style="margin-top:10px;flex-wrap:nowrap"><input id="fno${p.id}" name="no" placeholder="Fatura no" style="flex:1;min-width:0"><button class="btn g">Fatura kesildi</button></form>`}</div>`;
+    ${SALT?'<div class="muted" style="margin-top:8px">Faturayı Ofis keser.</div>':`<form class="ff2" data-id="${p.id}" style="margin-top:10px"><div class="muted" style="font-size:13px;margin-bottom:6px">Müşteriye ne verdin? Birine basınca iş "müşteriye iletildi" olur, ödeme bekleyenlere geçer.</div><input id="fno${p.id}" name="no" placeholder="Fatura no (fatura kestiysen)" style="width:100%"><div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="faturaIlet(${p.id},'proforma')">📄 Proforma verildi</button><button type="button" class="btn g" style="flex:1" onclick="faturaIlet(${p.id},'fatura')">🧾 Fatura kesildi</button></div></form>`}</div>`;
   const okart=p=>{const g=gunGecti(p.fatura_tarihi),O=odm(p);return`<div class="card" style="${g>30?'border-color:#f3b4b4':''}"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3>
     <span class="chip ${g>30?'c-iade':'c-patronda'}" style="white-space:nowrap">${p.odeme_durum==='kismi'?'Kısmi ödendi':'Ödeme bekliyor'} · ${g} gün</span></div>${ust(p)}
-    <div class="muted">Fatura No: <b>${esc(p.fatura_no||'—')}</b> · ${tarih(p.fatura_tarihi)}</div>
+    <div class="muted">${p.iletim==='proforma'?`📄 Proforma verildi${p.proforma_no?' · <b>'+esc(p.proforma_no)+'</b>':''}`:`🧾 Fatura No: <b>${esc(p.fatura_no||'—')}</b>`} · ${tarih(p.fatura_tarihi)}</div>
     <div class="row sp" style="margin-top:8px"><div><div class="muted">Fatura tutarı</div><b>${tl(p.fiyat,p.para_birimi)}</b></div><div style="text-align:right"><div class="muted">Kalan</div><div class="big" style="color:var(--red)">${tl(kalan(p),p.para_birimi)}</div></div></div>
     ${O.length?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:4px"><div class="muted" style="font-weight:700">Gelen ödemeler</div>${O.map(odemeSatir).join('')}</div>`:''}
     ${SALT?'<div class="muted" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">Ödeme gelince Ofis veya Doğuş işaretler; sana bildirim gelir.</div>':`<form class="odf" data-id="${p.id}" data-pb="${esc(p.para_birimi||'TRY')}" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
@@ -606,19 +606,23 @@ async function vFatura(m){
    ${onp.length?`<h2 style="margin-top:14px">İşveren onayında · proforma hazır (${onp.length})</h2><div class="muted" style="margin:-4px 0 8px">Sahadan geldi. Doğuş onaylayınca aşağıya "fatura bekleyen" olarak düşer.</div>
      ${onp.map(p=>`<div class="card click" onclick="proformaGor(${p.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3><span class="chip c-patronda">Onayda</span></div>${ust(p)}<div class="row sp" style="margin-top:6px"><span class="muted">📄 ${esc(p.proforma_no)}${p.gonderim?' · '+saat(p.gonderim):''}</span><b style="color:var(--green)">${tl(p.fiyat,p.para_birimi)}</b></div></div>`).join('')}`:''}
    <h2 style="margin-top:14px">Fatura bekleyen işler (${bek.length})</h2>${bek.map(kart).join('')||'<div class="card muted">Bekleyen fatura yok.</div>'}
-   <h2 style="margin-top:16px">Ödeme bekleyenler (${obk.length})</h2><div class="muted" style="margin:-4px 0 8px">Faturası kesilip müşteriye gönderilen işler. Ödeme gelince gir, iş arşive kalkar.</div>
+   <h2 style="margin-top:16px">Ödeme bekleyenler (${obk.length})</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye proforma ya da fatura iletilen işler. Ödeme gelince gir, iş arşive kalkar.</div>
    ${obk.map(okart).join('')||'<div class="card muted">Ödemesi beklenen iş yok 👍</div>'}
    <h2 style="margin-top:16px">Arşiv · ödemesi alınanlar (${ars.length})</h2>
    ${ars.length?`<input id="arsq" type="search" placeholder="Ara: iş, müşteri, fatura no…" style="margin-bottom:8px">${ars.map(akart).join('')}<div id="arsyok" class="card muted" hidden>Bulunamadı.</div>`:'<div class="card muted">Henüz ödemesi tamamlanan iş yok.</div>'}`;
-  m.querySelectorAll('.ff2').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
-    const {error}=await sb.rpc('fatura_kes',{p:Number(f.dataset.id),no:f.no.value});if(hata(error))return;
-    toast('Fatura kesildi, ödeme bekleyenlere geçti');render()});
+  m.querySelectorAll('.ff2').forEach(f=>f.onsubmit=e=>{e.preventDefault();faturaIlet(Number(f.dataset.id),'fatura')});
   m.querySelectorAll('.odf').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
     const {error}=await sb.from('tahsilatlar').insert({proje_id:Number(f.dataset.id),tutar:Number(f.t.value),para_birimi:f.dataset.pb,yontem:f.y.value,tarih:f.d.value||gunStr(new Date()),aciklama:f.a.value.trim()||null,giren:me.id});if(hata(error))return;
     toast('Ödeme kaydedildi');render()});
   const q=$('#arsq');if(q)q.oninput=()=>{const v=q.value.trim().toLocaleLowerCase('tr');let n=0;m.querySelectorAll('.ars').forEach(d=>{const ok=!v||d.dataset.q.includes(v);d.hidden=!ok;n+=ok});$('#arsyok').hidden=n>0};
 }
 
+// Ofis: müşteriye proforma ya da fatura verildi → "müşteriye iletildi", ödeme bekleyenlere geçer
+async function faturaIlet(id,tur){const i=$('#fno'+id),no=i?i.value.trim():'';
+  if(tur==='fatura'&&!no&&!confirm('Fatura no yazmadın. Yine de "Fatura kesildi" olarak işaretlensin mi?'))return;
+  const {error}=await sb.rpc('fatura_kes',{p:id,no,belge:tur});if(hata(error))return;
+  toast((tur==='proforma'?'Proforma verildi':'Fatura kesildi')+' · müşteriye iletildi, ödeme bekleyenlere geçti');render()}
+const iletAd=p=>p.iletim==='proforma'?'Proforma verildi':'Fatura kesildi';
 // ---------------- Ajanda (planlar) ----------------
 const AJD={bekliyor:'Bekliyor',bakiyor:'Bakıyorum',planlandi:'Planlandı',devam:'Devam ediyor',bitti:'Bitti'};
 async function ajPlanla(id){
@@ -1101,7 +1105,7 @@ async function vCari(m){
   // Alacak: fiyatı belli olup ödemesi alınmamış her iş (onayda, ofiste, faturalı)
   const fat=p=>p.fatura_durum==='kesildi',kal=p=>['patronda','onaylandi'].includes(p.durum)&&p.odeme_durum!=='alindi'&&p.fiyat!=null?Math.max(0,Number(p.fiyat||0)-Number(p.odenen||0)):0;
   if(S.cari&&C[S.cari]){const c=C[S.cari];const I=c.is,devam=I.filter(p=>['acik','devam','iade'].includes(p.durum)),bit=I.filter(p=>!['acik','devam','iade'].includes(p.durum));
-    const asama=p=>p.durum==='bitti'?'İş bitti'+(prfGor(p)?' · proforma hazırlanacak':''):p.durum==='patronda'?'İşveren onayında':p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'Ödendi · '+tarih(p.odeme_tarihi):fat(p)?(p.odeme_durum==='kismi'?'Kısmi ödendi · kalan '+tl(kal(p),pbP(p)):'Fatura kesildi · ödeme bekleniyor'):'Ofiste · fatura bekliyor'):DURUM[p.durum];
+    const asama=p=>p.durum==='bitti'?'İş bitti'+(prfGor(p)?' · proforma hazırlanacak':''):p.durum==='patronda'?'İşveren onayında':p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'Ödendi · '+tarih(p.odeme_tarihi):fat(p)?(p.odeme_durum==='kismi'?'Kısmi ödendi · kalan '+tl(kal(p),pbP(p)):iletAd(p)+' · ödeme bekleniyor'):'Ofiste · fatura bekliyor'):DURUM[p.durum];
     const isKart=p=>{const ys=((p.proforma&&p.proforma.isler)||[]).filter(Boolean);return`<div class="card click" onclick="openP(${p.id},'gorev')"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(p.ad)}</b>${p.fiyat!=null&&me.rol!=='calisan'?`<b style="white-space:nowrap;color:${kal(p)>0?'var(--red)':'var(--green)'}">${tl(p.fiyat,pbP(p))}</b>`:''}</div>
       <div class="muted">${esc(dname(p.departman_id))} · ${tarih(p.baslangic||p.olusturma)}${p.sure||(p.proforma&&p.proforma.sure)?' · '+String((p.proforma||{}).sure).replace('.',',')+' gün':''} · Takip: ${esc(pname(p.takipci_id))}</div>
       <div style="margin-top:4px;font-weight:700;font-size:14px;color:${p.odeme_durum==='alindi'?'var(--green)':kal(p)>0?'var(--red)':'var(--text)'}">${esc(asama(p))}</div>
@@ -1342,7 +1346,7 @@ function projeKart(p,G){
   const acik=T.filter(t=>t.durum!=='bitti').sort((a,b)=>(calisiyorMu(a.durum)?0:1)-(calisiyorMu(b.durum)?0:1));
   const simdi=acik.find(t=>calisiyorMu(t.durum));
   const asama=p.durum==='patronda'?'İşverene gönderildi · onayını bekliyor'
-    :p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'Ödendi ✓ · arşivde':p.fatura_durum==='kesildi'?'Fatura edildi'+(p.fatura_no?' · No: '+p.fatura_no:'')+' · '+(p.odeme_durum==='kismi'?'kısmi ödeme alındı':'ödeme bekleniyor'):'İşveren onayladı · Ofiste fatura bekliyor')
+    :p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'Ödendi ✓ · arşivde':p.fatura_durum==='kesildi'?(p.iletim==='proforma'?'Proforma verildi':'Fatura edildi')+(p.fatura_no?' · No: '+p.fatura_no:'')+' · '+(p.odeme_durum==='kismi'?'kısmi ödeme alındı':'ödeme bekleniyor'):'İşveren onayladı · Ofiste fatura bekliyor')
     :p.durum==='iade'?'İşveren iade etti, düzeltiliyor'
     :p.durum==='bitti'?'İş bitti'+(prfGor(p)?' · proforma hazırlanacak':'')
     :simdi?'Şu an: '+simdi.baslik:acik.length?'Sırada: '+acik[0].baslik:'Henüz görev planlanmadı';
@@ -1521,7 +1525,7 @@ async function vProjeler(m){
   const tk=BIT?'':await takvim(true);
   const {data:GG}=await sb.from('gorevler').select('*').order('plan_tarih',{ascending:true,nullsFirst:false});
   const SIRA=CAL?['devam','acik','iade','bitti','patronda','ofis','odeme','odendi']:BIT?['bitti','patronda','ofis','odeme','odendi']:['devam','acik','iade'];
-  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:me.rol==='patron'?'İş bitti':'İş bitti · proforma hazırlanacak',patronda:'İşverene gönderildi · onay bekliyor',ofis:'Onaylandı · Ofiste fatura bekliyor',odeme:'Fatura kesildi · ödeme bekleniyor',odendi:'Ödendi · arşiv'};
+  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:me.rol==='patron'?'İş bitti':'İş bitti · proforma hazırlanacak',patronda:'İşverene gönderildi · onay bekliyor',ofis:'Onaylandı · Ofiste fatura bekliyor',odeme:'Müşteriye iletildi · ödeme bekleniyor',odendi:'Ödendi · arşiv'};
   const gk=p=>p.durum!=='onaylandi'?p.durum:p.fatura_durum!=='kesildi'?'ofis':p.odeme_durum==='alindi'?'odendi':'odeme';
   const grup=SIRA.map(d=>{const l=list.filter(p=>gk(p)===d);if(!l.length)return'';const h=`${BASLIK[d]} (${l.length})`,k=l.map(p=>projeKart(p,GG||[])).join('');
     return d==='odendi'?`<details style="margin-top:14px"><summary style="font-size:14px;font-weight:700">${h}</summary>${k}</details>`:`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${h}</h3>${k}`}).join('');
