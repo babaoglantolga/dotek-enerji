@@ -1585,7 +1585,7 @@ async function kSet(id,btn){
 
 init();
 </script>
-<script>/*DEMO_INDIR*/indir=function(b,ad){toast("Demoda dosya indirilemez; gerçek programda "+ad+" iner.")}</script>
+<script>/*DEMO_INDIR*/(function(){const _indir=indir;indir=async function(b,ad){let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){dl=null};if(dl){try{await dl.save({filename:ad,data:b});toast("İndirildi: "+ad)}catch(e){toast(e&&e.code==="declined"?"İndirme iptal edildi":"İndirilemedi: "+((e&&e.message)||""))}return};_indir(b,ad)}})()</script>
 
 </body>
 </html>
