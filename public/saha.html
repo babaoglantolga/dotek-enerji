@@ -1638,13 +1638,13 @@ async function vProje(m){
     await kurAl();const KU=M.filter(x=>x.tur==='kullanilan'),AL=M.filter(x=>x.tur==='alinan'),dvz=M.some(x=>mPb(x,pb)!==pb);
     const kT=mToplamCevrik(KU,pb),aT=mToplamCevrik(AL,pb);
     const sure=I.reduce((s,x)=>s+Number(x.sure_saat||0),0);
-    body=`<div class="card"><table>
+    body=me.rol==='patron'?'':`<div class="card"><table>
       <tr><td>Alınan malzeme (maliyet)</td><td class="n">${tl(aT,pb)}${dvz?`<div class="muted" style="font-size:12px">${mToplamYazi(AL,pb)}</div>`:''}</td></tr>
       <tr><td>Kullanılan malzeme</td><td class="n">${tl(kT,pb)}${dvz?`<div class="muted" style="font-size:12px">${mToplamYazi(KU,pb)}</div>`:''}</td></tr>
       ${(()=>{const ar=malzemeFarki(M).filter(x=>x.fark>0);const v=ar.reduce((t,x)=>t+(paraCevir(x.fark*x.fiyat,x.pb||pb,pb)??0),0);return v?`<tr><td>Artan malzeme (depoya dönecek)</td><td class="n">${tl(v,pb)}</td></tr>`:''})()}
       <tr><td>Toplam çalışma süresi</td><td class="n">${sure} saat${isEkip(G).gun?' · '+String(isEkip(G).gun).replace('.',',')+' gün':''}</td></tr>
       <tr><td>Çalışan kişi</td><td class="n">${isEkip(G).kisi||'—'} kişi${isEkip(G).adlar.length?`<div class="muted" style="font-size:12px">${esc(isEkip(G).adlar.join(', '))}</div>`:''}</td></tr>
-      <tr><td>Görevler</td><td class="n">${G.filter(t=>t.durum==='bitti').length} / ${G.length} bitti</td></tr></table>${dvz?kurNotu(M.map(x=>mPb(x,pb)),pb):''}</div>`+tedarikOzet(M,pb);
+      <tr><td>Görevler</td><td class="n">${G.filter(t=>t.durum==='bitti').length} / ${G.length} bitti</td></tr></table>${dvz?kurNotu(M.map(x=>mPb(x,pb)),pb):''}</div>`;body+=tedarikOzet(M,pb);
     if(duz){
       body+=`<div class="card" style="border-color:#bfe3cc"><h3 style="margin:0 0 4px">📄 Proforma ile gönder</h3><div class="muted">İş bitince proformayı hazırla: yapılan işler ve malzemeler otomatik gelir, toplam işin fiyatı olur. ${me.rol==='patron'?'Gönderince onaylanmış olur ve Ofis\'e düşer.':'Doğuş\'a ve Ofis\'e birlikte gider.'}</div>
         <button class="btn g w" style="margin-top:8px" onclick="proformaHazirla(${id})">📄 Proforma ${p.proforma_no?'aç ('+esc(p.proforma_no)+')':'hazırla'}</button></div>
