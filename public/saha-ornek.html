@@ -600,6 +600,7 @@ async function vFatura(m){
     <span class="chip ${g>30?'c-iade':'c-patronda'}" style="white-space:nowrap">${p.odeme_durum==='kismi'?'Kısmi ödendi':'Ödeme bekliyor'} · ${g} gün</span></div>${ust(p)}
     <div class="muted">${p.iletim==='proforma'?`📄 Proforma verildi${p.proforma_no?' · <b>'+esc(p.proforma_no)+'</b>':''}`:`🧾 Fatura No: <b>${esc(p.fatura_no||'—')}</b>`} · ${tarih(p.fatura_tarihi)}</div>
     <div class="row sp" style="margin-top:8px"><div><div class="muted">Fatura tutarı</div><b>${tl(p.fiyat,p.para_birimi)}</b></div><div style="text-align:right"><div class="muted">Kalan</div><div class="big" style="color:var(--red)">${tl(kalan(p),p.para_birimi)}</div></div></div>
+    ${isOzet(p)}
     ${O.length?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:4px"><div class="muted" style="font-weight:700">Gelen ödemeler</div>${O.map(odemeSatir).join('')}</div>`:''}
     ${SALT?'<div class="muted" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">Ödeme gelince Ofis veya Doğuş işaretler; sana bildirim gelir.</div>':`<form class="odf" data-id="${p.id}" data-pb="${esc(p.para_birimi||'TRY')}" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
      <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="ot${p.id}">Gelen tutar (${esc(p.para_birimi||'TRY')})</label><input id="ot${p.id}" name="t" type="number" step="0.01" min="0.01" required value="${kalan(p)}"></div>
@@ -629,8 +630,20 @@ async function vFatura(m){
 
 // ---------------- Ödeme takibi notları (Ofis / Doğuş / sorumlu) ----------------
 let TN={};   // proje_id → notlar
-async function tnYukle(ids){TN={};if(!ids.length)return;const {data}=await sb.from('tahsilat_notlar').select('*').in('proje_id',ids).order('tarih',{ascending:true});(data||[]).forEach(n=>(TN[n.proje_id]=TN[n.proje_id]||[]).push(n))}
-function tnBlok(p){const N=TN[p.id]||[],P=me.rol==='patron',hz=['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
+let TG={};
+async function tnYukle(ids){TN={};TG={};if(!ids.length)return;{const g=await sb.from('gorevler').select('*').in('proje_id',ids);(g.data||[]).forEach(t=>(TG[t.proje_id]=TG[t.proje_id]||[]).push(t))}const {data}=await sb.from('tahsilat_notlar').select('*').in('proje_id',ids).order('tarih',{ascending:true});(data||[]).forEach(n=>(TN[n.proje_id]=TN[n.proje_id]||[]).push(n))}
+// Ödeme konuşmasından önce: bu işte ne yapıldı, ne tutuyor (konuşan ne konuşacağını bilsin)
+function isOzet(p){const d=p.proforma||{},pb=pbP(p),G=(TG[p.id]||[]).filter(t=>t.durum==='bitti');let isl=(d.isler||[]).map(isTemiz).filter(Boolean);if(!isl.length)isl=G.map(t=>t.baslik+(t.aciklama?' — '+t.aciklama:''));const K=d.kalemler&&d.kalemler.length?d.kalemler:p.fiyat!=null?[{ad:'İşçilik ve hizmet bedeli',miktar:1,birim:'iş',fiyat:Number(p.iscilik||0)},{ad:'Malzeme',miktar:1,birim:'adet',fiyat:Math.max(0,Number(p.fiyat)-Number(p.iscilik||0))}]:[];
+  const t=a=>a.reduce((x,k)=>x+Number(k.miktar||0)*Number(k.fiyat||0),0),isc=K.filter(iscMi),mal=K.filter(k=>!iscMi(k));
+  const m=d.musteri||{};
+  return`<details style="margin-top:8px;background:#f6f8fc;border:1px solid var(--line);border-radius:10px;padding:8px 10px" open><summary style="margin:0;font-weight:700;cursor:pointer">🛠️ Bu işte ne yapıldı?</summary>
+   ${m.ilgili||m.adres||p.adres?`<div class="muted" style="margin-top:4px">${m.ilgili?'İlgili: <b>'+esc(m.ilgili)+'</b> · ':''}${esc(m.adres||p.adres||'')}</div>`:''}
+   <div class="muted" style="margin-top:2px">${esc(dname(p.departman_id))} · Sorumlu: ${esc(pname(p.takipci_id))}${d.sure?' · '+String(d.sure).replace('.',',')+' gün':''}${d.kisi?' · '+d.kisi+' kişi':''}${p.onay_tarihi?' · İş bitişi/onay: '+tarih(p.onay_tarihi):''}</div>
+   ${isl.length?`<ul style="margin:6px 0 0;padding-left:18px">${isl.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<div class="muted" style="margin-top:4px">Yapılan işler yazılmamış.</div>'}
+   ${K.length?`<div class="row sp" style="margin-top:6px;flex-wrap:nowrap"><span>İşçilik ve hizmet</span><b>${tl(t(isc),pb)}</b></div><div class="row sp" style="flex-wrap:nowrap"><span>Malzeme${d.kalemler?' ('+mal.length+' kalem)':''}</span><b>${tl(t(mal),pb)}</b></div>${Number(d.kdv)>0?`<div class="row sp" style="flex-wrap:nowrap"><span>KDV %${d.kdv}</span><b>${tl(t(K)*Number(d.kdv)/100,pb)}</b></div>`:''}`:''}
+   <div class="durumlar" style="margin-top:8px">${p.proforma_no?`<button type="button" class="btn s l" onclick="proformaGor(${p.id})">📄 Proformayı aç</button>`:''}${mal.length&&d.kalemler?`<button type="button" class="btn s l" onclick="ekGor(PRJ_PRF[${p.id}])">📎 Malzeme listesi</button>`:''}</div></details>`}
+const PRJ_PRF={};
+function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',hz=['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
   return`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="muted" style="font-weight:700">📞 Ödeme takibi notları${N.length?' ('+N.length+')':''}</div>
    ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${n.bildirildi?' · 📣 '+(P?'bildirildi':'Doğuş\'a bildirildi'):''}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
    <div class="durumlar" style="margin-top:8px;flex-wrap:wrap">${hz.map(h=>`<button type="button" class="btn s l" onclick="const i=$('#tn${p.id}');i.value=this.textContent;i.focus()">${h}</button>`).join('')}</div>
@@ -648,7 +661,7 @@ async function odemeTakipKart(){
   return`<h2 style="margin-top:4px">💰 Ödeme takibi (${L.length})</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye iletildi, ödemesi bekleniyor. Aradıysan, konuştuysan altına yaz.</div>
    ${L.map(p=>{const g=gunGecti(p.fatura_tarihi);return`<div class="card" style="border-color:${g>30?'#f3b4b4':'#f0d9a0'}"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(p.ad)}</b><b style="white-space:nowrap;color:var(--red)">${tl(kal(p),pbP(p))}</b></div>
      <div class="muted">${p.musteri?'Müşteri: <b>'+esc(p.musteri)+'</b> · ':''}${esc(dname(p.departman_id))} · Sorumlu: ${esc(pname(p.takipci_id))}</div>
-     <div class="muted">${p.iletim==='proforma'?'📄 Proforma verildi':'🧾 Fatura kesildi'} · ${tarih(p.fatura_tarihi)} · <b style="color:${g>30?'var(--red)':'inherit'}">${g} gün oldu</b></div>${tnBlok(p)}</div>`}).join('')}`;
+     <div class="muted">${p.iletim==='proforma'?'📄 Proforma verildi':'🧾 Fatura kesildi'} · ${tarih(p.fatura_tarihi)} · <b style="color:${g>30?'var(--red)':'inherit'}">${g} gün oldu</b></div>${isOzet(p)}${tnBlok(p)}</div>`}).join('')}`;
 }
 // Ofis: müşteriye proforma ya da fatura verildi → "müşteriye iletildi", ödeme bekleyenlere geçer
 async function faturaIlet(id,tur){const i=$('#fno'+id),no=i?i.value.trim():'';
