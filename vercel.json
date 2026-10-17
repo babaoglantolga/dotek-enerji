@@ -54,6 +54,15 @@
           "value": "noindex"
         }
       ]
+    },
+    {
+      "source": "/saha-ornek",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex"
+        }
+      ]
     }
   ],
   "redirects": [

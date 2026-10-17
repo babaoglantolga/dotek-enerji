@@ -85,7 +85,7 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .msg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;max-width:85%;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.ben{align-self:flex-end;background:#e8f0fe;border-color:#c9dafb}
 </style>
-<div id="demo" data-nocevir><b>DEMO · Kim olarak bak:</b><button class="on" onclick="demoRol('u1',this)">Doğuş (İşveren)</button><button onclick="demoRol('u2',this)">Esat (Elektrik)</button><button onclick="demoRol('u5',this)">İbrahim (Jeneratör)</button><button onclick="demoRol('u8',this)">Tolga (Elektronik)</button><button onclick="demoRol('u7',this)">Gökçe (Ofis)</button><button onclick="demoRol('u3',this)">Michael (EN)</button><button onclick="demoRol('u11',this)">Said (اردو)</button><button onclick="demoSifirla()" title="Girilen örnek işleri siler" style="margin-left:auto;opacity:.75">↺ Demoyu sıfırla</button></div>
+<div id="demo" data-nocevir><b>DEMO · Kim olarak bak:</b><button class="on" onclick="demoRol('u1',this)">Doğuş (İşveren)</button><button onclick="demoRol('u2',this)">Esat (Elektrik)</button><button onclick="demoRol('u5',this)">İbrahim (Jeneratör)</button><button onclick="demoRol('u8',this)">Tolga (Elektronik)</button><button onclick="demoRol('u7',this)">Gökçe (Ofis)</button><button onclick="demoRol('u3',this)">Michael (EN)</button><button onclick="demoRol('u11',this)">Said (اردو)</button><button id="ornekBtn" onclick="demoOrnek()" title="Önceki örnek işleri geri getirir" style="margin-left:auto;opacity:.8">📦 Örnek verileri yükle</button><button onclick="demoSifirla()" title="Girilen örnek işleri siler" style="opacity:.75">↺ Sıfırla</button></div>
 <div id="app"></div><div id="toast"></div>
 <script>
 window.confirm=()=>true;
@@ -306,7 +306,11 @@ async function fisDemo(du){
 const functions={invoke:async(n,o)=>{try{if(n==='fis-oku')return{data:await fisDemo(o.body.resim),error:null};return{data:{ceviri:await cevirDemo(o.body.hedef,o.body.metinler)},error:null}}catch(e){return{data:null,error:e}}}};
 const rpc=async(n,a)=>{const r=await rpc0(n,a);kaydet();return r};
 // Demo kaydı: girilen her şey bu cihazda saklanır, sayfa yenilense de silinmez ("Sıfırla" ile baştan başlar)
-const KAYIT='dotek_demo_v3';
+// Temiz başlangıç: sadece personel ve departmanlar kalır; örnek veriler SEED'de saklı ("Örnek verileri yükle" ile geri gelir)
+const SEED=JSON.parse(JSON.stringify(DB));
+const TEMIZ=!window.DEMO_ORNEK;
+if(TEMIZ)Object.keys(DB).forEach(t=>{if(!['departmanlar','profiller'].includes(t))DB[t]=[]});
+const KAYIT=TEMIZ?'dotek_temiz_v1':'dotek_demo_v3';
 function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
 // Bitti görünen ama açık görevi olan iş 'Devam ediyor'a döner
@@ -315,7 +319,10 @@ DB.projeler.forEach(p=>{if(p.durum==='bitti'&&DB.gorevler.some(g=>g.proje_id===p
 try{const kim=new URLSearchParams(location.search).get('kim');if(kim){const u=DB.profiller.find(x=>x.kullanici_adi===kim.toLowerCase());if(u){CUR=u.id;window.KIM_SABIT=true;const d0=document.getElementById('demo');if(d0)d0.style.display='none';else document.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById('demo');if(d)d.style.display='none'})}}}catch(e){}
 // Başka sekmede yapılan işlem bu sekmeye de yansır (aynı cihazda Doğuş ve Esat ekranları yan yana)
 addEventListener('storage',e=>{if(e.key!==KAYIT||!e.newValue)return;try{const k=JSON.parse(e.newValue);Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira;if(!S.belge&&!document.querySelector('form:focus-within'))render();else if(typeof bildirimKontrol==='function')bildirimKontrol()}catch(x){}});
-window.demoSifirla=()=>{if(!confirm('Demo baştan başlasın mı? Girdiğin örnek işler silinir.'))return;try{localStorage.removeItem(KAYIT)}catch(e){}location.reload()};
+window.demoOrnek=()=>{if(!confirm('Örnek veriler yüklensin mi? Şu an girdiklerinin yerine geçer.'))return;let v=null;try{v=localStorage.getItem('dotek_demo_v3')}catch(e){}
+  try{localStorage.setItem(KAYIT,v||JSON.stringify({DB:SEED,nid:100,prfSira:47}))}catch(e){}location.reload()};
+if(!TEMIZ){const ob=document.getElementById('ornekBtn');if(ob)ob.style.display='none'}
+window.demoSifirla=()=>{if(!confirm('Demo baştan başlasın mı? Girdiğin işler silinir, personel kalır.'))return;try{localStorage.removeItem(KAYIT)}catch(e){}location.reload()};
 window.supabase={createClient:()=>({from,auth,rpc,functions})};
 window.demoRol=(id,btn)=>{CUR=id;document.querySelectorAll('#demo button').forEach(b=>b.classList.toggle('on',b===btn));S.tab='';S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;init()};
 })();
