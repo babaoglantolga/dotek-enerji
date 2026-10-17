@@ -464,7 +464,7 @@ async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewL
 function tabsFor(){
   if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
   if(ofisMi())return me.rol==='ds'?[['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']]:[['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
-  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']];
+  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
@@ -556,6 +556,7 @@ const YONTEM={nakit:'Nakit',havale:'Havale / EFT',kart:'Kredi kartı',cek:'Çek'
 const kalan=p=>Math.max(0,Number(p.fiyat||0)-Number(p.odenen||0));
 const gunGecti=d=>d?Math.floor((Date.now()-new Date(d))/864e5):0;
 async function vFatura(m){
+  const SALT=me.rol==='ds'&&!ofisMi();
   const {data,error}=await sb.from('projeler').select('*').eq('durum','onaylandi').order('onay_tarihi',{ascending:false});if(hata(error))return;
   const ids=data.filter(p=>p.fatura_durum==='kesildi').map(p=>p.id);
   const th=ids.length?((await sb.from('tahsilatlar').select('*').in('proje_id',ids).order('tarih',{ascending:true})).data||[]):[];
@@ -570,24 +571,24 @@ async function vFatura(m){
     <div class="big" style="margin-top:6px">${tl(p.fiyat,p.para_birimi)}</div>
     <div class="muted">İşçilik: ${tl(p.iscilik,p.para_birimi)} · İşveren onayı: ${saat(p.onay_tarihi)}</div>
     ${p.fiyat_notu?`<div class="muted" style="margin-top:4px">Not: ${esc(p.fiyat_notu)}</div>`:''}
-    <button class="btn l w" style="margin-top:10px" onclick="proformaAc(${p.id})">📄 ${p.proforma_no?'Proforma '+esc(p.proforma_no)+' · aç / indir':'Proforma oluştur (PDF · Word · Fotoğraf)'}</button>
-    <form class="ff2 row" data-id="${p.id}" style="margin-top:10px;flex-wrap:nowrap"><input id="fno${p.id}" name="no" placeholder="Fatura no" style="flex:1;min-width:0"><button class="btn g">Fatura kesildi</button></form></div>`;
+    ${SALT?(p.proforma_no?`<button class="btn l w" style="margin-top:10px" onclick="proformaGor(${p.id})">📄 Proforma ${esc(p.proforma_no)}</button>`:''):`<button class="btn l w" style="margin-top:10px" onclick="proformaAc(${p.id})">📄 ${p.proforma_no?'Proforma '+esc(p.proforma_no)+' · aç / indir':'Proforma oluştur (PDF · Word · Fotoğraf)'}</button>`}
+    ${SALT?'<div class="muted" style="margin-top:8px">Faturayı Ofis keser.</div>':`<form class="ff2 row" data-id="${p.id}" style="margin-top:10px;flex-wrap:nowrap"><input id="fno${p.id}" name="no" placeholder="Fatura no" style="flex:1;min-width:0"><button class="btn g">Fatura kesildi</button></form>`}</div>`;
   const okart=p=>{const g=gunGecti(p.fatura_tarihi),O=odm(p);return`<div class="card" style="${g>30?'border-color:#f3b4b4':''}"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3>
     <span class="chip ${g>30?'c-iade':'c-patronda'}" style="white-space:nowrap">${p.odeme_durum==='kismi'?'Kısmi ödendi':'Ödeme bekliyor'} · ${g} gün</span></div>${ust(p)}
     <div class="muted">Fatura No: <b>${esc(p.fatura_no||'—')}</b> · ${tarih(p.fatura_tarihi)}</div>
     <div class="row sp" style="margin-top:8px"><div><div class="muted">Fatura tutarı</div><b>${tl(p.fiyat,p.para_birimi)}</b></div><div style="text-align:right"><div class="muted">Kalan</div><div class="big" style="color:var(--red)">${tl(kalan(p),p.para_birimi)}</div></div></div>
     ${O.length?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:4px"><div class="muted" style="font-weight:700">Gelen ödemeler</div>${O.map(odemeSatir).join('')}</div>`:''}
-    <form class="odf" data-id="${p.id}" data-pb="${esc(p.para_birimi||'TRY')}" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
+    ${SALT?'<div class="muted" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">Ödeme gelince Ofis veya Doğuş işaretler; sana bildirim gelir.</div>':`<form class="odf" data-id="${p.id}" data-pb="${esc(p.para_birimi||'TRY')}" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
      <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="ot${p.id}">Gelen tutar (${esc(p.para_birimi||'TRY')})</label><input id="ot${p.id}" name="t" type="number" step="0.01" min="0.01" required value="${kalan(p)}"></div>
      <div style="flex:1;min-width:0"><label for="oy${p.id}">Nasıl</label><select id="oy${p.id}" name="y">${Object.entries(YONTEM).map(([k,v])=>`<option value="${k}"${k==='havale'?' selected':''}>${v}</option>`).join('')}</select></div></div>
      <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="od${p.id}">Tarih</label><input id="od${p.id}" name="d" type="date" value="${gunStr(new Date())}"></div>
      <div style="flex:1;min-width:0"><label for="oa${p.id}">Not</label><input id="oa${p.id}" name="a" placeholder="Örn: Dekont no"></div></div>
-     <button class="btn g w" style="margin-top:10px">💰 Ödeme alındı</button></form></div>`};
+     <button class="btn g w" style="margin-top:10px">💰 Ödeme alındı</button></form>`}</div>`};
   const akart=p=>`<details class="card ars" data-q="${esc([p.ad,p.musteri,p.fatura_no,p.proforma_no,dname(p.departman_id)].join(' ').toLocaleLowerCase('tr'))}" style="padding-block:10px"><summary style="display:flex;justify-content:space-between;gap:8px;cursor:pointer;list-style:none;color:var(--text);margin:0"><span style="min-width:0"><b>${esc(p.ad)}</b><span class="muted"><br>${p.musteri?esc(p.musteri)+' · ':''}No: ${esc(p.fatura_no||'—')} · Ödendi ${tarih(p.odeme_tarihi)}</span></span><b style="white-space:nowrap;color:var(--green)">${tl(p.fiyat,p.para_birimi)}</b></summary>
     <div style="margin-top:8px;border-top:1px solid var(--line);padding-top:6px">${ust(p)}<div class="muted">Fatura: ${tarih(p.fatura_tarihi)} · Ödeme süresi: ${Math.max(0,Math.round((new Date(p.odeme_tarihi)-new Date(p.fatura_tarihi))/864e5))} gün</div>
     ${odm(p).map(odemeSatir).join('')}<div class="durumlar" style="margin-top:8px"><button class="btn s l" onclick="openP(${p.id},'fiyat')">İşi aç ›</button>${p.proforma_no?`<button class="btn s l" onclick="proformaAc(${p.id})">📄 Proforma</button>`:''}</div></div></details>`;
   const P=me.rol==='patron';
-  m.innerHTML=`${P?'<button class="btn s l" onclick="go(\'onay\')">← Ana Sayfa</button><h2 style="margin-top:10px">Fatura ve tahsilat</h2>':''}
+  m.innerHTML=`${P||SALT?'<button class="btn s l" onclick="go(\'cari\')">← Müşteri</button><h2 style="margin-top:10px">Fatura ve tahsilat</h2>':''}
    <div class="row"><div class="stat"><span class="muted">Fatura bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Ödeme bekleyen</span><b style="color:var(--red)">${obk.length?sumPB(obk,kalan):'0'}</b></div></div>
    ${onp.length?`<h2 style="margin-top:14px">İşveren onayında · proforma hazır (${onp.length})</h2><div class="muted" style="margin:-4px 0 8px">Sahadan geldi. Doğuş onaylayınca aşağıya "fatura bekleyen" olarak düşer.</div>
      ${onp.map(p=>`<div class="card click" onclick="proformaGor(${p.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3><span class="chip c-patronda">Onayda</span></div>${ust(p)}<div class="row sp" style="margin-top:6px"><span class="muted">📄 ${esc(p.proforma_no)}${p.gonderim?' · '+saat(p.gonderim):''}</span><b style="color:var(--green)">${tl(p.fiyat,p.para_birimi)}</b></div></div>`).join('')}`:''}
