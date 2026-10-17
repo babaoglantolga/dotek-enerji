@@ -940,6 +940,9 @@ const proformaDuzenler=p=>!ofisMi()&&(me.rol==='patron'||(me.rol==='ds'&&p.depar
 const proformaBtn=p=>proformaDuzenler(p)?`proformaHazirla(${p.id})`:`proformaGor(${p.id})`;
 // İşte kaç kişi çalıştı, kaç gün sürdü (planlamadan)
 // Kimden ne kadar malzeme alındı (müşteriye gitmez, sadece içeride)
+function mDuzelt(mid){const x=(window._MZ||[]).find(y=>y.id===mid),f=$('#mf');if(!x||!f)return;
+  f.tur.value=x.tur;f.ad.value=x.ad;f.td.value=x.tedarikci||'';f.mk.value=x.miktar;if([...f.br.options].some(o=>o.value===x.birim))f.br.value=x.birim;f.bf.value=x.birim_fiyat;if(x.para_birimi)f.pb.value=x.para_birimi;
+  f.dataset.edit=mid;$('#mfb').textContent='✏️ Malzemeyi düzelt';$('#mfk').textContent='Kaydet';$('#mfv').hidden=false;f.scrollIntoView({behavior:'smooth',block:'center'});f.ad.focus()}
 function tedarikOzet(M,pb){const AL=M.filter(x=>x.tur==='alinan'||x.tedarikci);if(!AL.length)return'';const G={};AL.forEach(x=>{const k=(x.tedarikci||'').trim()||'Firma yazılmamış';(G[k]=G[k]||[]).push(x)});
   const L=Object.entries(G).map(([k,a])=>({k,a,t:mToplamCevrik(a,pb)})).sort((x,y)=>y.t-x.t);
   return`<div class="card" style="border-color:#c9d3e6"><h3 style="margin:0 0 2px">🧾 Kimden ne alındı?</h3><div class="muted" style="font-size:12px;margin-bottom:6px">Sadece içeride görünür; proformaya ve müşteriye gitmez.</div>
@@ -1530,17 +1533,18 @@ async function vProje(m){
   if(S.ptab==='malzeme'){
     const al=M.filter(x=>x.tur==='alinan'),ku=M.filter(x=>x.tur==='kullanilan');
     const tbl=(arr,bas)=>`<div class="card"><h3>${bas}</h3>${arr.length?`<table><tr><th>Malzeme</th><th class="n">Miktar</th>${para?'<th class="n">B.Fiyat</th><th class="n">Tutar</th>':''}${duz?'<th></th>':''}</tr>
-      ${arr.map(x=>`<tr><td>${esc(x.ad)}${x.tedarikci&&me.rol!=='calisan'?`<div class="muted" style="font-size:12px">${esc(x.tedarikci)}</div>`:''}${x.fis_yolu?` <a href="#" onclick="event.preventDefault();fisGoster('${esc(x.fis_yolu)}')" title="Fişi gör">📎</a>`:''}</td><td class="n">${x.miktar} ${esc(x.birim||'')}</td>${para?`<td class="n">${tl(x.birim_fiyat,mPb(x,pb))}</td><td class="n">${tl(mTutar(x),mPb(x,pb))}</td>`:''}${duz?`<td class="n"><button class="btn s r" onclick="sil('malzemeler',${x.id})">×</button></td>`:''}</tr>`).join('')}
+      ${arr.map(x=>`<tr><td>${esc(x.ad)}${x.tedarikci&&me.rol!=='calisan'?`<div class="muted" style="font-size:12px">${esc(x.tedarikci)}</div>`:''}${x.fis_yolu?` <a href="#" onclick="event.preventDefault();fisGoster('${esc(x.fis_yolu)}')" title="Fişi gör">📎</a>`:''}</td><td class="n">${x.miktar} ${esc(x.birim||'')}</td>${para?`<td class="n">${tl(x.birim_fiyat,mPb(x,pb))}</td><td class="n">${tl(mTutar(x),mPb(x,pb))}</td>`:''}${duz?`<td class="n" style="white-space:nowrap"><button class="btn s l" aria-label="Düzelt" title="Düzelt" onclick="mDuzelt(${x.id})">✏️</button> <button class="btn s r" aria-label="Sil" title="Sil" onclick="sil('malzemeler',${x.id})">×</button></td>`:''}</tr>`).join('')}
       ${para?`<tr><th colspan="3">Toplam</th><th class="n">${mToplamYazi(arr,pb)}</th>${duz?'<th></th>':''}</tr>`:''}</table>`:'<div class="muted">Kayıt yok.</div>'}</div>`;
+    window._MZ=M;
     body=(duz?`<button class="btn g w" style="margin-bottom:10px" onclick="fisOku(${id})">📷 Fiş / fatura fotoğrafından ekle</button>`:'')+tbl(al,'Alınan malzeme')+tbl(ku,'Kullanılan malzeme')+farkTablo(M,pb,para)+(para?tedarikOzet(M,pb):'');
-    if(duz) body+=`<form id="mf" class="card"><h3>+ Malzeme gir</h3>
+    if(duz) body+=`<form id="mf" class="card"><h3 id="mfb">+ Malzeme gir</h3>
       <label>Tür</label><select name="tur"><option value="kullanilan">Kullanılan</option><option value="alinan">Alınan (satın alınan)</option></select>
       <label>Malzeme adı *</label><input name="ad" required placeholder="Örn: 2.5mm kablo">
       <label>Kimden alındı (firma) <span class="muted" style="font-weight:400">· sadece içeride görünür</span></label><input name="td" list="tdl" placeholder="Örn: Kıbrıs Elektrik Market"><datalist id="tdl">${[...new Set(M.map(x=>x.tedarikci).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')}</datalist>
       <div class="row"><div style="flex:1"><label>Miktar *</label><input name="mk" type="number" step="0.01" min="0" value="1" required></div>
       <div style="flex:1"><label>Birim</label><select name="br">${['adet','metre','kg','litre','paket','takım','saat'].map(b=>`<option>${b}</option>`).join('')}</select></div></div>
       <div class="row" style="flex-wrap:nowrap"><div style="flex:1.4;min-width:0"><label>Birim fiyat</label><input name="bf" type="number" step="0.01" min="0" value="0"></div><div style="flex:1;min-width:0"><label>Döviz</label><select name="pb">${pbSec(pb)}</select></div></div>
-      <button class="btn w" style="margin-top:12px">Ekle</button></form>`;
+      <div class="row" style="margin-top:12px;flex-wrap:nowrap"><button class="btn w" id="mfk" style="flex:2">Ekle</button><button type="button" class="btn l" id="mfv" hidden style="flex:1" onclick="render()">Vazgeç</button></div></form>`;
   }
 
   if(S.ptab==='fiyat'&&para){
@@ -1590,8 +1594,9 @@ async function vProje(m){
     const {error}=await sb.from('islemler').insert({proje_id:id,gorev_id:Number(iff.g.value)||null,aciklama:iff.a.value.trim(),sure_saat:Number(iff.s.value)||null});
     if(hata(error))return;toast('İşlem kaydedildi');render()};
   const mf=$('#mf');if(mf)mf.onsubmit=async e=>{e.preventDefault();
-    const {error}=await sb.from('malzemeler').insert({proje_id:id,tur:mf.tur.value,ad:mf.ad.value.trim(),miktar:Number(mf.mk.value)||0,birim:mf.br.value,birim_fiyat:Number(mf.bf.value)||0,para_birimi:mf.pb.value,tedarikci:mf.td.value.trim()||null});
-    if(hata(error))return;toast('Malzeme eklendi');render()};
+    const row={proje_id:id,tur:mf.tur.value,ad:mf.ad.value.trim(),miktar:Number(mf.mk.value)||0,birim:mf.br.value,birim_fiyat:Number(mf.bf.value)||0,para_birimi:mf.pb.value,tedarikci:mf.td.value.trim()||null};
+    const {error}=mf.dataset.edit?await sb.from('malzemeler').update(row).eq('id',Number(mf.dataset.edit)):await sb.from('malzemeler').insert(row);
+    if(hata(error))return;toast(mf.dataset.edit?'Malzeme düzeltildi':'Malzeme eklendi');render()};
 }
 
 function gBtn(t){
