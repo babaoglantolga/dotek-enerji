@@ -1374,12 +1374,16 @@ async function raporExcel(){toast('Excel hazırlanıyor…');try{const R=await a
 // ---------------- Malzeme alımları: hangi firmadan ne alındı, ne ödendi, ne borç var ----------------
 const firmaKey=a=>String(a||'').trim().toLocaleLowerCase('tr').replace(/\s+/g,' ');
 async function vTedarik(m){
-  const [ml,pr,od]=await Promise.all([sb.from('malzemeler').select('*').order('tarih',{ascending:false}),sb.from('projeler').select('id,ad,musteri,departman_id,takipci_id'),sb.from('tedarik_odemeler').select('*').order('tarih',{ascending:false})]);
+  const [ml,pr,od]=await Promise.all([sb.from('malzemeler').select('*').order('tarih',{ascending:false}),sb.from('projeler').select('*'),sb.from('tedarik_odemeler').select('*').order('tarih',{ascending:false})]);
   if(hata(ml.error))return;
   const P={};(pr.data||[]).forEach(p=>P[p.id]=p);
   // Alım: "alınan" kayıtları; bir işte alınan kaydı yoksa firması yazılı "kullanılan" kayıtları
   const M=(ml.data||[]).filter(x=>P[x.proje_id]),alinanVar=new Set(M.filter(x=>x.tur==='alinan').map(x=>x.proje_id));
   const AL=M.filter(x=>x.tur==='alinan'||(!alinanVar.has(x.proje_id)&&(x.tedarikci||'').trim()));
+  // Malzeme sekmesine girilmemiş, sadece proformaya yazılmış malzemeler de sayılır (firması proformadaki "Kimden alındı")
+  const malVar=new Set(AL.map(x=>x.proje_id));
+  Object.values(P).forEach(p=>{if(malVar.has(p.id)||!p.proforma||!Array.isArray(p.proforma.kalemler))return;
+    p.proforma.kalemler.filter(k=>!iscMi(k)&&(k.ad||'').trim()&&Number(k.miktar)*Number(k.fiyat)>0).forEach((k,i)=>AL.push({id:'p'+p.id+'_'+i,proje_id:p.id,ad:k.ad,miktar:k.miktar,birim:k.birim,birim_fiyat:k.fiyat,para_birimi:p.proforma.pb||p.para_birimi||'TRY',tedarikci:k.firma||'',tarih:p.gonderim||p.proforma.tarih,giren:p.takipci_id,prf:true}))});
   const O=od.data||[],yaz=me.rol==='patron'||ofisMi();
   const G={};const g=k=>G[k]=G[k]||{ad:'',al:[],od:[]};
   AL.forEach(x=>{const k=firmaKey(x.tedarikci)||'_';const o=g(k);o.ad=o.ad||(x.tedarikci||'').trim()||'Firma yazılmamış';o.al.push(x)});
@@ -1391,9 +1395,9 @@ async function vTedarik(m){
   const borclu=o=>Object.values(kalan(o)).some(v=>v>0.004);
   const L=Object.entries(G).sort((a,b)=>(a[0]==='_')-(b[0]==='_')||borclu(b[1])-borclu(a[1])||a[1].ad.localeCompare(b[1].ad,'tr'));
   if(S.ted&&G[S.ted]){const k=S.ted,o=G[k],ka=kalan(o);
-    const satir=x=>{const p=P[x.proje_id]||{};return`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row sp" style="flex-wrap:nowrap;gap:8px"><b style="min-width:0">${esc(x.ad)}</b><b style="white-space:nowrap">${tl(Number(x.miktar||0)*Number(x.birim_fiyat||0),x.para_birimi||'TRY')}</b></div>
+    const satir=x=>{const p=P[x.proje_id]||{};return`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row sp" style="flex-wrap:nowrap;gap:8px"><b style="min-width:0">${esc(x.ad)}${x.prf?' <span class="muted" style="font-weight:400;font-size:12px">(proformadan)</span>':''}</b><b style="white-space:nowrap">${tl(Number(x.miktar||0)*Number(x.birim_fiyat||0),x.para_birimi||'TRY')}</b></div>
       <div class="muted" style="font-size:13px">${(x.tarih||x.olusturma)?tarih(x.tarih||x.olusturma)+' · ':''}${String(x.miktar).replace('.',',')} ${esc(x.birim||'')} × ${tl(x.birim_fiyat,x.para_birimi||'TRY')}</div>
-      <div class="muted click" style="font-size:13px" onclick="openP(${x.proje_id},'malzeme')">📁 ${esc(p.ad||'')}${p.musteri?' · '+esc(p.musteri):''} · ${esc(dname(p.departman_id))} · Alan: ${esc((x.giren?pname(x.giren):pname(p.takipci_id))||'—')} ›</div></div>`};
+      <div class="muted click" style="font-size:13px" onclick="${x.prf?`proformaGor(${x.proje_id})`:`openP(${x.proje_id},'malzeme')`}">📁 ${esc(p.ad||'')}${p.musteri?' · '+esc(p.musteri):''} · ${esc(dname(p.departman_id))} · Alan: ${esc((x.giren?pname(x.giren):pname(p.takipci_id))||'—')} ›</div></div>`};
     m.innerHTML=`<button class="btn s l" onclick="S.ted=null;render()">← Firmalar</button>
      <div class="card" style="margin-top:10px;${borclu(o)?'border-color:#e5484d':''}"><h2 style="margin:0">${esc(o.ad)}</h2>
       <div class="row" style="margin-top:10px"><div class="stat"><span class="muted">Alınan</span><b>${yazT(alT(o))}</b></div><div class="stat"><span class="muted">Ödenen</span><b style="color:var(--green)">${yazT(odT(o))}</b></div></div>
