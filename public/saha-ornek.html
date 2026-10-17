@@ -720,6 +720,14 @@ function yaziyla(t,pb){
   const k=Math.round(Number(t||0)*100),tam=Math.floor(k/100),kr=k%100;let s=sayi(tam);s=s.charAt(0).toLocaleUpperCase('tr')+s.slice(1)+' '+ad[0];
   if(kr)s+=' '+sayi(kr)+' '+ad[1];return s;
 }
+// Proforma kâğıdında malzemeler tek satır "Malzeme bedeli" olur (ayrıntı ek malzeme listesinde); toplam değişmez
+const iscMi=k=>{const a=(k.ad||'').toLocaleLowerCase('tr');return a.includes('işçilik')||a.includes('hizmet bedeli')||k.birim==='iş'};
+function basKalem(d){
+  if(d.tur!=='PROFORMA FATURA'||d.malzemeTek===false)return d.kalemler;
+  const mal=d.kalemler.filter(k=>!iscMi(k)),isc=d.kalemler.filter(iscMi);if(!mal.length)return d.kalemler;
+  const t=Math.round(mal.reduce((a,k)=>a+Number(k.miktar||0)*Number(k.fiyat||0),0)*100)/100;
+  return[{ad:'Malzeme bedeli (ayrıntısı ek malzeme listesinde)',miktar:1,birim:'',fiyat:t},...isc];
+}
 function bHesap(d){const ara=d.kalemler.reduce((t,k)=>t+Number(k.miktar||0)*Number(k.fiyat||0),0);const kdv=Math.round(ara*Number(d.kdv||0))/100;return{ara,kdv,gen:Math.round((ara+kdv)*100)/100}}
 const BELGE_CSS=`
 .blg{width:794px;min-height:1123px;background:#fff;color:#1b2433;font:12.6px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;text-align:left}
@@ -765,7 +773,7 @@ const kdvNot=d=>d.ek?'':Number(d.kdv)>0?'Faturaya %'+String(d.kdv).replace('.','
 function belgeHTML(d){
   if(d.ek)return ekHTML(d);
   const h=bHesap(d),pb=d.pb;
-  const tr=d.kalemler.map((k,i)=>`<tr><td class="s">${String(i+1).padStart(2,'0')}</td><td>${esc(k.ad)}</td><td class="n">${String(k.miktar).replace('.',',')} ${esc(k.birim||'')}</td><td class="n">${bPara(k.fiyat,pb)}</td><td class="n"><b>${bPara(k.miktar*k.fiyat,pb)}</b></td></tr>`).join('');
+  const tr=basKalem(d).map((k,i)=>`<tr><td class="s">${String(i+1).padStart(2,'0')}</td><td>${esc(k.ad)}</td><td class="n">${String(k.miktar).replace('.',',')} ${esc(k.birim||'')}</td><td class="n">${bPara(k.fiyat,pb)}</td><td class="n"><b>${bPara(k.miktar*k.fiyat,pb)}</b></td></tr>`).join('');
   const m=d.musteri||{};
   return`<div class="blg"><div class="u"><div class="mk"><img src="${LOGO_BASKI}" alt=""><div><b>DOTEK</b><span>ENERJİ SİSTEMLERİ</span></div></div><div class="tr"><small>${esc(d.tur)}</small><strong>${esc(d.no||'—')}</strong></div></div>
   <div class="sr"></div><div class="hz">${FIRMA.hizmet.join(' · ')}</div>
@@ -834,7 +842,7 @@ async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('doc
   const cols=[600,4906,1500,1600,1600];
   const hr=new TableRow({tableHeader:true,children:['NO','AÇIKLAMA','MİKTAR','BİRİM FİYAT','TUTAR'].map((x,i)=>C([P(T(x,{size:15,bold:true,color:NAVY,sp:20}),{al:i>=2?R:undefined})],cols[i],{fill:'F1F3F7',borders:{left:nb,right:nb,top:{style:BorderStyle.SINGLE,size:12,color:NAVY},bottom:{style:BorderStyle.SINGLE,size:6,color:NAVY}},m:{top:110,bottom:110,left:120,right:120}}))});
   const bb={top:nb,left:nb,right:nb,bottom:ln};
-  const rows=d.kalemler.map((k,i)=>{const v=[String(i+1).padStart(2,'0'),k.ad,String(k.miktar).replace('.',',')+' '+(k.birim||''),bPara(k.fiyat,pb),bPara(k.miktar*k.fiyat,pb)];
+  const rows=basKalem(d).map((k,i)=>{const v=[String(i+1).padStart(2,'0'),k.ad,String(k.miktar).replace('.',',')+' '+(k.birim||''),bPara(k.fiyat,pb),bPara(k.miktar*k.fiyat,pb)];
     return new TableRow({children:v.map((x,j)=>C([P(T(x,{color:j==0?LG:undefined,bold:j==4}),{al:j>=2?R:undefined})],cols[j],{fill:i%2?ZEB:undefined,borders:bb,m:{top:120,bottom:120,left:120,right:120}}))})});
   const tot=TB([new TableRow({children:[C([P(T('Ara toplam'))],2100,{borders:{top:ln,left:ln,right:nb,bottom:ln}}),C([P(T(bPara(h.ara,pb)),{al:R})],1900,{borders:{top:ln,right:ln,left:nb,bottom:ln}})]}),
     new TableRow({children:[C([P(T('KDV %'+d.kdv))],2100,{borders:{left:ln,bottom:ln,top:nb,right:nb}}),C([P(T(bPara(h.kdv,pb)),{al:R})],1900,{borders:{right:ln,bottom:ln,top:nb,left:nb}})]}),
@@ -938,7 +946,7 @@ function vBelge(m){
    <div class="row" style="flex-wrap:nowrap"><div style="flex:2;min-width:0"><label for="bp1">Döviz</label><select id="bp1" onchange="BELGE.d.pb=this.value;belgeOnizle()">${pbSec(d.pb)}</select></div><div style="flex:1;min-width:0"><label for="bv1">KDV %</label><input id="bv1" type="number" step="1" value="${d.kdv}" oninput="BELGE.d.kdv=Number(this.value)||0;belgeOnizle()"></div></div></div>
   ${d.tur==='PROFORMA FATURA'?`<div class="card"><div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="bsu" style="margin-top:0">İşin süresi (gün)</label><input id="bsu" type="number" min="0" step="0.5" value="${d.sure??''}" placeholder="Örn: 3" oninput="BELGE.d.sure=Number(this.value)||null;belgeOnizle()"></div><div style="flex:1;min-width:0"><label for="bks" style="margin-top:0">Çalışan kişi</label><input id="bks" type="number" min="0" step="1" value="${d.kisi??''}" placeholder="Örn: 3" oninput="BELGE.d.kisi=Number(this.value)||null;belgeOnizle()"></div></div><div class="muted" style="font-size:12px">Planlamadan otomatik hesaplandı; değiştirebilirsin. Kâğıtta "İş süresi" ve "Çalışan" olarak çıkar.</div></div>`:''}
   ${Array.isArray(d.isler)?`<div class="card"><label for="bi1" style="margin-top:0">Yapılan işler (her satır bir iş · kâğıtta liste olarak çıkar)</label><textarea id="bi1" rows="${Math.max(3,d.isler.length+1)}" oninput="BELGE.d.isler=this.value.split('\n');belgeOnizle()">${esc(d.isler.join('\n'))}</textarea></div>`:''}
-  <h3 style="margin:14px 0 8px">Kalemler</h3>${d.tur==='PROFORMA FATURA'?`<div class="muted" style="font-size:12px;margin:-4px 0 8px">Her satır: miktar · birim · birim fiyat. 🧾 Firma sadece sende görünür, müşteri kâğıdına çıkmaz.</div><datalist id="tdkl">${(window._tdk||[]).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}${d.kalemler.map(kalem).join('')}
+  <h3 style="margin:14px 0 8px">Kalemler</h3>${d.tur==='PROFORMA FATURA'?`<label class="row" style="flex-wrap:nowrap;gap:8px;align-items:center;margin:0 0 8px;padding:10px;border:1px solid #9fd3b2;background:#eefaf2;border-radius:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;flex-shrink:0" ${d.malzemeTek!==false?'checked':''} onchange="BELGE.d.malzemeTek=this.checked;belgeOnizle()"> Kâğıtta malzemeler tek satır "Malzeme bedeli" olarak toplansın (ayrıntı ek listede)</label>`:''}${d.tur==='PROFORMA FATURA'?`<div class="muted" style="font-size:12px;margin:-4px 0 8px">Her satır: miktar · birim · birim fiyat. 🧾 Firma sadece sende görünür, müşteri kâğıdına çıkmaz.</div><datalist id="tdkl">${(window._tdk||[]).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}${d.kalemler.map(kalem).join('')}
   <button class="btn l w" onclick="BELGE.d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0});render()">+ Kalem ekle</button>
   <div class="card" style="margin-top:10px"><label for="bn1" style="margin-top:0">${teklif?'Şartlar':'Notlar'} (her satır bir madde)</label><textarea id="bn1" rows="4" oninput="BELGE.d.notlar=this.value.split('\\n');belgeOnizle()">${esc((d.notlar||[]).join('\n'))}</textarea></div>
   <h3 style="margin:14px 0 8px">Önizleme</h3><div id="onz" style="border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff"></div>`;
