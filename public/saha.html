@@ -51,7 +51,7 @@ html{color-scheme:light}
 #demo b{margin-right:4px}#demo button{border:1px solid #e0b860;background:#fff;color:#5a3a00;border-radius:99px;padding:5px 11px;font:inherit;font-weight:700;cursor:pointer}
 #demo button.on{background:#a35f00;color:#fff;border-color:#a35f00}
 nav.bottom button{font-size:13px}
-button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}@media(min-width:1000px){main{max-width:1000px}nav.bottom{padding-left:calc((100vw - 1000px)/2);padding-right:calc((100vw - 1000px)/2)}}.kareler{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.kare{background:#fff;border:1px solid var(--line);border-top:4px solid #c3cad6;border-radius:12px;padding:10px 11px;min-height:128px;display:flex;flex-direction:column}.kare[hidden]{display:none}.kare .kis{margin-top:auto;padding-top:8px;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:2px}@media(min-width:1000px){main{max-width:1000px}nav.bottom{padding-left:calc((100vw - 1000px)/2);padding-right:calc((100vw - 1000px)/2)}}.card[hidden]{display:none}.kareler{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}.kare{background:#fff;border:1px solid var(--line);border-top:4px solid #c3cad6;border-radius:12px;padding:10px 11px;min-height:128px;display:flex;flex-direction:column}.kare[hidden]{display:none}.kare .kis{margin-top:auto;padding-top:8px;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .cal-bas{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
 .cal-bas h2{margin:0;text-transform:capitalize}
 .cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
@@ -561,7 +561,7 @@ function bildirimAc(pid,kanal,tur,aj){
   if(aj)return ajAc(aj);
   if(kanal!==null)return mesajAc(kanal);
   if(tur==='fatura')return go('fatura');
-  if(tur==='tahsilat'){go(me.rol==='patron'||!ofisMi()?(me.rol==='patron'?'onay':'gorevlerim'):'fatura');let n=0;const t=setInterval(()=>{const h=document.getElementById('odemeTakip');if(h||++n>20){clearInterval(t);if(h)h.scrollIntoView({behavior:'smooth'})}},150);return}
+  if(tur==='tahsilat'){go(me.rol==='patron'||!ofisMi()?(me.rol==='patron'?'onay':'gorevlerim'):'fatura');let n=0;const t=setInterval(()=>{const h=document.getElementById('odemeTakip');if(h||++n>20){clearInterval(t);const k=document.getElementById('otk'+pid);if(k&&k.hidden){k.hidden=false;k.scrollIntoView({behavior:'smooth'})}else if(h)h.scrollIntoView({behavior:'smooth'})}},150);return}
   if(tur==='proforma')return ofisMi()?go('fatura'):openP(pid,'fiyat');
   if(tur==='teklif')return go('teklif');
   if(tur==='teklif_hazir'||tur==='teklif_red')return go('onay');
@@ -659,8 +659,14 @@ async function odemeTakipKart(){
   const L=(data||[]).filter(p=>p.fatura_durum==='kesildi'&&p.odeme_durum!=='alindi'&&(me.rol==='patron'||ofisMi()||(me.rol==='ds'&&p.departman_id===me.departman_id)));
   if(!L.length)return'';await tnYukle(L.map(p=>p.id));
   const kal=p=>Math.max(0,Number(p.fiyat||0)-Number(p.odenen||0));
-  return`<h2 id="odemeTakip" style="margin-top:4px">💰 Ödeme takibi (${L.length})</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye iletildi, ödemesi bekleniyor. Aradıysan, konuştuysan altına yaz.</div>
-   ${L.map(p=>{const g=gunGecti(p.fatura_tarihi);return`<div class="card" style="border-color:${g>30?'#f3b4b4':'#f0d9a0'}"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(p.ad)}</b><b style="white-space:nowrap;color:var(--red)">${tl(kal(p),pbP(p))}</b></div>
+  return`<h2 id="odemeTakip" style="margin-top:4px">💰 Ödeme takibi (${L.length})</h2><div class="muted" style="margin:-4px 0 8px">${me.rol==='patron'?'Müşteriye iletildi, ödemesi bekleniyor. Ayrıntı ve notlar için kutuya bas.':'Müşteriye iletildi, ödemesi bekleniyor. Aradıysan, konuştuysan altına yaz.'}</div>
+   ${me.rol==='patron'?`<div class="kareler">${L.map(p=>{const g=gunGecti(p.fatura_tarihi),N=TN[p.id]||[],son=N[N.length-1],d=p.proforma||{};
+       const isS=((d.isler||[]).map(isTemiz).filter(Boolean).length)||(TG[p.id]||[]).filter(t=>t.durum==='bitti').length;
+       return`<div class="kare click" style="border:2px solid #e5484d;background:#fdecec" onclick="const k=document.getElementById('otk${p.id}');const a=!k.hidden;document.querySelectorAll('.otk').forEach(x=>x.hidden=true);k.hidden=a;if(!a)k.scrollIntoView({behavior:'smooth',block:'start'})">
+        <b style="line-height:1.2">${esc(p.musteri||p.ad)}</b><div class="muted" style="font-size:12px">${p.musteri?esc(p.ad):''}${isS?(p.musteri?' · ':'')+isS+' iş yapıldı':''}</div>
+        <div style="font-weight:800;color:var(--red);margin-top:4px">Borç: ${tl(kal(p),pbP(p))}</div>
+        <div style="font-size:12px;margin-top:auto;padding-top:6px;line-height:1.3"><b style="color:${g>30?'var(--red)':'#8a5a00'}">${g} gün</b> · ${son?esc(son.metin.replace(/^\S*📞\s*/,'').slice(0,60))+'<span class="muted"> · '+esc((pname(son.yazan_id)||'').split(' ')[0])+'</span>':'<span class="muted">Henüz aranmadı</span>'}</div></div>`}).join('')}</div>`:''}
+   ${L.map(p=>{const g=gunGecti(p.fatura_tarihi);return`<div class="card${me.rol==='patron'?' otk':''}" id="otk${p.id}" ${me.rol==='patron'?'hidden':''} style="border-color:${g>30?'#f3b4b4':'#f0d9a0'}"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(p.ad)}</b><b style="white-space:nowrap;color:var(--red)">${tl(kal(p),pbP(p))}</b></div>
      <div class="muted">${p.musteri?'Müşteri: <b>'+esc(p.musteri)+'</b> · ':''}${esc(dname(p.departman_id))} · Sorumlu: ${esc(pname(p.takipci_id))}</div>
      <div class="muted">${p.iletim==='proforma'?'📄 Proforma verildi':'🧾 Fatura kesildi'} · ${tarih(p.fatura_tarihi)} · <b style="color:${g>30?'var(--red)':'inherit'}">${g} gün oldu</b></div>${isOzet(p)}${tnBlok(p)}</div>`}).join('')}`;
 }
