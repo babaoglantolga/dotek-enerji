@@ -1017,6 +1017,20 @@ async function proformaGor(pid){
   scrollTo(0,0);const k=$('#pgk'),i=$('#pgi'),olc=()=>{const z=k.clientWidth/794;i.style.transform='scale('+z+')';k.style.height=(i.offsetHeight*z)+'px'};olc();addEventListener('resize',olc);
 }
 
+function paraDurumuKart(data){
+  const n=new Date();
+  const ony=data.filter(p=>p.durum==='onaylandi'),kes=ony.filter(p=>p.fatura_durum==='kesildi'),fbk=ony.filter(p=>p.fatura_durum!=='kesildi');
+  const obk=kes.filter(p=>p.odeme_durum!=='alindi'),gec=obk.filter(p=>gunGecti(p.fatura_tarihi)>30),ode=kes.filter(p=>p.odeme_durum==='alindi'&&p.odeme_tarihi&&new Date(p.odeme_tarihi).getMonth()===n.getMonth()&&new Date(p.odeme_tarihi).getFullYear()===n.getFullYear());
+  const sum=a=>a.reduce((t,p)=>t+Number(p.fiyat||0),0);
+  const para=(ad,a,renk,alt)=>`<div class="row sp" style="padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>${ad}</b><div class="muted">${a.length} iş${alt?' · '+alt:''}</div></div><b style="font-size:17px;color:${renk};white-space:nowrap">${sumPB(a)}</b></div>`;
+  return`<div class="card" style="padding-block:4px"><h3 style="margin:8px 0 2px">Para durumu</h3>
+   ${para('Biten iş (onaylanan)',ony,'var(--navy)','')}
+   ${para('Fatura bekliyor',fbk,'var(--red)','ofiste')}
+   <div class="row sp" style="padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>Ödeme bekleniyor</b><div class="muted">${obk.length} iş · fatura gönderildi${gec.length?' · <b style="color:var(--red)">'+gec.length+' tanesi 30 günü geçti</b>':''}</div></div><b style="font-size:17px;color:var(--orange,#c26a00);white-space:nowrap">${sumPB(obk,kalan)}</b></div>
+   <div style="border-bottom:0">${para('Bu ay ödemesi alınan',ode,'var(--green)','arşivde')}</div>
+   <button class="btn l w" style="margin:10px 0" onclick="go('fatura')">Fatura, tahsilat ve arşiv ›</button>
+  </div>`;
+}
 // ---------------- Müşteri (cari): müşteriye yapılan bütün işler, faturalar, ödemeler, teklifler ----------------
 const cariAnahtar=ad=>(ad||'').trim().replace(/\s+/g,' ').toLocaleUpperCase('tr');
 async function vCari(m){
@@ -1042,7 +1056,7 @@ async function vCari(m){
      ${c.tk.length?`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">Teklifler (${c.tk.length})</h3><div class="card" style="padding-block:4px">${c.tk.map(t=>{const h=bHesap({kalemler:t.kalemler||[],kdv:t.kdv});return`<div class="row sp click" style="padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div style="min-width:0"><b style="font-weight:600">${esc(t.no||'')} · ${ic(t.konu||'')}</b><div class="muted">${tarih(t.tarih)}${h.gen?' · '+bPara(h.gen,t.para_birimi):''}</div></div><span class="chip ${t.durum==='kabul'?'c-bitti':t.durum==='red'?'c-iade':'c-bekliyor'}">${TKD[t.durum]||t.durum}</span></div>`}).join('')}</div>`:''}`;
     return scrollTo(0,0)}
   const L=Object.entries(C).sort((a,b)=>b[1].son-a[1].son);
-  m.innerHTML=`<h2>Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
+  m.innerHTML=paraDurumuKart(pr.data||[])+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
    <input id="cq" type="search" placeholder="Müşteri ara…" style="margin-bottom:8px">
    ${L.map(([k,c])=>{const ak=c.is.filter(p=>kal(p)>0);return`<div class="card click cr" data-q="${esc(k.toLocaleLowerCase('tr'))}" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(c.ad)}</b>${ak.length?`<b style="color:var(--red);white-space:nowrap">${sumPB(ak,kal)}</b>`:''}</div>
      <div class="muted">${c.is.length} iş${c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length?' · '+c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length+' biten':''}${c.tk.length?' · '+c.tk.length+' teklif':''}${ak.length?' · alacak var':''}</div></div>`}).join('')||'<div class="card muted">Henüz müşteri yok. Projelere ve tekliflere yazılan müşteri adları burada toplanır.</div>'}`;
@@ -1299,18 +1313,7 @@ async function vOnay(m){
   const ekip=aktifler().filter(p=>p.rol!=='patron');
   const calisiyor=ekip.filter(p=>G.some(t=>gKisi(t).includes(p.id)&&calisiyorMu(t.durum))).length;
   const tk=await takvim(),pk=await planKarti()+await teklifKarti();
-  const ony=data.filter(p=>p.durum==='onaylandi'),kes=ony.filter(p=>p.fatura_durum==='kesildi'),fbk=ony.filter(p=>p.fatura_durum!=='kesildi');
-  const obk=kes.filter(p=>p.odeme_durum!=='alindi'),gec=obk.filter(p=>gunGecti(p.fatura_tarihi)>30),ode=kes.filter(p=>p.odeme_durum==='alindi'&&p.odeme_tarihi&&new Date(p.odeme_tarihi).getMonth()===n.getMonth()&&new Date(p.odeme_tarihi).getFullYear()===n.getFullYear());
-  const sum=a=>a.reduce((t,p)=>t+Number(p.fiyat||0),0);
-  const para=(ad,a,renk,alt)=>`<div class="row sp" style="padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>${ad}</b><div class="muted">${a.length} iş${alt?' · '+alt:''}</div></div><b style="font-size:17px;color:${renk};white-space:nowrap">${sumPB(a)}</b></div>`;
   m.innerHTML=tk+pk+`<div class="row"><div class="stat"><span class="muted">Onay bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Süren iş</span><b>${devam}</b></div></div>
-  <div class="card" style="margin-top:10px;padding-block:4px"><h3 style="margin:8px 0 2px">Para durumu</h3>
-   ${para('Biten iş (onaylanan)',ony,'var(--navy)','')}
-   ${para('Fatura bekliyor',fbk,'var(--red)','ofiste')}
-   <div class="row sp" style="padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>Ödeme bekleniyor</b><div class="muted">${obk.length} iş · fatura gönderildi${gec.length?' · <b style="color:var(--red)">'+gec.length+' tanesi 30 günü geçti</b>':''}</div></div><b style="font-size:17px;color:var(--orange,#c26a00);white-space:nowrap">${sumPB(obk,kalan)}</b></div>
-   <div style="border-bottom:0">${para('Bu ay ödemesi alınan',ode,'var(--green)','arşivde')}</div>
-   <button class="btn l w" style="margin:10px 0" onclick="go('fatura')">Fatura, tahsilat ve arşiv ›</button>
-  </div>
   <h2 style="margin-top:16px">Onayını bekleyen işler</h2>
   ${bek.length?bek.map(onayKart).join(''):'<div class="card muted">Şu an onayını bekleyen iş yok.</div>'}
   <h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div class="card" style="padding-block:2px">${kimNerede(ekip,G)}</div>`;
