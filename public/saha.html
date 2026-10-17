@@ -223,6 +223,7 @@ function run(st){
  if(st.op==='insert'){const d=typeof varsay[t]==='function'?varsay[t]():(varsay[t]||{});const r={id:nid++,olusturma:new Date().toISOString(),...d,...st.payload};tab.push(r);
    if(t==='teklifler'){r.no='TKL-2026-'+String(r.id).padStart(4,'0');if(r.durum==='istendi')DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis).forEach(x=>bildir(x.id,pAd(CUR)+' teklif istedi: '+r.musteri+(r.konu?' · '+r.konu.slice(0,60):''),null,null,'teklif'))}
    if(t==='gorevler')DB.ajanda.filter(a=>a.proje_id==r.proje_id&&['bekliyor','bakiyor'].includes(a.durum)).forEach(a=>{a.durum='planlandi';DB.bildirimler.filter(x=>x.ajanda_id===a.id&&x.tur==='ajanda').forEach(x=>x.islem_yapildi=true);if(a.sahip_id!==CUR)DB.bildirimler.push({id:nid++,alici_id:a.sahip_id,metin:pAd(a.atanan_id)+' planladı: '+a.baslik+' · ekibine dağıttı',tur:'ajanda_plan',ajanda_id:a.id,islem_yapildi:false,tarih:new Date().toISOString()})});
+   if(t==='gorevler'){const pp=DB.projeler.find(x=>x.id==r.proje_id);if(pp&&pp.durum==='bitti')pp.durum='devam'}
    if(t==='gorevler'){r.ekip=kis(r);const p=DB.projeler.find(x=>x.id==r.proje_id);r.ekip.forEach(k=>bildir(k,'Sana yeni iş verildi: '+r.baslik+' · '+(p||{}).ad+(r.ekip.length>1?' · Ekip: '+r.ekip.map(pAd).join(', '):''),r.proje_id,null,'gorev'))}
    if(t==='ajanda_notlar'){const a=DB.ajanda.find(x=>x.id===r.ajanda_id);const al=r.yazan_id===a.atanan_id?a.sahip_id:a.atanan_id;DB.bildirimler.filter(x=>x.alici_id===r.yazan_id&&x.ajanda_id===a.id&&x.tur==='ajanda_not').forEach(x=>x.islem_yapildi=true);if(al&&al!==r.yazan_id)DB.bildirimler.push({id:nid++,alici_id:al,metin:pAd(r.yazan_id)+' geri bildirim yazdı ('+a.baslik+'): '+r.metin.slice(0,80),tur:'ajanda_not',ajanda_id:a.id,islem_yapildi:false,tarih:new Date().toISOString()})}
    if(t==='ajanda')ajProje(r);
@@ -252,7 +253,7 @@ function run(st){
      if(r.durum==='patronda')DB.profiller.filter(x=>x.rol==='patron').forEach(x=>bildir(x.id,'Onayını bekleyen iş: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'onay'));
      if(r.durum==='onaylandi'){r.fatura_durum='bekliyor';DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis).forEach(x=>bildir(x.id,'Fatura için bekliyor: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'fatura'))}
      if(['onaylandi','iade'].includes(r.durum))DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===r.departman_id)||x.id===r.takipci_id).forEach(x=>bildir(x.id,(r.durum==='onaylandi'?'İşveren onayladı: ':'İşveren iade etti: ')+r.ad+(r.patron_notu?' — '+r.patron_notu:''),r.id,null,r.durum))}
-   if(t==='gorevler'&&['bakiyor','basladi'].includes(st.payload.durum)){const p=DB.projeler.find(x=>x.id===r.proje_id);if(p&&p.durum==='acik')p.durum='devam'}}
+   if(t==='gorevler'&&['bakiyor','basladi'].includes(st.payload.durum)){const p=DB.projeler.find(x=>x.id===r.proje_id);if(p&&['acik','bitti'].includes(p.durum))p.durum='devam'}}
    return{data:null,error:null}}
  if(st.op==='delete'){DB[t]=tab.filter(r=>!fl(r));return{data:null,error:null}}
  let rows=tab.filter(vis).filter(fl).map(r=>({...r}));
@@ -308,6 +309,8 @@ const rpc=async(n,a)=>{const r=await rpc0(n,a);kaydet();return r};
 const KAYIT='dotek_demo_v3';
 function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
+// Bitti görünen ama açık görevi olan iş 'Devam ediyor'a döner
+DB.projeler.forEach(p=>{if(p.durum==='bitti'&&DB.gorevler.some(g=>g.proje_id===p.id&&g.durum!=='bitti'))p.durum='devam'});
 // Kişiye özel ekran: ?kim=esat → o kişi olarak açılır, kişi seçme şeridi gizlenir
 try{const kim=new URLSearchParams(location.search).get('kim');if(kim){const u=DB.profiller.find(x=>x.kullanici_adi===kim.toLowerCase());if(u){CUR=u.id;window.KIM_SABIT=true;const d0=document.getElementById('demo');if(d0)d0.style.display='none';else document.addEventListener('DOMContentLoaded',()=>{const d=document.getElementById('demo');if(d)d.style.display='none'})}}}catch(e){}
 // Başka sekmede yapılan işlem bu sekmeye de yansır (aynı cihazda Doğuş ve Esat ekranları yan yana)
