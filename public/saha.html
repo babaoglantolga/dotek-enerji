@@ -279,7 +279,7 @@ let prfSira=47;const rpc0=async(n,a)=>{
  if(n==='dil_kaydet'){const p=DB.profiller.find(x=>x.id===CUR);if(p)p.dil=a.d;return{error:null}}
  if(n==='proforma_gonder'){const p=DB.projeler.find(x=>x.id===a.p),m=meP(),now=new Date().toISOString();
   if(!(m.rol==='patron'||(m.rol==='ds'&&p.departman_id===m.departman_id)))return{data:null,error:{message:'Bu işin proformasını hazırlayamazsın'}};
-  if(p.fatura_durum==='kesildi')return{data:null,error:{message:'Fatura kesildi, proforma artık değiştirilemez'}};
+  if(p.fatura_durum==='kesildi'&&(p.iletim!=='proforma'||p.odeme_durum==='alindi'))return{data:null,error:{message:'Fatura kesildi, proforma artık değiştirilemez'}};
   if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma=JSON.parse(JSON.stringify({...a.veri,no:p.proforma_no}));p.fiyat=a.toplam;p.iscilik=a.isc||0;if(a.veri&&a.veri.pb)p.para_birimi=a.veri.pb;
   const ofisler=DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis);
   if(a.gonder){if(['acik','devam','bitti','iade'].includes(p.durum)){
@@ -1046,7 +1046,7 @@ async function proformaAc(pid){
 }
 
 // --- Proforma: sahada biten işten. Sorumlu (veya işveren) hazırlar, görür, ekler, gönderir. Fatura kesilene kadar düzeltebilir. ---
-const proformaDuzenler=p=>!ofisMi()&&(me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id))&&p.fatura_durum!=='kesildi'&&['acik','devam','bitti','iade','patronda','onaylandi'].includes(p.durum);
+const proformaDuzenler=p=>!ofisMi()&&(me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id))&&(p.fatura_durum!=='kesildi'||(p.iletim==='proforma'&&p.odeme_durum!=='alindi'))&&['acik','devam','bitti','iade','patronda','onaylandi'].includes(p.durum);
 const proformaBtn=p=>proformaDuzenler(p)?`proformaHazirla(${p.id})`:`proformaGor(${p.id})`;
 // İşte kaç kişi çalıştı, kaç gün sürdü (planlamadan)
 // Kimden ne kadar malzeme alındı (müşteriye gitmez, sadece içeride)
@@ -1120,7 +1120,7 @@ async function proformaGor(pid){
   m.innerHTML=`<button class="btn s l" onclick="render()">← Geri</button><h2 style="margin-top:10px">Proforma <span class="muted" style="font-weight:600">${esc(d.no||'')}</span></h2>
    <div class="card"><div class="muted">${esc(p.ad)} · ${esc(dname(p.departman_id))} · ${p.durum==='patronda'?'İşveren onayı bekleniyor':p.durum==='onaylandi'?'Onaylandı':esc(DURUM[p.durum]||'')}</div>
     <div class="big" style="margin-top:4px">${bPara(bHesap(d).gen,d.pb)}</div>
-    <div class="durumlar" style="margin-top:8px"><button class="btn" onclick="indirPDF(_pg)">📄 PDF</button><button class="btn" onclick="indirWord(_pg)">📝 Word</button><button class="btn" onclick="indirPNG(_pg)">🖼️ Fotoğraf</button></div><button class="btn l w" style="margin-top:8px" onclick="ekGor(_pg)">📎 Ek malzeme listesi</button></div>
+    <div class="durumlar" style="margin-top:8px"><button class="btn" onclick="indirPDF(_pg)">📄 PDF</button><button class="btn" onclick="indirWord(_pg)">📝 Word</button><button class="btn" onclick="indirPNG(_pg)">🖼️ Fotoğraf</button></div><button class="btn l w" style="margin-top:8px" onclick="ekGor(_pg)">📎 Ek malzeme listesi</button>${proformaDuzenler(p)?`<button class="btn g w" style="margin-top:8px" onclick="proformaHazirla(${p.id})">✏️ Proformayı düzenle</button>`:''}</div>
    <div id="pgk" style="border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff"><div id="pgi" data-nocevir style="width:794px;transform-origin:0 0">${belgeHTML(d)}</div></div>`;
   scrollTo(0,0);const k=$('#pgk'),i=$('#pgi'),olc=()=>{const z=k.clientWidth/794;i.style.transform='scale('+z+')';k.style.height=(i.offsetHeight*z)+'px'};olc();addEventListener('resize',olc);
 }
