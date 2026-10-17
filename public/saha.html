@@ -85,7 +85,7 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .msg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;max-width:85%;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.ben{align-self:flex-end;background:#e8f0fe;border-color:#c9dafb}
 </style>
-<div id="demo" data-nocevir><b>DEMO · Kim olarak bak:</b><button class="on" onclick="demoRol('u1',this)">Doğuş (İşveren)</button><button onclick="demoRol('u2',this)">Esat (Elektrik)</button><button onclick="demoRol('u5',this)">İbrahim (Jeneratör)</button><button onclick="demoRol('u8',this)">Tolga (Elektronik)</button><button onclick="demoRol('u7',this)">Gökçe (Ofis)</button><button onclick="demoRol('u3',this)">Michael (EN)</button><button onclick="demoRol('u11',this)">Said (اردو)</button></div>
+<div id="demo" data-nocevir><b>DEMO · Kim olarak bak:</b><button class="on" onclick="demoRol('u1',this)">Doğuş (İşveren)</button><button onclick="demoRol('u2',this)">Esat (Elektrik)</button><button onclick="demoRol('u5',this)">İbrahim (Jeneratör)</button><button onclick="demoRol('u8',this)">Tolga (Elektronik)</button><button onclick="demoRol('u7',this)">Gökçe (Ofis)</button><button onclick="demoRol('u3',this)">Michael (EN)</button><button onclick="demoRol('u11',this)">Said (اردو)</button><button onclick="demoSifirla()" title="Girilen örnek işleri siler" style="margin-left:auto;opacity:.75">↺ Demoyu sıfırla</button></div>
 <div id="app"></div><div id="toast"></div>
 <script>
 window.confirm=()=>true;
@@ -250,11 +250,11 @@ function from(table){const st={table,op:'select',filters:[],orders:[],single:fal
  const b={select(s){if(st.op==='select'){const m=/(\w+)\(/.exec(s||'');if(m)st.embed=m[1]}return b},eq(c,v){st.filters.push([c,v]);return b},neq(c,v){st.filters.push([c,v,1]);return b},in(c,v){st.filters.push([c,v,2]);return b},
   order(c,o={}){st.orders.push([c,o.ascending!==false]);return b},single(){st.single=true;return b},
   insert(r){st.op='insert';st.payload=r;return b},update(o){st.op='update';st.payload=o;return b},delete(){st.op='delete';return b},
-  then(ok){ok(run(st))}};return b}
+  then(ok){const r=run(st);if(st.op!=='select')kaydet();ok(r)}};return b}
 const auth={getSession:async()=>({data:{session:CUR?{user:{id:CUR}}:null}}),signOut:async()=>{CUR=null},
  signInWithPassword:async({email})=>{const u=DB.profiller.find(p=>p.kullanici_adi===email.split('@')[0]);if(!u)return{error:{message:'yok'}};CUR=u.id;return{error:null}},
- signUp:async({email,options})=>{const id='u'+(nid++);DB.profiller.push({id,ad:options.data.ad||email,kullanici_adi:email.split('@')[0],rol:'bekliyor',departman_id:null});CUR=id;return{data:{session:{}},error:null}}};
-let prfSira=47;const rpc=async(n,a)=>{
+ signUp:async({email,options})=>{const id='u'+(nid++);DB.profiller.push({id,ad:options.data.ad||email,kullanici_adi:email.split('@')[0],rol:'bekliyor',departman_id:null});CUR=id;kaydet();return{data:{session:{}},error:null}}};
+let prfSira=47;const rpc0=async(n,a)=>{
  if(n==='dil_kaydet'){const p=DB.profiller.find(x=>x.id===CUR);if(p)p.dil=a.d;return{error:null}}
  if(n==='proforma_gonder'){const p=DB.projeler.find(x=>x.id===a.p),m=meP(),now=new Date().toISOString();
   if(!(m.rol==='patron'||(m.rol==='ds'&&p.departman_id===m.departman_id)))return{data:null,error:{message:'Bu işin proformasını hazırlayamazsın'}};
@@ -288,6 +288,12 @@ async function fisDemo(du){
     kalemler:[{ad:'NYA 2.5 mm² kablo',miktar:100,birim:'metre',birim_fiyat:9.5},{ad:'Otomatik sigorta C16',miktar:12,birim:'adet',birim_fiyat:85},{ad:'Kaçak akım rölesi 40A 30mA',miktar:1,birim:'adet',birim_fiyat:1350},{ad:'Buat 100x100',miktar:10,birim:'adet',birim_fiyat:28.5}]};
 }
 const functions={invoke:async(n,o)=>{try{if(n==='fis-oku')return{data:await fisDemo(o.body.resim),error:null};return{data:{ceviri:await cevirDemo(o.body.hedef,o.body.metinler)},error:null}}catch(e){return{data:null,error:e}}}};
+const rpc=async(n,a)=>{const r=await rpc0(n,a);kaydet();return r};
+// Demo kaydı: girilen her şey bu cihazda saklanır, sayfa yenilense de silinmez ("Sıfırla" ile baştan başlar)
+const KAYIT='dotek_demo_v1';
+function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
+try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
+window.demoSifirla=()=>{if(!confirm('Demo baştan başlasın mı? Girdiğin örnek işler silinir.'))return;try{localStorage.removeItem(KAYIT)}catch(e){}location.reload()};
 window.supabase={createClient:()=>({from,auth,rpc,functions})};
 window.demoRol=(id,btn)=>{CUR=id;document.querySelectorAll('#demo button').forEach(b=>b.classList.toggle('on',b===btn));S.tab='';S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;init()};
 })();
