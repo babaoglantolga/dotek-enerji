@@ -278,7 +278,7 @@ let prfSira=47;const rpc0=async(n,a)=>{
  if(n==='proforma_gonder'){const p=DB.projeler.find(x=>x.id===a.p),m=meP(),now=new Date().toISOString();
   if(!(m.rol==='patron'||(m.rol==='ds'&&p.departman_id===m.departman_id)))return{data:null,error:{message:'Bu işin proformasını hazırlayamazsın'}};
   if(p.fatura_durum==='kesildi')return{data:null,error:{message:'Fatura kesildi, proforma artık değiştirilemez'}};
-  if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma=JSON.parse(JSON.stringify({...a.veri,no:p.proforma_no}));p.fiyat=a.toplam;p.iscilik=a.isc||0;
+  if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma=JSON.parse(JSON.stringify({...a.veri,no:p.proforma_no}));p.fiyat=a.toplam;p.iscilik=a.isc||0;if(a.veri&&a.veri.pb)p.para_birimi=a.veri.pb;
   const ofisler=DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis);
   if(a.gonder){if(['acik','devam','bitti','iade'].includes(p.durum)){
     if(m.rol==='patron')run({table:'projeler',op:'update',filters:[['id',p.id]],orders:[],payload:{durum:'onaylandi',onay_tarihi:now,gonderim:p.gonderim||now,patron_notu:null}});
@@ -318,6 +318,8 @@ function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
 function isBittiBildir(r){const ds=DB.profiller.find(x=>x.rol==='ds'&&x.departman_id===r.departman_id);DB.profiller.filter(x=>x.rol==='patron').forEach(x=>DB.bildirimler.push({id:nid++,alici_id:x.id,tur:'is_bitti',proje_id:r.id,departman_id:null,islem_yapildi:false,tarih:new Date().toISOString(),metin:(pAd(r.takipci_id)||(ds&&ds.ad)||pAd(CUR))+' işi bitirdi: '+r.ad+(r.musteri?' · '+r.musteri:'')}))}
 DB.bildirimler.forEach(b=>{if(b.tur==='is_bitti')b.metin=b.metin.replace(' · proforma hazırlanacak','')});
+// Proformadaki para birimi işe de yazılır (USD proforma TL görünmesin)
+DB.projeler.forEach(p=>{if(p.proforma&&p.proforma.pb)p.para_birimi=p.proforma.pb});
 // Bütün görevleri biten iş 'İş bitti' olur; Doğuş'a haber gider (önceden bitmiş olanlar dahil)
 DB.projeler.forEach(p=>{if(['acik','devam'].includes(p.durum)&&DB.gorevler.some(g=>g.proje_id===p.id)&&!DB.gorevler.some(g=>g.proje_id===p.id&&g.durum!=='bitti'))p.durum='bitti'});
 DB.projeler.forEach(p=>{if(p.durum==='bitti'&&!DB.bildirimler.some(b=>b.proje_id===p.id&&b.tur==='is_bitti'))isBittiBildir(p)});
