@@ -726,7 +726,8 @@ const BELGE_CSS=`
 // "Esat Tuğralı · Elektrik" → "Dotek Elektrik Bölümü" (kâğıtta kişi adı değil bölüm yazar)
 function imzaYaz(x){const [b,v]=x||['',''];if(b!=='Hazırlayan')return[b,v];const m=/·\s*(.+)$/.exec(v||'');const d=m?m[1].trim():'';
   return[b,!d?(v||''):d==='İşveren'?'Dotek Enerji Sistemleri':d==='Ofis'?'Dotek Ofis':'Dotek '+d+' Bölümü']}
-const kdvNot=d=>Number(d.kdv)>0?'Faturaya %'+String(d.kdv).replace('.',',')+' KDV eklenir. Genel toplam KDV dahil tutardır.':'';
+const FATURA_KDV=16;
+const kdvNot=d=>d.ek?'':Number(d.kdv)>0?'Faturaya %'+String(d.kdv).replace('.',',')+' KDV eklenir. Genel toplam KDV dahil tutardır.':'Fiyatlara KDV dahil değildir. Faturaya %'+FATURA_KDV+' KDV eklenir.';
 function belgeHTML(d){
   if(d.ek)return ekHTML(d);
   const h=bHesap(d),pb=d.pb;
