@@ -435,7 +435,7 @@ async function init(){
   {const pd=DILLER[me.dil]?me.dil:'tr';if(pd!==DIL)dilSec(pd);}
   if(!['patron','ds','calisan'].includes(me.rol)) return viewWait();
   await loadBase();
-  if(!S.tab) S.tab=me.rol==='patron'?'onay':ofisMi()?'fatura':me.rol==='ds'?'planlama':'gorevlerim';
+  if(!S.tab) S.tab=me.rol==='patron'?'onay':ofisMi()?'ofisana':me.rol==='ds'?'planlama':'gorevlerim';
   render();
   clearInterval(window._bt);window._bt=setInterval(bildirimKontrol,20000);
 }
@@ -482,7 +482,7 @@ async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewL
 // ---------------- Kabuk ----------------
 function tabsFor(){
   if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
-  if(ofisMi())return me.rol==='ds'?[['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']]:[['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
+  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
   if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
@@ -491,7 +491,7 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
 function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
@@ -1370,6 +1370,12 @@ async function raporExcel(){toast('Excel hazırlanıyor…');try{const R=await a
   const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});indir(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Dotek_Rapor_'+R.ad.replace(/\s+/g,'_')+'.xlsx')}catch(e){toast(e.message)}}
 
 // ---------------- Kim hangi işte ----------------
+// Ofis ana sayfası: takvim + kim hangi işte
+async function vOfisAna(m){
+  const G=await acikGorevler(),ekip=aktifler().filter(p=>p.rol!=='patron');
+  const calisiyor=ekip.filter(p=>G.some(t=>gKisi(t).includes(p.id)&&calisiyorMu(t.durum))).length;
+  m.innerHTML=await takvim()+`<h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div>${kimNerede(ekip,G)}</div>`;
+}
 async function acikGorevler(){const {data}=await sb.from('gorevler').select('*, projeler(id,ad,musteri)');return (data||[]).filter(t=>t.durum!=='bitti')}
 function kimNerede(kisiler,G){
   if(!kisiler.length)return'<div class="card muted">Personel yok.</div>';
