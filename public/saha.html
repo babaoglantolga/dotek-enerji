@@ -487,7 +487,7 @@ const pCard=p=>`<div class="card click" onclick="openP(${p.id},'${p.durum==='pat
 
 // ---------------- Bildirimler ----------------
 // Bildirim ilgili işlem yapılınca kapanır.
-const BEKLER={teklif:'Teklif bekleniyor',ajanda:'Yapman bekleniyor',onay:'Onay bekliyor',mesaj:'Cevap bekliyor',fatura:'Fatura bekliyor',gorev:'Başlaman bekleniyor',iade:'Düzeltme bekliyor',kayit:'Rol ver'};
+const BEKLER={teklif:'Teklif bekleniyor',ajanda:'İş geldi',onay:'Onay bekliyor',mesaj:'Cevap bekliyor',fatura:'Fatura bekliyor',gorev:'Başlaman bekleniyor',iade:'Düzeltme bekliyor',kayit:'Rol ver'};
 // Alt menüde sayılar: kırmızı = işlem bekliyor, gri = toplam
 async function navSayilar(L){
   const say=(...t)=>L.filter(x=>t.includes(x.tur)).length;
