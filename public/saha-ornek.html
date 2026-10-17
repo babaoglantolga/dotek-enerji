@@ -250,6 +250,8 @@ function run(st){
    if(t==='projeler'&&r.durum!==eski&&eski==='patronda')DB.bildirimler.filter(x=>x.proje_id===r.id&&x.tur==='onay').forEach(x=>x.islem_yapildi=true);
    if(t==='projeler'&&r.durum==='patronda'&&eski!=='patronda')DB.bildirimler.filter(x=>x.proje_id===r.id&&x.tur==='iade').forEach(x=>x.islem_yapildi=true);
    if(t==='projeler'&&r.durum!==eski){
+     if(eski==='bitti')DB.bildirimler.filter(x=>x.proje_id===r.id&&x.tur==='is_bitti').forEach(x=>x.islem_yapildi=true);
+     if(r.durum==='bitti')DB.profiller.filter(x=>x.rol==='patron').forEach(x=>bildir(x.id,pAd(CUR)+' işi bitirdi: '+r.ad+(r.musteri?' · '+r.musteri:'')+' · proforma hazırlanacak',r.id,null,'is_bitti'));
      if(r.durum==='patronda')DB.profiller.filter(x=>x.rol==='patron').forEach(x=>bildir(x.id,'Onayını bekleyen iş: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'onay'));
      if(r.durum==='onaylandi'){r.fatura_durum='bekliyor';DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis).forEach(x=>bildir(x.id,'Fatura için bekliyor: '+r.ad+' · '+r.fiyat+' '+(r.para_birimi||'TRY'),r.id,null,'fatura'))}
      if(['onaylandi','iade'].includes(r.durum))DB.profiller.filter(x=>(x.rol==='ds'&&x.departman_id===r.departman_id)||x.id===r.takipci_id).forEach(x=>bildir(x.id,(r.durum==='onaylandi'?'İşveren onayladı: ':'İşveren iade etti: ')+r.ad+(r.patron_notu?' — '+r.patron_notu:''),r.id,null,r.durum))}
@@ -487,7 +489,7 @@ const pCard=p=>`<div class="card click" onclick="openP(${p.id},'${p.durum==='pat
 
 // ---------------- Bildirimler ----------------
 // Bildirim ilgili işlem yapılınca kapanır.
-const BEKLER={teklif:'Teklif bekleniyor',ajanda:'İş geldi',onay:'Onay bekliyor',mesaj:'Cevap bekliyor',fatura:'Fatura bekliyor',gorev:'Başlaman bekleniyor',iade:'Düzeltme bekliyor',kayit:'Rol ver'};
+const BEKLER={is_bitti:'Proforma bekleniyor',teklif:'Teklif bekleniyor',ajanda:'İş geldi',onay:'Onay bekliyor',mesaj:'Cevap bekliyor',fatura:'Fatura bekliyor',gorev:'Başlaman bekleniyor',iade:'Düzeltme bekliyor',kayit:'Rol ver'};
 // Alt menüde sayılar: kırmızı = işlem bekliyor, gri = toplam
 async function navSayilar(L){
   const say=(...t)=>L.filter(x=>t.includes(x.tur)).length;
@@ -497,7 +499,7 @@ async function navSayilar(L){
   const N={
     onay:[P.filter(p=>p.durum==='patronda').length+say('kayit','teklif_kabul','teklif_red','teklif_hazir','ajanda_bitti','ajanda_plan','ajanda_not'),'r'],
     projeler:[say('takip','iade')||aktifSay,say('takip','iade')?'r':'g'],
-    biten:me.rol==='patron'?[P.filter(p=>p.durum==='patronda').length,'r']:[bitenSay+say('bitti'),bitenSay?'r':'g'],
+    biten:me.rol==='patron'?[P.filter(p=>p.durum==='patronda').length+say('is_bitti'),'r']:[bitenSay+say('bitti'),bitenSay?'r':'g'],
     planlama:[say('ajanda','gorev'),'r'],
     gorevlerim:[G.length+A.length,say('gorev','ajanda')?'r':'g'],
     mesajlar:[say('mesaj'),'r'],
@@ -516,7 +518,7 @@ async function bildirimKontrol(){
   let b=$('#bbanner');
   if(n&&S.tab!=='bildirim'&&m){
     if(!b){b=document.createElement('div');b.id='bbanner';b.onclick=()=>go('bildirim');m.prepend(b)}
-    const alt=[[say('onay'),'iş onayını bekliyor'],[say('mesaj'),'mesaj cevap bekliyor'],[say('fatura'),'iş fatura bekliyor'],[say('gorev'),'yeni iş verildi'],[say('iade'),'iş iade edildi'],[say('ajanda'),'iş geldi',(()=>{const k=[...new Set(L.filter(x=>x.tur==='ajanda').map(x=>(x.metin||'').split(' iş geldi')[0]))];return k.length===1&&k[0].length<30?k[0]:''})()],[say('teklif'),'teklif isteniyor']].filter(x=>x[0]).map(x=>`<br><span style="font-weight:700">${x[2]?x[2]+' ':''}${x[0]} ${x[1]}</span>`).join('');
+    const alt=[[say('is_bitti'),'iş bitti · proforma bekleniyor'],[say('onay'),'iş onayını bekliyor'],[say('mesaj'),'mesaj cevap bekliyor'],[say('fatura'),'iş fatura bekliyor'],[say('gorev'),'yeni iş verildi'],[say('iade'),'iş iade edildi'],[say('ajanda'),'iş geldi',(()=>{const k=[...new Set(L.filter(x=>x.tur==='ajanda').map(x=>(x.metin||'').split(' iş geldi')[0]))];return k.length===1&&k[0].length<30?k[0]:''})()],[say('teklif'),'teklif isteniyor']].filter(x=>x[0]).map(x=>`<br><span style="font-weight:700">${x[2]?x[2]+' ':''}${x[0]} ${x[1]}</span>`).join('');
     b.innerHTML=`<span>🔔 Bildirim geldi! ${n} bildirim işlem bekliyor${alt}</span><span style="font-weight:700">Gör ›</span>`;
   }else if(b)b.remove();
 }
@@ -525,7 +527,7 @@ function bTurAd(t){const P=me.rol==='patron',ana=P?'Ana Sayfa':me.rol==='ds'?'Bu
   return({mesaj:'💬 Mesaj · Mesajlar sekmesi',ajanda_not:'📝 İş hakkında geri bildirim · '+ana,onay:'✅ Onay bekleyen iş · Ana Sayfa',fatura:'🧾 Fatura · Fatura sekmesi',teklif:'📄 Teklif isteği · Teklif sekmesi',
     teklif_hazir:'📄 Ofis teklifi hazırlıyor · Ana Sayfa',teklif_acildi:'👀 Ofis teklif isteğini açtı · Ana Sayfa',teklif_gonderildi:'📤 Teklif müşteriye gönderildi · Ana Sayfa',teklif_kabul:'📄 Teklif kabul edildi · Projeler',teklif_red:'📄 Teklif reddedildi · Ana Sayfa',gorev:'🛠️ Yeni görev · '+(me.rol==='ds'?'Görevlerim':ana),ajanda:'📌 Verilen iş · '+ana,
     ajanda_bitti:'📌 Verilen iş bitti · '+ana,ajanda_plan:'📋 İş planlandı · '+ana,bitti:'✔️ Görev bitti · Projeler',takip:'📁 Proje · Projeler',iade:'↩ İşveren iade etti · Projeler',onaylandi:'✅ İşveren onayladı · Projeler',
-    kesildi:'🧾 Fatura kesildi · Ana Sayfa',proforma:'📄 Proforma · '+(ofisMi()?'Fatura sekmesi':'Projeler'),odeme:'💰 Ödeme · '+(P?'Ana Sayfa':'Projeler'),rapor:'📊 Aylık rapor · Departman',kayit:'👤 Yeni personel · Ekip'})[t]||'🔔 Bildirim'}
+    kesildi:'🧾 Fatura kesildi · Ana Sayfa',is_bitti:'✔️ İş bitti · Biten İş',proforma:'📄 Proforma · '+(ofisMi()?'Fatura sekmesi':'Projeler'),odeme:'💰 Ödeme · '+(P?'Ana Sayfa':'Projeler'),rapor:'📊 Aylık rapor · Departman',kayit:'👤 Yeni personel · Ekip'})[t]||'🔔 Bildirim'}
 async function vBildirim(m){
   const {data,error}=await sb.from('bildirimler').select('*').order('tarih',{ascending:false});if(hata(error))return;
   const acik=data.filter(x=>!x.islem_yapildi),kapali=data.filter(x=>x.islem_yapildi);
@@ -1331,7 +1333,7 @@ async function vOnay(m){
   const ekip=aktifler().filter(p=>p.rol!=='patron');
   const calisiyor=ekip.filter(p=>G.some(t=>gKisi(t).includes(p.id)&&calisiyorMu(t.durum))).length;
   const tk=await takvim(),pk=await planKarti()+await teklifKarti();
-  m.innerHTML=tk+pk+`<div class="row"><div class="stat"><span class="muted">Onay bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Süren iş</span><b>${devam}</b></div></div>
+  m.innerHTML=tk+pk+`<div class="row"><div class="stat"><span class="muted">Onay bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Süren iş</span><b>${devam}</b></div><div class="stat click" onclick="go('biten')"><span class="muted">Biten iş · proforma bekliyor</span><b style="color:${data.filter(p=>p.durum==='bitti').length?'var(--green)':'inherit'}">${data.filter(p=>p.durum==='bitti').length}</b></div></div>
   <h2 style="margin-top:16px">Onayını bekleyen işler</h2>
   ${bek.length?bek.map(onayKart).join(''):'<div class="card muted">Şu an onayını bekleyen iş yok.</div>'}
   <h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div>${kimNerede(ekip,G)}</div>`;
