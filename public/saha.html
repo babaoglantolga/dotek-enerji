@@ -134,8 +134,8 @@ const DB={
   {id:9,proje_id:3,baslik:'Akü ve şarj testi',atanan_id:'u9',plan_tarih:ds(2),durum:'bekliyor'},
   {id:10,proje_id:5,baslik:'Kart arıza tespiti',atanan_id:'u11',plan_tarih:ds(0),durum:'basladi'},
   {id:11,proje_id:6,baslik:'Motor sökümü ve sarım',atanan_id:'u10',plan_tarih:ds(1),durum:'bekliyor'},
-  {id:40,proje_id:24,baslik:'Atölye ana pano montajı',atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-2),durum:'bitti',bitis_tarihi:iso(gun(-2))},
-  {id:41,proje_id:24,baslik:'Makine besleme hatları',atanan_id:'u4',ekip:['u4','u13'],plan_tarih:ds(-1),durum:'bitti',bitis_tarihi:iso(gun(-1))},
+  {id:40,proje_id:24,baslik:'Atölye ana pano montajı',aciklama:'3 faz dağıtım, 36 modül pano',kisi_sayisi:2,atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-2),durum:'bitti',bitis_tarihi:iso(gun(-2))},
+  {id:41,proje_id:24,baslik:'Makine besleme hatları',aciklama:'Torna ve kaynak makinesi',kisi_sayisi:3,atanan_id:'u4',ekip:['u4','u13'],plan_tarih:ds(-1),durum:'bitti',bitis_tarihi:iso(gun(-1))},
   {id:42,proje_id:24,baslik:'Aydınlatma ve son kontrol',atanan_id:'u3',plan_tarih:ds(0),durum:'bitti',bitis_tarihi:iso(gun(0))},
   {id:30,proje_id:23,baslik:'Soğuk oda panosu montajı',atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-4),durum:'bitti',bitis_tarihi:iso(gun(-4))},
   {id:31,proje_id:23,baslik:'Besleme hattı çekimi (25 m)',atanan_id:'u4',plan_tarih:ds(-3),durum:'bitti',bitis_tarihi:iso(gun(-3))},
@@ -305,7 +305,7 @@ async function fisDemo(du){
 const functions={invoke:async(n,o)=>{try{if(n==='fis-oku')return{data:await fisDemo(o.body.resim),error:null};return{data:{ceviri:await cevirDemo(o.body.hedef,o.body.metinler)},error:null}}catch(e){return{data:null,error:e}}}};
 const rpc=async(n,a)=>{const r=await rpc0(n,a);kaydet();return r};
 // Demo kaydı: girilen her şey bu cihazda saklanır, sayfa yenilense de silinmez ("Sıfırla" ile baştan başlar)
-const KAYIT='dotek_demo_v2';
+const KAYIT='dotek_demo_v3';
 function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
 window.demoSifirla=()=>{if(!confirm('Demo baştan başlasın mı? Girdiğin örnek işler silinir.'))return;try{localStorage.removeItem(KAYIT)}catch(e){}location.reload()};
@@ -907,7 +907,9 @@ async function proformaHazirla(pid){
   let d=p.proforma?JSON.parse(JSON.stringify(p.proforma)):null;
   if(!d){await kurAl();const ppb=p.para_birimi||'TRY';
     const ku=(ml.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,miktar:Number(x.miktar),birim:x.birim,fiyat:Math.round((paraCevir(Number(x.birim_fiyat),x.para_birimi||ppb,ppb)??Number(x.birim_fiyat))*100)/100}));
-    const isler=[...new Set([...(gr.data||[]).filter(t=>t.durum==='bitti').map(t=>t.baslik),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter(Boolean))].slice(0,16);
+    const GB=(gr.data||[]).filter(t=>t.durum==='bitti');
+    window._aktar=[...GB.map(t=>{const n=t.kisi_sayisi||gKisi(t).length;return t.baslik+(t.aciklama?' — '+t.aciklama:'')+(n?' ('+n+' kişi)':'')}),...(isl.data||[]).map(x=>x.aciklama)].map(x=>(x||'').trim()).filter((x,i,a)=>x&&a.indexOf(x)===i).slice(0,16);
+    const isler=[];
     d={tur:'PROFORMA FATURA',no:p.proforma_no,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:p.musteri||'',ilgili:'',adres:p.adres||''},proje:p.ad,konu:p.ad,pb:ppb,kdv:16,isler,
       kalemler:[...ku,{ad:'İşçilik ve hizmet bedeli',miktar:1,birim:'iş',fiyat:Number(p.iscilik||0)}],
       notlar:['Bu belge proforma faturadır; resmi fatura ödeme sonrasında düzenlenir.','Ödeme, vade tarihine kadar aşağıdaki banka hesabına yapılabilir.','Açıklamaya belge numarasını yazmanız rica olunur.'],
@@ -915,7 +917,11 @@ async function proformaHazirla(pid){
   if(!Array.isArray(d.isler))d.isler=[];
   if(p.proforma_no)d.no=p.proforma_no;
   const once=['patronda','onaylandi'].includes(p.durum),P=me.rol==='patron';
-  const ekstra=`<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+  const aktarSor=!p.proforma&&(window._aktar||[]).length?`<div id="aktar" style="margin-top:12px;padding:12px;border:2px solid #9fd3b2;background:#eefaf2;border-radius:12px"><b style="font-size:16px">Planlamadaki yapılan işleri aktarmak ister misin?</b>
+     <div class="muted" style="margin-top:2px">${window._aktar.length} iş: ${window._aktar.slice(0,3).map(esc).join(' · ')}${window._aktar.length>3?' …':''}</div>
+     <div class="durumlar" style="margin-top:10px"><button class="btn g" onclick="proformaAktar(true)">Evet, aktar</button><button class="btn l" onclick="proformaAktar(false)">Hayır</button></div></div>`:'';
+  window._aktarHTML=aktarSor;
+  const ekstra=`<div id="aktarK">${aktarSor}</div><div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
    ${once?`<div class="muted">${p.durum==='patronda'?'Doğuş\'un onayında':'Onaylandı, Ofis\'te'}. Fatura kesilene kadar düzeltebilirsin; gönderince Doğuş\'a ve Ofis\'e "güncellendi" bilgisi gider.</div>`:`<div class="muted">Yapılan işler ve kullanılan malzemeler otomatik yazıldı. <b>İşçilik</b> fiyatını yazmayı unutma.</div>`}
    <button class="btn g w" style="margin-top:8px;font-size:16px;padding:14px" onclick="proformaSor()">📤 ${once?'Güncellemeyi gönder':P?'Onayla ve Ofis\'e gönder':'Doğuş\'a ve Ofis\'e gönder'}</button>
    <div id="psor" hidden style="margin-top:10px;padding:12px;border:2px solid #f3d36b;background:#fffbea;border-radius:12px"><b style="font-size:16px">Eklemek istediğin başka bir iş ya da malzeme var mı?</b>
@@ -923,6 +929,7 @@ async function proformaHazirla(pid){
      <div class="durumlar" style="margin-top:10px"><button class="btn l" onclick="proformaEkle()">+ Evet, ekleyeceğim</button><button class="btn g" onclick="proformaGonder(${pid},true)">Hayır, gönder</button></div></div></div>`;
   vBelgeAc(d,()=>proformaGonder(pid,false),()=>openP(pid,'fiyat'),ekstra);
 }
+function proformaAktar(evet){if(evet){BELGE.d.isler=[...(window._aktar||[])];toast('Yapılan işler proformaya aktarıldı')}BELGE.ekstra=BELGE.ekstra.replace(window._aktarHTML||'@@','');window._aktar=[];render()}
 function proformaSor(){const k=$('#psor');if(!k)return;k.hidden=false;k.querySelector('b+div b').textContent=bPara(bHesap(BELGE.d).gen,BELGE.d.pb);k.scrollIntoView({behavior:'smooth',block:'center'})}
 function proformaEkle(){BELGE.d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0});render();setTimeout(()=>{const x=[...document.querySelectorAll('[aria-label="Açıklama"]')].pop();if(x){x.scrollIntoView({block:'center'});x.focus()}},60)}
 async function proformaGonder(pid,gonder){
@@ -1244,12 +1251,13 @@ async function vGorevEkle(pid){
    <label for="gb">Ne yapılacak *</label><input id="gb" name="b" required placeholder="Örn: Ana pano montajı">
    <label>Kim yapacak? (bir veya birkaç kişi seç) *</label><div id="gk">${kisiSec(ekipOf(sec.departman_id),'k')}</div>
    <label for="gt">Tarih</label><input id="gt" type="date" name="t" value="${S.gun||gunStr(new Date())}">
-   <label for="ga">Detay</label><textarea id="ga" name="a" rows="2"></textarea>
+   <label for="ga">Yapılacak iş (detay)</label><textarea id="ga" name="a" rows="2" placeholder="Örn: 3 faz pano, 24 sigorta, topraklama"></textarea>
+   <label>Kaç kişi çalışacak?</label><input name="ks" type="number" min="1" step="1" placeholder="Boş bırakırsan seçilen kişi sayısı"><div class="muted" style="font-size:12px">Dışarıdan yardımcı gelecekse onları da say.</div>
    <button class="btn w" style="margin-top:14px">Görevi ata</button></form>`;
   window.P_SEC=P;
   $('#gf2').onsubmit=async e=>{e.preventDefault();const f=e.target;
     const k=secilenler(f,'k');if(!k.length)return toast('En az bir kişi seç');
-    const {error}=await sb.from('gorevler').insert({proje_id:Number(f.p.value),baslik:f.b.value.trim(),aciklama:f.a.value.trim()||null,atanan_id:k[0],ekip:k,plan_tarih:f.t.value||null});
+    const {error}=await sb.from('gorevler').insert({proje_id:Number(f.p.value),baslik:f.b.value.trim(),aciklama:f.a.value.trim()||null,atanan_id:k[0],ekip:k,kisi_sayisi:Number(f.ks.value)||k.length,plan_tarih:f.t.value||null});
     if(hata(error))return;toast('Görev atandı, bildirim gitti');render()};
 }
 
@@ -1414,8 +1422,9 @@ async function vProje(m){
       ${!kilit&&(bende(t)||yon)?`<div style="margin-top:10px;display:grid;gap:6px">${gBtn(t)}${duz?`<button class="btn s l" style="justify-self:end;color:var(--red)" onclick="sil('gorevler',${t.id})">Görevi sil</button>`:''}</div>`:''}</div>`).join('')||'<div class="card muted">Henüz görev planlanmadı.</div>';
     if(duz) body+=`<form id="gf" class="card"><h3>+ Görev planla ve ata</h3>
       <label>Ne yapılacak *</label><input name="b" required placeholder="Örn: Ana pano montajı">
-      <label>Detay</label><textarea name="a" rows="2"></textarea>
+      <label>Yapılacak iş (detay)</label><textarea name="a" rows="2" placeholder="Örn: 3 faz pano, 24 sigorta, topraklama"></textarea>
       <label>Kim yapacak? (bir veya birkaç kişi seç) *</label>${kisiSec(ekipOf(p.departman_id),'k')}
+      <label>Kaç kişi çalışacak?</label><input name="ks" type="number" min="1" step="1" placeholder="Boş bırakırsan seçilen kişi sayısı"><div class="muted" style="font-size:12px">Dışarıdan yardımcı gelecekse onları da say.</div>
       <label>Planlanan tarih</label><input type="date" name="t">
       <button class="btn w" style="margin-top:12px">Görevi ata</button></form>`;
   }
@@ -1489,7 +1498,7 @@ async function vProje(m){
 
   const gf=$('#gf');if(gf)gf.onsubmit=async e=>{e.preventDefault();
     const k=secilenler(gf,'k');if(!k.length)return toast('En az bir kişi seç');
-    const {error}=await sb.from('gorevler').insert({proje_id:id,baslik:gf.b.value.trim(),aciklama:gf.a.value.trim()||null,atanan_id:k[0],ekip:k,plan_tarih:gf.t.value||null});
+    const {error}=await sb.from('gorevler').insert({proje_id:id,baslik:gf.b.value.trim(),aciklama:gf.a.value.trim()||null,atanan_id:k[0],ekip:k,kisi_sayisi:Number(gf.ks.value)||k.length,plan_tarih:gf.t.value||null});
     if(hata(error))return;toast('Görev atandı');render()};
   const iff=$('#if');if(iff)iff.onsubmit=async e=>{e.preventDefault();
     const {error}=await sb.from('islemler').insert({proje_id:id,gorev_id:Number(iff.g.value)||null,aciklama:iff.a.value.trim(),sure_saat:Number(iff.s.value)||null});
