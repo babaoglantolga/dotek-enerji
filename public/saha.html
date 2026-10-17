@@ -214,7 +214,7 @@ const pAd=id=>(DB.profiller.find(p=>p.id===id)||{}).ad||'';
 const ekli=ad=>{const a=(ad||'Biri').split(' ')[0],son=a.slice(-1).toLowerCase(),v=(a.match(/[aeıioöuüAEIİOÖUÜ]/g)||['a']).pop().toLocaleLowerCase('tr');return a+"'"+('fstkçşhp'.includes(son)?'t':'d')+('eiöü'.includes(v)?'en':'an')};
 // İşveren bir departman sorumlusuna iş verince proje otomatik açılır (SQL: ajanda_proje_ac)
 function ajProje(r){const k=DB.profiller.find(p=>p.id===r.atanan_id);if(r.proje_id||!k||k.rol!=='ds'||r.atanan_id===r.sahip_id)return;const d=DB.departmanlar.find(x=>x.id===k.departman_id);if(!d||d.ofis)return;
- const p={id:nid++,departman_id:d.id,ad:r.baslik,aciklama:r.aciklama||(pAd(r.sahip_id)+' tarafından verildi'),takipci_id:k.id,durum:'acik',iscilik:0,para_birimi:'TRY',baslangic:r.tarih||null,olusturan:r.sahip_id,olusturma:new Date().toISOString()};DB.projeler.push(p);r.proje_id=p.id}
+ const p={id:nid++,departman_id:d.id,ad:r.baslik,musteri:(r.musteri||'').trim()||null,aciklama:r.aciklama||(pAd(r.sahip_id)+' tarafından verildi'),takipci_id:k.id,durum:'acik',iscilik:0,para_birimi:'TRY',baslangic:r.tarih||null,olusturan:r.sahip_id,olusturma:new Date().toISOString()};DB.projeler.push(p);r.proje_id=p.id}
 DB.ajanda.forEach(ajProje);
 const gorunur={teklifler:r=>ofisM()||meP().rol==='patron'||(meP().rol==='ds'&&(r.departman_id===meP().departman_id||r.olusturan===CUR)),ajanda_notlar:r=>{const a=DB.ajanda.find(x=>x.id===r.ajanda_id)||{};return a.sahip_id===CUR||a.atanan_id===CUR||meP().rol==='patron'},ajanda:r=>r.sahip_id===CUR||r.atanan_id===CUR||meP().rol==='patron',bildirimler:r=>r.alici_id===CUR,projeler:r=>erisim(r.id),gorevler:r=>takipEder(r.proje_id)||kis(r).includes(CUR),islemler:r=>takipEder(r.proje_id)||r.kullanici_id===CUR,malzemeler:r=>takipEder(r.proje_id)||(ofisM()&&(DB.projeler.find(x=>x.id===r.proje_id)||{}).durum==='onaylandi')};
 const varsay={teklifler:()=>({durum:'taslak',olusturan:CUR,tarih:new Date().toISOString()}),projeler:{durum:'acik',iscilik:0,para_birimi:'TRY'},gorevler:{durum:'bekliyor'},islemler:()=>({kullanici_id:CUR,tarih:new Date().toISOString()}),malzemeler:{birim:'adet',para_birimi:'TRY'},ajanda:{durum:'bekliyor',para_birimi:'TRY'},ajanda_notlar:()=>({yazan_id:CUR,tarih:new Date().toISOString()}),mesajlar:()=>({gonderen_id:CUR,tarih:new Date().toISOString()})};
@@ -675,12 +675,14 @@ function vPlanEkle(){
   const kisiler=aktifler().filter(p=>p.id!==me.id&&(me.rol==='patron'||p.departman_id===me.departman_id));
   m.innerHTML=`<button class="btn s l" onclick="render()">← Geri</button><h2 style="margin-top:10px">İş ekle</h2><form id="pf" class="card">
    <label for="pb1">Ne yapılacak *</label><input id="pb1" name="b" required placeholder="Örn: Otel teklifini hazırla">
+   <label for="pm1">Müşteri (kimin işi?)</label><input id="pm1" name="mu" list="pml" placeholder="Örn: Ramazan Küçüksu"><datalist id="pml"></datalist>
    <label for="pk1">Kim yapacak</label><select id="pk1" name="k"><option value="${me.id}">Kendim (${esc(me.ad)})</option>${kisiler.map(p=>`<option value="${p.id}">${esc(p.ad)} · ${p.rol==='ds'?'Sorumlu':'Çalışan'}${p.departman_id?' · '+esc(dname(p.departman_id)):''}</option>`).join('')}</select>
    <div class="row"><div style="flex:1;min-width:0"><label for="pt1">Tarih</label><input id="pt1" type="date" name="t" value="${S.gun||gunStr(new Date())}"></div><div style="flex:1;min-width:0"><label for="ps1">Saat</label><input id="ps1" type="time" name="s"></div></div>
    <label for="pa1">Not</label><textarea id="pa1" name="a" rows="2"></textarea>
    <button class="btn w" style="margin-top:14px">Kaydet</button></form>`;
+  sb.from('projeler').select('musteri').then(r=>{const dl=$('#pml');if(dl)dl.innerHTML=[...new Set((r.data||[]).map(x=>(x.musteri||'').trim()).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')});
   $('#pf').onsubmit=async e=>{e.preventDefault();const f=e.target;
-    const {error}=await sb.from('ajanda').insert({sahip_id:me.id,atanan_id:f.k.value,baslik:f.b.value.trim(),aciklama:f.a.value.trim()||null,tarih:f.t.value||null,saat:f.s.value||null});
+    const {error}=await sb.from('ajanda').insert({sahip_id:me.id,atanan_id:f.k.value,baslik:f.b.value.trim(),musteri:f.mu.value.trim()||null,aciklama:f.a.value.trim()||null,tarih:f.t.value||null,saat:f.s.value||null});
     if(hata(error))return;toast(f.k.value===me.id?'İş kaydedildi':'İş verildi, bildirim gitti');render()};
 }
 
@@ -1067,11 +1069,12 @@ async function vCari(m){
      <h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">Biten işler (${bit.length})</h3>${bit.map(isKart).join('')||'<div class="card muted">Henüz biten iş yok.</div>'}
      ${c.tk.length?`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">Teklifler (${c.tk.length})</h3><div class="card" style="padding-block:4px">${c.tk.map(t=>{const h=bHesap({kalemler:t.kalemler||[],kdv:t.kdv});return`<div class="row sp click" style="padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div style="min-width:0"><b style="font-weight:600">${esc(t.no||'')} · ${ic(t.konu||'')}</b><div class="muted">${tarih(t.tarih)}${h.gen?' · '+bPara(h.gen,t.para_birimi):''}</div></div><span class="chip ${t.durum==='kabul'?'c-bitti':t.durum==='red'?'c-iade':'c-bekliyor'}">${TKD[t.durum]||t.durum}</span></div>`}).join('')}</div>`:''}`;
     return scrollTo(0,0)}
-  const L=Object.entries(C).sort((a,b)=>b[1].son-a[1].son);
+  const L=Object.entries(C).sort((a,b)=>b[1].son-a[1].son),adsiz=(pr.data||[]).filter(p=>!cariAnahtar(p.musteri));
   m.innerHTML=paraDurumuKart(pr.data||[])+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
    <input id="cq" type="search" placeholder="Müşteri ara…" style="margin-bottom:8px">
    ${L.map(([k,c])=>{const ak=c.is.filter(p=>kal(p)>0);return`<div class="card click cr" data-q="${esc(k.toLocaleLowerCase('tr'))}" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(c.ad)}</b>${ak.length?`<b style="color:var(--red);white-space:nowrap">${sumPB(ak,kal)}</b>`:''}</div>
-     <div class="muted">${c.is.length} iş${c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length?' · '+c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length+' biten':''}${c.tk.length?' · '+c.tk.length+' teklif':''}${ak.length?' · alacak var':''}</div></div>`}).join('')||'<div class="card muted">Henüz müşteri yok. Projelere ve tekliflere yazılan müşteri adları burada toplanır.</div>'}`;
+     <div class="muted">${c.is.length} iş${c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length?' · '+c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length+' biten':''}${c.tk.length?' · '+c.tk.length+' teklif':''}${ak.length?' · alacak var':''}</div></div>`}).join('')||'<div class="card muted">Henüz müşteri yok. Projelere ve tekliflere yazılan müşteri adları burada toplanır.</div>'}
+   ${adsiz.length?`<div class="card" style="border-color:#f3d36b;background:#fffbea;margin-top:10px"><b>Müşterisi yazılmamış işler (${adsiz.length})</b><div class="muted" style="font-size:13px">İşi açıp "Müşteri" kutusuna adı yaz, buraya düşer.</div>${adsiz.map(p=>`<div class="row sp click" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap" onclick="openP(${p.id},'gorev')"><span style="min-width:0">${esc(p.ad)} <span class="muted">· ${esc(dname(p.departman_id))}</span></span><b style="color:var(--blue)">Yaz ›</b></div>`).join('')}</div>`:''}`;
   const q=$('#cq');if(q)q.oninput=()=>{const v=q.value.trim().toLocaleLowerCase('tr');m.querySelectorAll('.cr').forEach(d=>d.hidden=!!v&&!d.dataset.q.includes(v))};
 }
 
@@ -1520,7 +1523,8 @@ async function vProje(m){
      :me.rol!=='calisan'&&p.proforma_no?`<button class="btn l w" style="margin-top:10px" onclick="${proformaBtn(p)}">📄 Proforma ${esc(p.proforma_no)} · ${proformaDuzenler(p)?'aç / düzelt':'gör / indir'}</button>`:''}
    ${duz?`<div class="row" style="margin-top:10px">
      <div style="flex:1;min-width:140px"><label>Durum</label><select onchange="pSet(${id},{durum:this.value})">${['acik','devam','bitti'].map(k=>`<option value="${k}" ${p.durum===k?'selected':''}>${DURUM[k]}</option>`).join('')}${p.durum==='iade'?'<option value="iade" selected>İade edildi</option>':''}</select></div>
-     <div style="flex:1;min-width:140px"><label>Takip eden</label><select onchange="pSet(${id},{takipci_id:this.value||null})">${opts(ekipOf(p.departman_id),p.takipci_id,p.departman_id)}</select></div></div>`:''}
+     <div style="flex:1;min-width:140px"><label>Takip eden</label><select onchange="pSet(${id},{takipci_id:this.value||null})">${opts(ekipOf(p.departman_id),p.takipci_id,p.departman_id)}</select></div></div>
+     <label>Müşteri</label><input value="${esc(p.musteri||'')}" placeholder="Müşteri adını yaz (Müşteri sekmesinde toplanır)" onchange="pSet(${id},{musteri:this.value.trim()||null})">`:''}
   </div>
   <div class="tabs">${sek.map(([k,t])=>`<button class="${S.ptab===k?'on':''}" onclick="S.ptab='${k}';render()">${t}</button>`).join('')}</div><div id="pt"></div>`;
   m.innerHTML=ust;
