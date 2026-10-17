@@ -21,7 +21,7 @@ body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;b
 header.top{background:var(--navy);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:env(safe-area-inset-top,0px);z-index:5}
 main{padding-block:12px 90px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:820px;margin:0 auto}
 nav.bottom{position:fixed;bottom:0;padding-bottom:env(safe-area-inset-bottom,0px);left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:5}
-nav.bottom button{flex:1;padding:14px 4px;border:0;background:none;font:inherit;font-size:14px;color:var(--muted);font-weight:700;cursor:pointer}
+nav.bottom button{flex:1;min-width:0;padding:14px 4px;border:0;background:none;font:inherit;font-size:clamp(11px,3.3vw,14px);white-space:nowrap;color:var(--muted);font-weight:700;cursor:pointer}
 nav.bottom button.on{color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
 .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
@@ -115,6 +115,8 @@ const DB={
   {id:5,departman_id:3,ad:'Jeneratör kontrol kartı tamiri',musteri:'Lefkoşa Palace Otel',takipci_id:'u8',durum:'devam',iscilik:0,fiyat:null,baslangic:ds(-2),olusturma:iso(gun(-2))},
   {id:6,departman_id:4,ad:'Su pompası motor sarımı',musteri:'Alsancak Belediyesi',takipci_id:'u1',durum:'acik',iscilik:0,fiyat:null,baslangic:ds(1),olusturma:iso(gun(-1))},
   {id:4,departman_id:1,ad:'Ofis aydınlatma değişimi',musteri:'Ercan Lojistik',takipci_id:'u2',durum:'onaylandi',iscilik:3000,fiyat:9200,gonderim:iso(gun(-4)),onay_tarihi:iso(gun(-3)),fatura_durum:'kesildi',fatura_no:'A-1042',fatura_tarihi:iso(gun(-2)),odeme_durum:'bekliyor',odenen:0,olusturma:iso(gun(-14))},
+  {id:24,departman_id:1,ad:'RAMAZAN KÜÇÜKSU ATÖLYE 1',musteri:'Ramazan Küçüksu',adres:'Gazimağusa',aciklama:'Doğuş Yanal tarafından verildi',takipci_id:'u2',durum:'bitti',iscilik:0,fiyat:null,baslangic:ds(-3),olusturan:'u1',olusturma:iso(gun(-4))},
+  {id:25,departman_id:1,ad:'RAMAZAN KÜÇÜKSU ATÖLYE 2',musteri:'Ramazan Küçüksu',adres:'Gazimağusa',aciklama:'Doğuş Yanal tarafından verildi',takipci_id:'u2',durum:'acik',iscilik:0,fiyat:null,baslangic:ds(1),olusturan:'u1',olusturma:iso(gun(0))},
   {id:23,departman_id:1,ad:'Lemar Market soğuk oda elektrik tesisatı',musteri:'Lemar Market',adres:'Gazimağusa, Sakarya',aciklama:'Soğuk oda için ayrı pano, besleme hattı ve aydınlatma.',takipci_id:'u2',durum:'bitti',iscilik:0,fiyat:null,baslangic:ds(-6),bitis:ds(-1),olusturma:iso(gun(-8))},
   {id:20,departman_id:2,ad:'Market jeneratör yıllık bakım',musteri:'Kıbrıs Market',adres:'Gazimağusa',takipci_id:'u5',durum:'onaylandi',iscilik:2500,fiyat:4800,gonderim:iso(gun(-44)),onay_tarihi:iso(gun(-43)),fatura_durum:'kesildi',fatura_no:'A-1031',fatura_tarihi:iso(gun(-41)),odeme_durum:'kismi',odenen:2000,olusturma:iso(gun(-50))},
   {id:21,departman_id:1,ad:'Villa havuz pano tesisatı',musteri:'Aydın Ailesi',adres:'Girne, Çatalköy',takipci_id:'u2',durum:'onaylandi',iscilik:4000,fiyat:12500,gonderim:iso(gun(-25)),onay_tarihi:iso(gun(-24)),fatura_durum:'kesildi',fatura_no:'A-1036',fatura_tarihi:iso(gun(-23)),odeme_durum:'alindi',odenen:12500,odeme_tarihi:iso(gun(-6)),olusturma:iso(gun(-30))},
@@ -132,10 +134,16 @@ const DB={
   {id:9,proje_id:3,baslik:'Akü ve şarj testi',atanan_id:'u9',plan_tarih:ds(2),durum:'bekliyor'},
   {id:10,proje_id:5,baslik:'Kart arıza tespiti',atanan_id:'u11',plan_tarih:ds(0),durum:'basladi'},
   {id:11,proje_id:6,baslik:'Motor sökümü ve sarım',atanan_id:'u10',plan_tarih:ds(1),durum:'bekliyor'},
+  {id:40,proje_id:24,baslik:'Atölye ana pano montajı',atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-2),durum:'bitti',bitis_tarihi:iso(gun(-2))},
+  {id:41,proje_id:24,baslik:'Makine besleme hatları',atanan_id:'u4',ekip:['u4','u13'],plan_tarih:ds(-1),durum:'bitti',bitis_tarihi:iso(gun(-1))},
+  {id:42,proje_id:24,baslik:'Aydınlatma ve son kontrol',atanan_id:'u3',plan_tarih:ds(0),durum:'bitti',bitis_tarihi:iso(gun(0))},
   {id:30,proje_id:23,baslik:'Soğuk oda panosu montajı',atanan_id:'u3',ekip:['u3','u4'],plan_tarih:ds(-4),durum:'bitti',bitis_tarihi:iso(gun(-4))},
   {id:31,proje_id:23,baslik:'Besleme hattı çekimi (25 m)',atanan_id:'u4',plan_tarih:ds(-3),durum:'bitti',bitis_tarihi:iso(gun(-3))},
   {id:32,proje_id:23,baslik:'LED aydınlatma ve test',atanan_id:'u3',plan_tarih:ds(-1),durum:'bitti',bitis_tarihi:iso(gun(-1))}],
  islemler:[
+  {id:40,proje_id:24,gorev_id:40,kullanici_id:'u3',aciklama:'Ana pano ve 3 faz dağıtım kuruldu.',sure_saat:6,tarih:iso(gun(-2))},
+  {id:41,proje_id:24,gorev_id:41,kullanici_id:'u4',aciklama:'Torna ve kaynak makinesi hatları çekildi.',sure_saat:5,tarih:iso(gun(-1))},
+  {id:42,proje_id:24,gorev_id:42,kullanici_id:'u3',aciklama:'Aydınlatma takıldı, tüm hatlar test edildi.',sure_saat:3,tarih:iso(gun(0))},
   {id:30,proje_id:23,gorev_id:30,kullanici_id:'u3',aciklama:'Kaçak akım rölesi ve termik koruma takıldı.',sure_saat:6,tarih:iso(gun(-4))},
   {id:31,proje_id:23,gorev_id:32,kullanici_id:'u3',aciklama:'Tüm hatlar ölçüldü, izolasyon testi tamam.',sure_saat:3,tarih:iso(gun(-1))},
   {id:1,proje_id:1,gorev_id:1,kullanici_id:'u3',aciklama:'Tüm odalara kablo çekildi, buatlar takıldı.',sure_saat:7,tarih:iso(gun(-5))},
@@ -153,6 +161,7 @@ const DB={
   {id:3,alici_id:'u3',metin:'Sana yeni iş verildi: Topraklama ölçümü · Girne villa elektrik tesisatı',proje_id:1,tur:'gorev',islem_yapildi:false,tarih:iso(gun(-1))},
   {id:4,alici_id:'u2',metin:'Michael bitirdi: Kablo çekimi · Girne villa elektrik tesisatı',proje_id:1,tur:'bitti',islem_yapildi:true,tarih:iso(gun(-5))},
   {id:6,alici_id:'u7',metin:'Fatura için bekliyor: Otel mutfak aspiratör motoru sarımı · 650 EUR',proje_id:7,tur:'fatura',islem_yapildi:false,tarih:iso(gun(-1))},
+  {id:60,alici_id:'u2',metin:"Doğuş'tan iş geldi: RAMAZAN KÜÇÜKSU ATÖLYE 2",tur:'ajanda',ajanda_id:6,islem_yapildi:false,tarih:iso(gun(0))},
   {id:7,alici_id:'u2',metin:'Doğuş\'tan iş geldi: Otel için yeni pano teklifini hazırla',tur:'ajanda',ajanda_id:2,islem_yapildi:false,tarih:iso(gun(0))},
   {id:8,alici_id:'u7',metin:'Doğuş\'tan iş geldi: KDV evraklarını muhasebeciye gönder',tur:'ajanda',ajanda_id:3,islem_yapildi:false,tarih:iso(gun(0))},
   {id:9,alici_id:'u1',metin:'Esat Tuğralı geri bildirim yazdı (Otel için yeni pano teklifini hazırla): Otelden ölçüleri aldım, yarın fiyatı çıkarıyorum.',tur:'ajanda_not',ajanda_id:2,islem_yapildi:false,tarih:iso(gun(0))},
@@ -163,6 +172,8 @@ const DB={
   {id:2,proje_id:21,tutar:12500,para_birimi:'TRY',yontem:'havale',tarih:ds(-6),aciklama:'Dekont 88412'},
   {id:3,proje_id:22,tutar:3200,para_birimi:'TRY',yontem:'cek',tarih:ds(-35)}],
  ajanda:[
+  {id:5,sahip_id:'u1',atanan_id:'u2',baslik:'RAMAZAN KÜÇÜKSU ATÖLYE 1',aciklama:'Atölye elektrik tesisatı',tarih:ds(-3),durum:'planlandi',proje_id:24},
+  {id:6,sahip_id:'u1',atanan_id:'u2',baslik:'RAMAZAN KÜÇÜKSU ATÖLYE 2',aciklama:'Atölye elektrik tesisatı',tarih:ds(1),durum:'bekliyor',proje_id:25},
   {id:1,sahip_id:'u1',atanan_id:'u1',baslik:'Banka — teminat mektubu',saat:'10:00:00',tarih:ds(0),durum:'bekliyor'},
   {id:2,sahip_id:'u1',atanan_id:'u2',baslik:'Otel için yeni pano teklifini hazırla',aciklama:'Pazartesiye kadar fiyat ver.',tarih:ds(1),durum:'bekliyor'},
   {id:3,sahip_id:'u1',atanan_id:'u7',baslik:'KDV evraklarını muhasebeciye gönder',tarih:ds(2),durum:'bekliyor'},
@@ -173,6 +184,10 @@ const DB={
   {id:113,no:'TKL-2026-0113',musteri:'Alsancak Belediyesi',ilgili:'Fen İşleri · 0533 000 00 00',adres:'Alsancak, Girne',konu:'Su pompası için otomatik kumanda panosu',proje_adi:'Su pompası kumanda panosu',departman_id:1,para_birimi:'TRY',kdv:16,gecerlilik:ds(15),sartlar:'',kalemler:[{ad:'Su pompası için otomatik kumanda panosu',miktar:1,birim:'iş',fiyat:0}],durum:'istendi',olusturan:'u1',tarih:iso(gun(0))},
   {id:112,no:'TKL-2026-0112',olusturan:'u1',acan:'u7',acilma_tarih:iso(gun(-1)),musteri:'Lefkoşa Palace Otel',ilgili:'Teknik Müdürlük',adres:'Lefkoşa, KKTC',konu:'250 kVA dizel jeneratör periyodik bakım teklifi',proje_adi:'Otel 250 kVA jeneratör bakımı',departman_id:2,para_birimi:'EUR',kdv:16,gecerlilik:ds(15),sartlar:'Teklif 15 gün geçerlidir.\nÖdeme: %50 sipariş onayında, %50 iş tesliminde.\nİşçiliğe 6 ay garanti verilir.',kalemler:[{ad:'Periyodik bakım işçiliği ve genel kontrol',miktar:1,birim:'iş',fiyat:280},{ad:'Motor yağı 15W-40',miktar:40,birim:'litre',fiyat:6.5},{ad:'Yağ filtresi',miktar:2,birim:'adet',fiyat:24},{ad:'Yakıt filtresi',miktar:2,birim:'adet',fiyat:32},{ad:'Hava filtresi',miktar:1,birim:'adet',fiyat:85}],durum:'gonderildi',gonderim_kanal:'WhatsApp',gonderim_tarih:iso(gun(-1)),gonderen:'u7',tarih:iso(gun(-1))}],
  malzemeler:[
+  {id:40,proje_id:24,tur:'kullanilan',ad:'Sıva üstü pano 36 modül',miktar:1,birim:'adet',birim_fiyat:1850},
+  {id:41,proje_id:24,tur:'kullanilan',ad:'5x10 mm² NYY kablo',miktar:40,birim:'metre',birim_fiyat:95},
+  {id:42,proje_id:24,tur:'kullanilan',ad:'Otomatik sigorta C32 3 faz',miktar:4,birim:'adet',birim_fiyat:240},
+  {id:43,proje_id:24,tur:'kullanilan',ad:'LED etanj armatür 150 cm',miktar:8,birim:'adet',birim_fiyat:480},
   {id:30,proje_id:23,tur:'alinan',ad:'4x6 mm² NYY kablo',miktar:30,birim:'metre',birim_fiyat:62},
   {id:31,proje_id:23,tur:'kullanilan',ad:'4x6 mm² NYY kablo',miktar:25,birim:'metre',birim_fiyat:62},
   {id:32,proje_id:23,tur:'kullanilan',ad:'Sıva üstü pano 24 modül',miktar:1,birim:'adet',birim_fiyat:1450},
@@ -290,7 +305,7 @@ async function fisDemo(du){
 const functions={invoke:async(n,o)=>{try{if(n==='fis-oku')return{data:await fisDemo(o.body.resim),error:null};return{data:{ceviri:await cevirDemo(o.body.hedef,o.body.metinler)},error:null}}catch(e){return{data:null,error:e}}}};
 const rpc=async(n,a)=>{const r=await rpc0(n,a);kaydet();return r};
 // Demo kaydı: girilen her şey bu cihazda saklanır, sayfa yenilense de silinmez ("Sıfırla" ile baştan başlar)
-const KAYIT='dotek_demo_v1';
+const KAYIT='dotek_demo_v2';
 function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
 window.demoSifirla=()=>{if(!confirm('Demo baştan başlasın mı? Girdiğin örnek işler silinir.'))return;try{localStorage.removeItem(KAYIT)}catch(e){}location.reload()};
@@ -433,9 +448,9 @@ async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewL
 
 // ---------------- Kabuk ----------------
 function tabsFor(){
-  if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['mesajlar','Mesajlar'],['ekip','Ekip']];
+  if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['mesajlar','Mesajlar'],['ekip','Ekip']];
   if(ofisMi())return me.rol==='ds'?[['fatura','Fatura'],['teklif','Teklif'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']]:[['fatura','Fatura'],['teklif','Teklif'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
-  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']];
+  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
@@ -443,7 +458,7 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom">${tabsFor().map(([k,t])=>`<button class="${S.tab===k&&!S.pid?'on':''}" onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
 function go(k){if(k!=='departmanlar')S.rap=0;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
@@ -464,10 +479,11 @@ async function navSayilar(L){
   const say=(...t)=>L.filter(x=>t.includes(x.tur)).length;
   const [pr,gr,aj]=await Promise.all([sb.from('projeler').select('id,durum,fatura_durum,departman_id'),sb.from('gorevler').select('*'),sb.from('ajanda').select('id,atanan_id,sahip_id,durum')]);
   const P=pr.data||[],G=(gr.data||[]).filter(t=>bende(t)&&t.durum!=='bitti'),A=(aj.data||[]).filter(a=>a.atanan_id===me.id&&a.sahip_id!==me.id&&a.durum!=='bitti');
-  const aktifSay=P.filter(p=>['acik','devam','bitti','iade'].includes(p.durum)).length;
+  const aktifSay=P.filter(p=>['acik','devam','iade'].includes(p.durum)).length,bitenSay=P.filter(p=>p.durum==='bitti').length;
   const N={
     onay:[P.filter(p=>p.durum==='patronda').length+say('kayit','teklif_kabul','teklif_red','teklif_hazir','ajanda_bitti','ajanda_plan','ajanda_not'),'r'],
-    projeler:[say('takip','iade','bitti')||aktifSay,say('takip','iade','bitti')?'r':'g'],
+    projeler:[say('takip','iade')||aktifSay,say('takip','iade')?'r':'g'],
+    biten:me.rol==='patron'?[P.filter(p=>p.durum==='patronda').length,'r']:[bitenSay+say('bitti'),bitenSay?'r':'g'],
     planlama:[say('ajanda','gorev'),'r'],
     gorevlerim:[G.length+A.length,say('gorev','ajanda')?'r':'g'],
     mesajlar:[say('mesaj'),'r'],
@@ -1317,18 +1333,21 @@ async function vProjeler(m){
   const {data,error}=await sb.from('projeler').select('*').order('olusturma',{ascending:false});
   if(hata(error))return;
   const flt={aktif:p=>['acik','devam','bitti','iade'].includes(p.durum),patronda:p=>p.durum==='patronda',hepsi:p=>me.rol!=='patron'||p.durum!=='onaylandi'};
-  const list=data.filter(flt[S.f]);
-  const tk=await takvim(true);
+  const BIT=S.tab==='biten';
+  const CAL=me.rol==='calisan';
+  const list=CAL?data:BIT?data.filter(p=>['bitti','patronda','onaylandi'].includes(p.durum)):data.filter(p=>['acik','devam','iade'].includes(p.durum));
+  const tk=BIT?'':await takvim(true);
   const {data:GG}=await sb.from('gorevler').select('*').order('plan_tarih',{ascending:true,nullsFirst:false});
-  const SIRA=me.rol==='patron'?['devam','acik','iade','bitti','patronda']:['devam','acik','iade','bitti','patronda','ofis','odeme','odendi'];
-  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:'İş bitti · fiyat bekliyor',patronda:'İşverene gönderildi · onay bekliyor',ofis:'Onaylandı · Ofiste fatura bekliyor',odeme:'Fatura kesildi · ödeme bekleniyor',odendi:'Ödendi · arşiv'};
+  const SIRA=CAL?['devam','acik','iade','bitti','patronda','ofis','odeme','odendi']:BIT?['bitti','patronda','ofis','odeme','odendi']:['devam','acik','iade'];
+  const BASLIK={devam:'Devam eden',acik:'Açık (başlamadı)',iade:'İşveren iade etti',bitti:'İş bitti · proforma hazırlanacak',patronda:'İşverene gönderildi · onay bekliyor',ofis:'Onaylandı · Ofiste fatura bekliyor',odeme:'Fatura kesildi · ödeme bekleniyor',odendi:'Ödendi · arşiv'};
   const gk=p=>p.durum!=='onaylandi'?p.durum:p.fatura_durum!=='kesildi'?'ofis':p.odeme_durum==='alindi'?'odendi':'odeme';
   const grup=SIRA.map(d=>{const l=list.filter(p=>gk(p)===d);if(!l.length)return'';const h=`${BASLIK[d]} (${l.length})`,k=l.map(p=>projeKart(p,GG||[])).join('');
     return d==='odendi'?`<details style="margin-top:14px"><summary style="font-size:14px;font-weight:700">${h}</summary>${k}</details>`:`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${h}</h3>${k}`}).join('');
-  m.innerHTML=tk+`<div class="row sp"><h2>${me.rol==='calisan'?'Projelerim':'Tüm projeler'}</h2>${me.rol!=='calisan'?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
-  <div class="tabs">${[['hepsi','Hepsi'],['aktif','Aktif'],['patronda','İşverende']].map(([k,t])=>`<button class="${S.f===k?'on':''}" onclick="S.f='${k}';render()">${t} (${data.filter(flt[k]).length})</button>`).join('')}</div>
+  m.innerHTML=BIT?`<h2>Biten işler</h2><div class="muted" style="margin:-4px 0 6px">İş bitti → proforma → işveren onayı → Ofis fatura → ödeme. Her iş bulunduğu aşamada.</div>
+  ${grup||'<div class="card muted">Henüz biten iş yok.</div>'}`
+  :tk+`<div class="row sp"><h2>${CAL?'Projelerim':'Devam eden projeler'}</h2>${!CAL?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
   ${grup||'<div class="card muted">Kayıt yok.</div>'}
-  ${me.rol==='patron'&&data.some(p=>p.durum==='onaylandi')?`<div class="muted" style="margin-top:10px">Onaylanan ${data.filter(p=>p.durum==='onaylandi').length} iş faturalanmak üzere Ofis'e geçti.</div>`:''}`;
+  ${!CAL&&data.some(p=>['bitti','patronda','onaylandi'].includes(p.durum))?`<div class="click card" style="margin-top:10px;color:var(--blue);font-weight:700" onclick="go('biten')">Biten işler (${data.filter(p=>['bitti','patronda','onaylandi'].includes(p.durum)).length}) · alttaki "Biten İş" sekmesinde ›</div>`:''}`;
 }
 function vYeni(){
   const m=$('#m');const isP=me.rol==='patron';
