@@ -168,6 +168,7 @@ const DB={
   {id:10,alici_id:'u7',metin:'Doğuş Yanal teklif istedi: Alsancak Belediyesi · Su pompası için otomatik kumanda panosu',tur:'teklif',islem_yapildi:false,tarih:iso(gun(0))},
   {id:5,alici_id:'u7',metin:'Esat Tuğralı mesaj yazdı (Ofis): Gökçe Hanım, Mağusa market işinin faturasını hazırlayabilir misiniz?',departman_id:5,tur:'mesaj',islem_yapildi:false,tarih:iso(gun(0))}],
  tahsilat_notlar:[],
+ tedarik_odemeler:[],
  tahsilatlar:[
   {id:1,proje_id:20,tutar:2000,para_birimi:'TRY',yontem:'nakit',tarih:ds(-20),aciklama:'Kalanı ay sonu dedi'},
   {id:2,proje_id:21,tutar:12500,para_birimi:'TRY',yontem:'havale',tarih:ds(-6),aciklama:'Dekont 88412'},
@@ -217,8 +218,8 @@ const ekli=ad=>{const a=(ad||'Biri').split(' ')[0],son=a.slice(-1).toLowerCase()
 function ajProje(r){const k=DB.profiller.find(p=>p.id===r.atanan_id);if(r.proje_id||!k||k.rol!=='ds'||r.atanan_id===r.sahip_id)return;const d=DB.departmanlar.find(x=>x.id===k.departman_id);if(!d||d.ofis)return;
  const p={id:nid++,departman_id:d.id,ad:r.baslik,musteri:(r.musteri||'').trim()||null,aciklama:r.aciklama||(pAd(r.sahip_id)+' tarafından verildi'),takipci_id:k.id,durum:'acik',iscilik:0,para_birimi:'TRY',baslangic:r.tarih||null,olusturan:r.sahip_id,olusturma:new Date().toISOString()};DB.projeler.push(p);r.proje_id=p.id}
 DB.ajanda.forEach(ajProje);
-const gorunur={teklifler:r=>ofisM()||meP().rol==='patron'||(meP().rol==='ds'&&(r.departman_id===meP().departman_id||r.olusturan===CUR)),ajanda_notlar:r=>{const a=DB.ajanda.find(x=>x.id===r.ajanda_id)||{};return a.sahip_id===CUR||a.atanan_id===CUR||meP().rol==='patron'},ajanda:r=>r.sahip_id===CUR||r.atanan_id===CUR||meP().rol==='patron',bildirimler:r=>r.alici_id===CUR,projeler:r=>erisim(r.id),gorevler:r=>takipEder(r.proje_id)||kis(r).includes(CUR)||ofisM(),islemler:r=>takipEder(r.proje_id)||r.kullanici_id===CUR,malzemeler:r=>takipEder(r.proje_id)||(ofisM()&&(DB.projeler.find(x=>x.id===r.proje_id)||{}).durum==='onaylandi')};
-const varsay={teklifler:()=>({durum:'taslak',olusturan:CUR,tarih:new Date().toISOString()}),projeler:{durum:'acik',iscilik:0,para_birimi:'TRY'},gorevler:{durum:'bekliyor'},islemler:()=>({kullanici_id:CUR,tarih:new Date().toISOString()}),malzemeler:{birim:'adet',para_birimi:'TRY'},ajanda:{durum:'bekliyor',para_birimi:'TRY'},ajanda_notlar:()=>({yazan_id:CUR,tarih:new Date().toISOString()}),mesajlar:()=>({gonderen_id:CUR,tarih:new Date().toISOString()})};
+const gorunur={teklifler:r=>ofisM()||meP().rol==='patron'||(meP().rol==='ds'&&(r.departman_id===meP().departman_id||r.olusturan===CUR)),ajanda_notlar:r=>{const a=DB.ajanda.find(x=>x.id===r.ajanda_id)||{};return a.sahip_id===CUR||a.atanan_id===CUR||meP().rol==='patron'},ajanda:r=>r.sahip_id===CUR||r.atanan_id===CUR||meP().rol==='patron',bildirimler:r=>r.alici_id===CUR,projeler:r=>erisim(r.id),gorevler:r=>takipEder(r.proje_id)||kis(r).includes(CUR)||ofisM(),islemler:r=>takipEder(r.proje_id)||r.kullanici_id===CUR,malzemeler:r=>takipEder(r.proje_id)||ofisM()};
+const varsay={tedarik_odemeler:()=>({giren:CUR,olusturma:new Date().toISOString()}),teklifler:()=>({durum:'taslak',olusturan:CUR,tarih:new Date().toISOString()}),projeler:{durum:'acik',iscilik:0,para_birimi:'TRY'},gorevler:{durum:'bekliyor'},islemler:()=>({kullanici_id:CUR,tarih:new Date().toISOString()}),malzemeler:()=>({birim:'adet',para_birimi:'TRY',giren:CUR,tarih:new Date().toISOString()}),ajanda:{durum:'bekliyor',para_birimi:'TRY'},ajanda_notlar:()=>({yazan_id:CUR,tarih:new Date().toISOString()}),mesajlar:()=>({gonderen_id:CUR,tarih:new Date().toISOString()})};
 function run(st){
  const t=st.table, tab=DB[t], fl=r=>st.filters.every(([c,v,ne])=>ne===2?v.includes(r[c]):ne?r[c]!=v:r[c]==v), vis=gorunur[t]||(()=>true);
  if(st.op==='insert'){const d=typeof varsay[t]==='function'?varsay[t]():(varsay[t]||{});const r={id:nid++,olusturma:new Date().toISOString(),...d,...st.payload};tab.push(r);
@@ -482,8 +483,8 @@ async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewL
 // ---------------- Kabuk ----------------
 function tabsFor(){
   if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
-  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
-  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['ekip','Ekibim']];
+  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
+  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
@@ -491,10 +492,10 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
-function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
+function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
 function mesajAc(id){S.tab='mesajlar';S.kanal=id;S.pid=null;render()}
 function openP(id,pt){S.aj=null;S.pid=id;S.ptab=pt||'gorev';render();scrollTo(0,0)}
 
@@ -1174,7 +1175,7 @@ async function vCari(m){
      ${c.tk.length?`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">Teklifler (${c.tk.length})</h3><div class="card" style="padding-block:4px">${c.tk.map(t=>{const h=bHesap({kalemler:t.kalemler||[],kdv:t.kdv});return`<div class="row sp click" style="padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div style="min-width:0"><b style="font-weight:600">${esc(t.no||'')} · ${ic(t.konu||'')}</b><div class="muted">${tarih(t.tarih)}${h.gen?' · '+bPara(h.gen,t.para_birimi):''}</div></div><span class="chip ${t.durum==='kabul'?'c-bitti':t.durum==='red'?'c-iade':'c-bekliyor'}">${TKD[t.durum]||t.durum}</span></div>`}).join('')}</div>`:''}`;
     return scrollTo(0,0)}
   const L=Object.entries(C).sort((a,b)=>b[1].son-a[1].son),adsiz=(pr.data||[]).filter(p=>!cariAnahtar(p.musteri));
-  m.innerHTML=paraDurumuKart(pr.data||[])+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
+  m.innerHTML=paraDurumuKart(pr.data||[])+(me.rol==='patron'?`<button class="btn l w" style="margin-top:-2px" onclick="go('tedarik')">🧾 Malzeme alımları · firmalara borç ›</button>`:'')+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
    <input id="cq" type="search" placeholder="Müşteri ara…" style="margin-bottom:8px">
    <div class="kareler">${L.map(([k,c])=>{const ak=c.is.filter(p=>kal(p)>0),bt=c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length,dv=c.is.length-bt;return`<div class="kare click cr" style="border:2px solid ${ak.length?'#e5484d':'#1a9c55'};background:${ak.length?'#fdecec':'#eaf7ef'}" data-q="${esc(k.toLocaleLowerCase('tr'))}" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()"><b style="line-height:1.2">${esc(c.ad)}</b>
      <div class="muted" style="font-size:12px;margin-top:4px">${c.is.length} iş${dv?' · '+dv+' devam':''}${bt?' · '+bt+' biten':''}${c.tk.length?' · '+c.tk.length+' teklif':''}</div>
@@ -1370,6 +1371,52 @@ async function raporExcel(){toast('Excel hazırlanıyor…');try{const R=await a
   const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});indir(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Dotek_Rapor_'+R.ad.replace(/\s+/g,'_')+'.xlsx')}catch(e){toast(e.message)}}
 
 // ---------------- Kim hangi işte ----------------
+// ---------------- Malzeme alımları: hangi firmadan ne alındı, ne ödendi, ne borç var ----------------
+const firmaKey=a=>String(a||'').trim().toLocaleLowerCase('tr').replace(/\s+/g,' ');
+async function vTedarik(m){
+  const [ml,pr,od]=await Promise.all([sb.from('malzemeler').select('*').order('tarih',{ascending:false}),sb.from('projeler').select('id,ad,musteri,departman_id,takipci_id'),sb.from('tedarik_odemeler').select('*').order('tarih',{ascending:false})]);
+  if(hata(ml.error))return;
+  const P={};(pr.data||[]).forEach(p=>P[p.id]=p);
+  // Alım: "alınan" kayıtları; bir işte alınan kaydı yoksa firması yazılı "kullanılan" kayıtları
+  const M=(ml.data||[]).filter(x=>P[x.proje_id]),alinanVar=new Set(M.filter(x=>x.tur==='alinan').map(x=>x.proje_id));
+  const AL=M.filter(x=>x.tur==='alinan'||(!alinanVar.has(x.proje_id)&&(x.tedarikci||'').trim()));
+  const O=od.data||[],yaz=me.rol==='patron'||ofisMi();
+  const G={};const g=k=>G[k]=G[k]||{ad:'',al:[],od:[]};
+  AL.forEach(x=>{const k=firmaKey(x.tedarikci)||'_';const o=g(k);o.ad=o.ad||(x.tedarikci||'').trim()||'Firma yazılmamış';o.al.push(x)});
+  O.forEach(x=>{const k=firmaKey(x.firma);if(!k)return;const o=g(k);o.ad=o.ad||x.firma;o.od.push(x)});
+  const top=(a,f)=>{const t={};a.forEach(x=>{const c=x.para_birimi||'TRY';t[c]=(t[c]||0)+f(x)});return t};
+  const alT=o=>top(o.al,x=>Number(x.miktar||0)*Number(x.birim_fiyat||0)),odT=o=>top(o.od,x=>Number(x.tutar||0));
+  const kalan=o=>{const a=alT(o),b=odT(o),t={};new Set([...Object.keys(a),...Object.keys(b)]).forEach(c=>{const v=Math.round(((a[c]||0)-(b[c]||0))*100)/100;if(v)t[c]=v});return t};
+  const yazT=t=>Object.keys(t).length?Object.entries(t).map(([c,v])=>tl(v,c)).join(' + '):tl(0);
+  const borclu=o=>Object.values(kalan(o)).some(v=>v>0.004);
+  const L=Object.entries(G).sort((a,b)=>(a[0]==='_')-(b[0]==='_')||borclu(b[1])-borclu(a[1])||a[1].ad.localeCompare(b[1].ad,'tr'));
+  if(S.ted&&G[S.ted]){const k=S.ted,o=G[k],ka=kalan(o);
+    const satir=x=>{const p=P[x.proje_id]||{};return`<div style="padding:8px 0;border-top:1px solid var(--line)"><div class="row sp" style="flex-wrap:nowrap;gap:8px"><b style="min-width:0">${esc(x.ad)}</b><b style="white-space:nowrap">${tl(Number(x.miktar||0)*Number(x.birim_fiyat||0),x.para_birimi||'TRY')}</b></div>
+      <div class="muted" style="font-size:13px">${(x.tarih||x.olusturma)?tarih(x.tarih||x.olusturma)+' · ':''}${String(x.miktar).replace('.',',')} ${esc(x.birim||'')} × ${tl(x.birim_fiyat,x.para_birimi||'TRY')}</div>
+      <div class="muted click" style="font-size:13px" onclick="openP(${x.proje_id},'malzeme')">📁 ${esc(p.ad||'')}${p.musteri?' · '+esc(p.musteri):''} · ${esc(dname(p.departman_id))} · Alan: ${esc((x.giren?pname(x.giren):pname(p.takipci_id))||'—')} ›</div></div>`};
+    m.innerHTML=`<button class="btn s l" onclick="S.ted=null;render()">← Firmalar</button>
+     <div class="card" style="margin-top:10px;${borclu(o)?'border-color:#e5484d':''}"><h2 style="margin:0">${esc(o.ad)}</h2>
+      <div class="row" style="margin-top:10px"><div class="stat"><span class="muted">Alınan</span><b>${yazT(alT(o))}</b></div><div class="stat"><span class="muted">Ödenen</span><b style="color:var(--green)">${yazT(odT(o))}</b></div></div>
+      <div class="stat" style="margin-top:8px;background:${borclu(o)?'#fdecec':'#eaf7ef'}"><span class="muted">Kalan borç</span><b style="font-size:22px;color:${borclu(o)?'var(--red)':'var(--green)'}">${borclu(o)?yazT(Object.fromEntries(Object.entries(ka).filter(([c,v])=>v>0))):'✓ Borç yok'}</b></div></div>
+     ${yaz&&k!=='_'?`<form id="tof" class="card" style="border-color:#bfe3cc"><h3 style="margin:0 0 4px">💸 Firmaya ödeme yaptık</h3>
+       <div class="row" style="flex-wrap:nowrap"><div style="flex:2;min-width:0"><label for="to1">Tutar</label><input id="to1" name="t" type="number" step="0.01" min="0.01" required value="${Math.max(0,...Object.values(ka))||''}"></div><div style="flex:1;min-width:0"><label for="to2">Döviz</label><select id="to2" name="c">${pbSec(Object.keys(ka).find(c=>ka[c]>0)||'TRY')}</select></div></div>
+       <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="to3">Tarih</label><input id="to3" name="d" type="date" value="${gunStr(new Date())}"></div><div style="flex:1.4;min-width:0"><label for="to4">Not</label><input id="to4" name="a" placeholder="Örn: Havale, dekont no"></div></div>
+       <button class="btn g w" style="margin-top:10px">💸 Ödemeyi kaydet</button></form>`:''}
+     <h3 style="margin:14px 0 6px;color:var(--muted);font-size:14px">Alınan malzemeler (${o.al.length})</h3><div class="card" style="padding-block:2px">${o.al.map(satir).join('')||'<div class="muted" style="padding:10px 0">Alım yok.</div>'}</div>
+     ${o.od.length?`<h3 style="margin:14px 0 6px;color:var(--muted);font-size:14px">Yapılan ödemeler (${o.od.length})</h3><div class="card" style="padding-block:2px">${o.od.map(x=>`<div class="row sp" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>${tarih(x.tarih)}</b><div class="muted" style="font-size:13px">${esc(pname(x.giren)||'')}${x.aciklama?' · '+esc(x.aciklama):''}</div></div><b style="color:var(--green);white-space:nowrap">${tl(x.tutar,x.para_birimi)}</b></div>`).join('')}</div>`:''}
+     ${k==='_'?'<div class="card muted">Bu malzemelerin firması yazılmamış. İşi açıp Malzeme sekmesinde "Kimden alındı" kısmını doldurun, doğru firmaya düşsün.</div>':''}`;
+    const f=$('#tof');if(f)f.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('tedarik_odemeler').insert({firma:o.ad,tutar:Number(f.t.value),para_birimi:f.c.value,tarih:f.d.value||gunStr(new Date()),aciklama:f.a.value.trim()||null});if(hata(error))return;toast('Ödeme kaydedildi');render()};
+    return scrollTo(0,0)}
+  const tumBorc={};L.forEach(([k,o])=>{if(k==='_')return;Object.entries(kalan(o)).forEach(([c,v])=>{if(v>0)tumBorc[c]=(tumBorc[c]||0)+v})});
+  m.innerHTML=`${me.rol==='patron'?'<button class="btn s l" onclick="go(\'cari\')">← Müşteri</button>':''}<h2 style="margin-top:${me.rol==='patron'?10:0}px">Malzeme alımları</h2><div class="muted" style="margin:-4px 0 8px">${me.rol==='ds'&&!ofisMi()?'Bölümünün hangi firmadan ne aldığı ve ne kadar borç olduğu.':'Hangi firmadan ne alındı, ne ödendi, ne borç kaldı.'} Firmaya bas, ayrıntısı açılsın.</div>
+   <div class="stat" style="background:${Object.keys(tumBorc).length?'#fdecec':'#eaf7ef'};margin-bottom:10px"><span class="muted">Firmalara toplam borç</span><b style="font-size:20px;color:${Object.keys(tumBorc).length?'var(--red)':'var(--green)'}">${Object.keys(tumBorc).length?yazT(tumBorc):'✓ Borç yok'}</b></div>
+   <input id="tq" type="search" placeholder="Firma ara…" style="margin-bottom:8px">
+   <div class="kareler">${L.map(([k,o])=>{const b=borclu(o),yok=k==='_',son=o.al[0];return`<div class="kare click tr" data-q="${esc(k)}" style="border:2px solid ${yok?'#f0d9a0':b?'#e5484d':'#1a9c55'};background:${yok?'#fffbea':b?'#fdecec':'#eaf7ef'}" onclick="S.ted='${esc(k).replace(/'/g,"\\'")}';render()">
+     <b style="line-height:1.2">${esc(o.ad)}</b><div class="muted" style="font-size:12px;margin-top:2px">${o.al.length} kalem${son&&(son.tarih||son.olusturma)?' · son: '+tarih(son.tarih||son.olusturma):''}${o.od.length?' · '+o.od.length+' ödeme':''}</div>
+     <div style="margin-top:auto;padding-top:8px;font-size:13px;font-weight:800;color:${yok?'#8a5a00':b?'var(--red)':'var(--green)'}">${yok?'Toplam: '+yazT(alT(o)):b?'Borç: '+yazT(Object.fromEntries(Object.entries(kalan(o)).filter(([c,v])=>v>0))):'✓ Borç yok'}</div></div>`}).join('')}</div>
+   ${L.length?'':'<div class="card muted">Henüz malzeme alımı yok. İşin Malzeme sekmesinde "Kimden alındı" yazılan alımlar burada firma firma toplanır.</div>'}`;
+  const q=$('#tq');if(q)q.oninput=()=>{const v=firmaKey(q.value);m.querySelectorAll('.tr').forEach(d=>d.hidden=!!v&&!d.dataset.q.includes(v))};
+}
 // Ofis ana sayfası: takvim + kim hangi işte
 async function vOfisAna(m){
   const G=await acikGorevler(),ekip=aktifler().filter(p=>p.rol!=='patron');
