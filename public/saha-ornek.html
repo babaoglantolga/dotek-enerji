@@ -561,7 +561,7 @@ function bildirimAc(pid,kanal,tur,aj){
   if(aj)return ajAc(aj);
   if(kanal!==null)return mesajAc(kanal);
   if(tur==='fatura')return go('fatura');
-  if(tur==='tahsilat')return go(me.rol==='patron'?'onay':ofisMi()?'fatura':'gorevlerim');
+  if(tur==='tahsilat'){go(me.rol==='patron'||!ofisMi()?(me.rol==='patron'?'onay':'gorevlerim'):'fatura');let n=0;const t=setInterval(()=>{const h=document.getElementById('odemeTakip');if(h||++n>20){clearInterval(t);if(h)h.scrollIntoView({behavior:'smooth'})}},150);return}
   if(tur==='proforma')return ofisMi()?go('fatura'):openP(pid,'fiyat');
   if(tur==='teklif')return go('teklif');
   if(tur==='teklif_hazir'||tur==='teklif_red')return go('onay');
@@ -643,12 +643,13 @@ function isOzet(p){const d=p.proforma||{},pb=pbP(p),G=(TG[p.id]||[]).filter(t=>t
    ${K.length?`<div class="row sp" style="margin-top:6px;flex-wrap:nowrap"><span>İşçilik ve hizmet</span><b>${tl(t(isc),pb)}</b></div><div class="row sp" style="flex-wrap:nowrap"><span>Malzeme${d.kalemler?' ('+mal.length+' kalem)':''}</span><b>${tl(t(mal),pb)}</b></div>${Number(d.kdv)>0?`<div class="row sp" style="flex-wrap:nowrap"><span>KDV %${d.kdv}</span><b>${tl(t(K)*Number(d.kdv)/100,pb)}</b></div>`:''}`:''}
    <div class="durumlar" style="margin-top:8px">${p.proforma_no?`<button type="button" class="btn s l" onclick="proformaGor(${p.id})">📄 Proformayı aç</button>`:''}${mal.length&&d.kalemler?`<button type="button" class="btn s l" onclick="ekGor(PRJ_PRF[${p.id}])">📎 Malzeme listesi</button>`:''}</div></details>`}
 const PRJ_PRF={};
-function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',hz=['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
+const pRol=id=>(people.find(x=>x.id===id)||{}).rol;
+function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',hz=P?['📞 Ben konuştum, ödeyecek','🔁 Tekrar arayın','⏳ Biraz bekleyelim']:['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
   return`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="muted" style="font-weight:700">📞 Ödeme takibi notları${N.length?' ('+N.length+')':''}</div>
-   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${n.bildirildi?' · 📣 '+(P?'bildirildi':'Doğuş\'a bildirildi'):''}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
+   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${!n.bildirildi?'':pRol(n.yazan_id)==='patron'?' · 📣 Ofis\'e ve sorumluya bildirildi':me.rol==='patron'?' · 📣 sana bildirildi':' · 📣 Doğuş\'a bildirildi'}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
    <div class="durumlar" style="margin-top:8px;flex-wrap:wrap">${hz.map(h=>`<button type="button" class="btn s l" onclick="const i=$('#tn${p.id}');i.value=this.textContent;i.focus()">${h}</button>`).join('')}</div>
    <textarea id="tn${p.id}" rows="2" placeholder="Açıklama yaz… (Örn: Gökçe aradı, açmadı. Yarın tekrar aranacak.)" style="margin-top:6px"></textarea>
-   <div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 ${P?'Ofis\'e ve sorumluya bildir':'Doğuş\'a bilgi gönder'}</button></div></div>`}
+   ${P?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 Ofis'e ve sorumluya bildir</button></div>`:`<button type="button" class="btn w" style="margin-top:6px;background:#e5484d" onclick="tnEkle(${p.id},true)">💾 Kaydet · Doğuş'a bildirim gider</button>`}</div>`}
 async function tnEkle(pid,bildirim){const i=$('#tn'+pid),t=i?i.value.trim():'';if(!t){toast('Önce açıklama yaz');if(i)i.focus();return}
   const {error}=await sb.rpc('tahsilat_not',{p:pid,metin:t,bildir:bildirim});if(hata(error))return;
   toast(bildirim?(me.rol==='patron'?'Not eklendi, Ofis\'e ve sorumluya bildirildi':'Not eklendi, Doğuş\'a bildirim gitti'):'Not eklendi');render()}
@@ -658,7 +659,7 @@ async function odemeTakipKart(){
   const L=(data||[]).filter(p=>p.fatura_durum==='kesildi'&&p.odeme_durum!=='alindi'&&(me.rol==='patron'||ofisMi()||(me.rol==='ds'&&p.departman_id===me.departman_id)));
   if(!L.length)return'';await tnYukle(L.map(p=>p.id));
   const kal=p=>Math.max(0,Number(p.fiyat||0)-Number(p.odenen||0));
-  return`<h2 style="margin-top:4px">💰 Ödeme takibi (${L.length})</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye iletildi, ödemesi bekleniyor. Aradıysan, konuştuysan altına yaz.</div>
+  return`<h2 id="odemeTakip" style="margin-top:4px">💰 Ödeme takibi (${L.length})</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye iletildi, ödemesi bekleniyor. Aradıysan, konuştuysan altına yaz.</div>
    ${L.map(p=>{const g=gunGecti(p.fatura_tarihi);return`<div class="card" style="border-color:${g>30?'#f3b4b4':'#f0d9a0'}"><div class="row sp" style="flex-wrap:nowrap"><b style="min-width:0">${esc(p.ad)}</b><b style="white-space:nowrap;color:var(--red)">${tl(kal(p),pbP(p))}</b></div>
      <div class="muted">${p.musteri?'Müşteri: <b>'+esc(p.musteri)+'</b> · ':''}${esc(dname(p.departman_id))} · Sorumlu: ${esc(pname(p.takipci_id))}</div>
      <div class="muted">${p.iletim==='proforma'?'📄 Proforma verildi':'🧾 Fatura kesildi'} · ${tarih(p.fatura_tarihi)} · <b style="color:${g>30?'var(--red)':'inherit'}">${g} gün oldu</b></div>${isOzet(p)}${tnBlok(p)}</div>`}).join('')}`;
