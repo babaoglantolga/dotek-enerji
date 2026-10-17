@@ -483,7 +483,7 @@ async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewL
 // ---------------- Kabuk ----------------
 function tabsFor(){
   if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
-  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar']];
+  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
   if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
@@ -1416,7 +1416,7 @@ async function vTedarik(m){
    <div class="stat" style="background:${Object.keys(tumBorc).length?'#fdecec':'#eaf7ef'};margin-bottom:10px"><span class="muted">Firmalara toplam borç</span><b style="font-size:20px;color:${Object.keys(tumBorc).length?'var(--red)':'var(--green)'}">${Object.keys(tumBorc).length?yazT(tumBorc):'✓ Borç yok'}</b></div>
    <input id="tq" type="search" placeholder="Firma ara…" style="margin-bottom:8px">
    <div class="kareler">${L.map(([k,o])=>{const b=borclu(o),yok=k==='_',son=o.al[0];return`<div class="kare click tr" data-q="${esc(k)}" style="border:2px solid ${yok?'#f0d9a0':b?'#e5484d':'#1a9c55'};background:${yok?'#fffbea':b?'#fdecec':'#eaf7ef'}" onclick="S.ted='${esc(k).replace(/'/g,"\\'")}';render()">
-     <b style="line-height:1.2">${esc(o.ad)}</b><div class="muted" style="font-size:12px;margin-top:2px">${o.al.length} kalem${son&&(son.tarih||son.olusturma)?' · son: '+tarih(son.tarih||son.olusturma):''}${o.od.length?' · '+o.od.length+' ödeme':''}</div>
+     <b style="line-height:1.2">${esc(o.ad)}</b><div class="muted" style="font-size:12px;margin-top:2px">${o.al.length} kalem${son&&(son.tarih||son.olusturma)?' · son: '+tarih(son.tarih||son.olusturma):''}${o.od.length?' · '+o.od.length+' ödeme':''}</div>${me.rol==='patron'||ofisMi()?`<div class="muted" style="font-size:12px">Alan: ${esc([...new Set(o.al.map(x=>(x.giren?pname(x.giren):pname((P[x.proje_id]||{}).takipci_id)||'').split(' ')[0]).filter(Boolean))].join(', ')||'—')}</div>`:''}
      <div style="margin-top:auto;padding-top:8px;font-size:13px;font-weight:800;color:${yok?'#8a5a00':b?'var(--red)':'var(--green)'}">${yok?'Toplam: '+yazT(alT(o)):b?'Borç: '+yazT(Object.fromEntries(Object.entries(kalan(o)).filter(([c,v])=>v>0))):'✓ Borç yok'}</div></div>`}).join('')}</div>
    ${L.length?'':'<div class="card muted">Henüz malzeme alımı yok. İşin Malzeme sekmesinde "Kimden alındı" yazılan alımlar burada firma firma toplanır.</div>'}`;
   const q=$('#tq');if(q)q.oninput=()=>{const v=firmaKey(q.value);m.querySelectorAll('.tr').forEach(d=>d.hidden=!!v&&!d.dataset.q.includes(v))};
