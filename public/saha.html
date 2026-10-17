@@ -208,7 +208,7 @@ const meP=()=>DB.profiller.find(p=>p.id===CUR)||{};
 const kis=g=>[...new Set([g.atanan_id,...(g.ekip||[])].filter(Boolean))];
 const ofisM=()=>!!(DB.departmanlar.find(d=>d.id===meP().departman_id)||{}).ofis;
 const erisim=pid=>{const p=DB.projeler.find(x=>x.id==pid);if(!p)return false;const m=meP();
- return m.rol==='patron'||(ofisM()&&(p.durum==='onaylandi'||(p.durum==='patronda'&&p.proforma_no)))||(m.rol==='ds'&&p.departman_id===m.departman_id)||p.takipci_id===CUR||DB.gorevler.some(g=>g.proje_id===p.id&&kis(g).includes(CUR))};
+ return m.rol==='patron'||ofisM()||(m.rol==='ds'&&p.departman_id===m.departman_id)||p.takipci_id===CUR||DB.gorevler.some(g=>g.proje_id===p.id&&kis(g).includes(CUR))};
 const takipEder=pid=>{const p=DB.projeler.find(x=>x.id==pid);if(!p)return false;const me_=meP();return me_.rol==='patron'||(me_.rol==='ds'&&p.departman_id===me_.departman_id)||p.takipci_id===CUR};
 const bildir=(a,metin,proje_id,departman_id,tur)=>{if(!a||a===CUR)return;DB.bildirimler.push({id:nid++,alici_id:a,metin,proje_id:proje_id??null,departman_id:departman_id??null,tur,islem_yapildi:false,tarih:new Date().toISOString()})};
 const pAd=id=>(DB.profiller.find(p=>p.id===id)||{}).ad||'';
@@ -217,7 +217,7 @@ const ekli=ad=>{const a=(ad||'Biri').split(' ')[0],son=a.slice(-1).toLowerCase()
 function ajProje(r){const k=DB.profiller.find(p=>p.id===r.atanan_id);if(r.proje_id||!k||k.rol!=='ds'||r.atanan_id===r.sahip_id)return;const d=DB.departmanlar.find(x=>x.id===k.departman_id);if(!d||d.ofis)return;
  const p={id:nid++,departman_id:d.id,ad:r.baslik,musteri:(r.musteri||'').trim()||null,aciklama:r.aciklama||(pAd(r.sahip_id)+' tarafından verildi'),takipci_id:k.id,durum:'acik',iscilik:0,para_birimi:'TRY',baslangic:r.tarih||null,olusturan:r.sahip_id,olusturma:new Date().toISOString()};DB.projeler.push(p);r.proje_id=p.id}
 DB.ajanda.forEach(ajProje);
-const gorunur={teklifler:r=>ofisM()||meP().rol==='patron'||(meP().rol==='ds'&&(r.departman_id===meP().departman_id||r.olusturan===CUR)),ajanda_notlar:r=>{const a=DB.ajanda.find(x=>x.id===r.ajanda_id)||{};return a.sahip_id===CUR||a.atanan_id===CUR||meP().rol==='patron'},ajanda:r=>r.sahip_id===CUR||r.atanan_id===CUR||meP().rol==='patron',bildirimler:r=>r.alici_id===CUR,projeler:r=>erisim(r.id),gorevler:r=>takipEder(r.proje_id)||kis(r).includes(CUR),islemler:r=>takipEder(r.proje_id)||r.kullanici_id===CUR,malzemeler:r=>takipEder(r.proje_id)||(ofisM()&&(DB.projeler.find(x=>x.id===r.proje_id)||{}).durum==='onaylandi')};
+const gorunur={teklifler:r=>ofisM()||meP().rol==='patron'||(meP().rol==='ds'&&(r.departman_id===meP().departman_id||r.olusturan===CUR)),ajanda_notlar:r=>{const a=DB.ajanda.find(x=>x.id===r.ajanda_id)||{};return a.sahip_id===CUR||a.atanan_id===CUR||meP().rol==='patron'},ajanda:r=>r.sahip_id===CUR||r.atanan_id===CUR||meP().rol==='patron',bildirimler:r=>r.alici_id===CUR,projeler:r=>erisim(r.id),gorevler:r=>takipEder(r.proje_id)||kis(r).includes(CUR)||ofisM(),islemler:r=>takipEder(r.proje_id)||r.kullanici_id===CUR,malzemeler:r=>takipEder(r.proje_id)||(ofisM()&&(DB.projeler.find(x=>x.id===r.proje_id)||{}).durum==='onaylandi')};
 const varsay={teklifler:()=>({durum:'taslak',olusturan:CUR,tarih:new Date().toISOString()}),projeler:{durum:'acik',iscilik:0,para_birimi:'TRY'},gorevler:{durum:'bekliyor'},islemler:()=>({kullanici_id:CUR,tarih:new Date().toISOString()}),malzemeler:{birim:'adet',para_birimi:'TRY'},ajanda:{durum:'bekliyor',para_birimi:'TRY'},ajanda_notlar:()=>({yazan_id:CUR,tarih:new Date().toISOString()}),mesajlar:()=>({gonderen_id:CUR,tarih:new Date().toISOString()})};
 function run(st){
  const t=st.table, tab=DB[t], fl=r=>st.filters.every(([c,v,ne])=>ne===2?v.includes(r[c]):ne?r[c]!=v:r[c]==v), vis=gorunur[t]||(()=>true);
@@ -1374,7 +1374,8 @@ async function raporExcel(){toast('Excel hazırlanıyor…');try{const R=await a
 async function vOfisAna(m){
   const G=await acikGorevler(),ekip=aktifler().filter(p=>p.rol!=='patron');
   const calisiyor=ekip.filter(p=>G.some(t=>gKisi(t).includes(p.id)&&calisiyorMu(t.durum))).length;
-  m.innerHTML=await takvim()+`<h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div>${kimNerede(ekip,G)}</div>`;
+  await vProjeler(m);
+  m.insertAdjacentHTML('beforeend',`<h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div>${kimNerede(ekip,G)}</div>`);
 }
 async function acikGorevler(){const {data}=await sb.from('gorevler').select('*, projeler(id,ad,musteri)');return (data||[]).filter(t=>t.durum!=='bitti')}
 function kimNerede(kisiler,G){
@@ -1591,7 +1592,7 @@ async function vProjeler(m){
     return d==='odendi'?`<details style="margin-top:14px"><summary style="font-size:14px;font-weight:700">${h}</summary>${k}</details>`:`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${h}</h3>${k}`}).join('');
   m.innerHTML=BIT?`<h2>Biten işler</h2><div class="muted" style="margin:-4px 0 6px">İş bitti → proforma → işveren onayı → Ofis fatura → ödeme. Her iş bulunduğu aşamada.</div>
   ${grup||'<div class="card muted">Henüz biten iş yok.</div>'}`
-  :tk+`<div class="row sp"><h2>${CAL?'Projelerim':'Devam eden projeler'}</h2>${!CAL?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
+  :tk+`<div class="row sp"><h2>${CAL?'Projelerim':'Devam eden projeler'}</h2>${!CAL&&!ofisMi()?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
   ${grup||'<div class="card muted">Kayıt yok.</div>'}
   ${!CAL&&data.some(p=>['bitti','patronda','onaylandi'].includes(p.durum))?`<div class="click card" style="margin-top:10px;color:var(--blue);font-weight:700" onclick="go('biten')">Biten işler (${data.filter(p=>['bitti','patronda','onaylandi'].includes(p.durum)).length}) · alttaki "Biten İş" sekmesinde ›</div>`:''}`;
 }
