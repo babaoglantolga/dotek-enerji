@@ -526,7 +526,11 @@ function tabloSatir(d){
   const sade=k=>({...k,tip:'k',sade:Number(k.miktar)===1&&(!k.birim||k.birim==='iş')});
   return[...(isl.length?[{tip:'b',ad:'YAPILAN İŞLER'},...isl.map(ad=>({tip:'i',ad}))]:[]),...isc.map(sade),...dig.map(sade)];
 }
-function bHesap(d){const ara=d.kalemler.reduce((t,k)=>t+Number(k.miktar||0)*Number(k.fiyat||0),0);const kdv=Math.round(ara*Number(d.kdv||0))/100;return{ara,kdv,gen:Math.round((ara+kdv)*100)/100}}
+// İndirim (isteğe bağlı): yüzde ya da tutar; KDV indirimli toplam üzerinden hesaplanır
+function bHesap(d){const ara=Math.round((d.kalemler||[]).reduce((t,k)=>t+Number(k.miktar||0)*Number(k.fiyat||0),0)*100)/100;
+  const I=d.indirim,v=I?Number(I.deger)||0:0,ind=v>0?Math.min(ara,Math.round((I.tip==='yuzde'?ara*v/100:v)*100)/100):0,net=Math.round((ara-ind)*100)/100;
+  const kdv=Math.round(net*Number(d.kdv||0))/100;return{ara,ind,net,kdv,gen:Math.round((net+kdv)*100)/100}}
+const indAd=d=>'İndirim'+(d.indirim&&d.indirim.tip==='yuzde'?' (%'+String(d.indirim.deger).replace('.',',')+')':'');
 const BELGE_CSS=`
 .blg{width:794px;min-height:1123px;background:#fff;color:#1b2433;font:12.6px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;display:flex;flex-direction:column;text-align:left}
 .blg *{box-sizing:border-box}
@@ -584,7 +588,7 @@ function belgeHTML(d){
   <table><thead><tr><th>NO</th><th>AÇIKLAMA</th><th class="n">MİKTAR</th><th class="n">BİRİM FİYAT</th><th class="n">TUTAR</th></tr></thead><tbody>${tr}</tbody></table>
   <div class="al"><div class="nt"><h4>${d.tur==='FİYAT TEKLİFİ'?'ŞARTLAR':'NOTLAR'}</h4><ul>${(d.notlar||[]).filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
    ${d.tur==='FİYAT TEKLİFİ'?'':`<div class="bk"><h4>ÖDEME BİLGİLERİ</h4><dl><dt>Banka</dt><dd>${esc(FIRMA.banka)}</dd><dt>Hesap adı</dt><dd>${esc(FIRMA.ad)}</dd><dt>IBAN</dt><dd>${esc(FIRMA.iban)}</dd></dl></div>`}</div>
-   <div><div class="tp"><div><span>Ara toplam</span><span>${bPara(h.ara,pb)}</span></div><div><span>KDV %${d.kdv}</span><span>${bPara(h.kdv,pb)}</span></div><div class="g"><span>GENEL TOPLAM</span><span>${bPara(h.gen,pb)}</span></div></div>
+   <div><div class="tp"><div><span>Ara toplam</span><span>${bPara(h.ara,pb)}</span></div>${h.ind?`<div><span>${indAd(d)}</span><span>−${bPara(h.ind,pb)}</span></div><div><span>İndirimli toplam</span><span>${bPara(h.net,pb)}</span></div>`:''}<div><span>KDV %${d.kdv}</span><span>${bPara(h.kdv,pb)}</span></div><div class="g"><span>GENEL TOPLAM</span><span>${bPara(h.gen,pb)}</span></div></div>
    <div class="yz">Yalnız: <b>${esc(yaziyla(h.gen,pb))}</b></div>${kdvNot(d)?`<div class="kn2">${esc(kdvNot(d))}</div>`:''}</div></div>
   <div class="im">${(d.imza||[]).map(imzaYaz).map(([x,y])=>`<div><b>${esc(x)}</b>${esc(y)}<br>Kaşe / İmza</div>`).join('')}</div></div>
   <div class="as"><span><b>${esc(FIRMA.ad)}</b> · ${esc(FIRMA.adres)}</span><span>Ofis: <b>${esc(FIRMA.tel)}</b> · ${esc(FIRMA.saat)}</span></div></div>`;
@@ -645,6 +649,8 @@ async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('doc
   let wno=0;const rows=tabloSatir(d).map((k,i)=>{const v=k.tip==='b'?['',k.ad,'','','']:k.tip==='i'?['','•  '+k.ad,'','','']:[String(++wno).padStart(2,'0'),k.ad,k.sade?'':String(k.miktar).replace('.',',')+' '+(k.birim||''),k.sade?'':bPara(k.fiyat,pb),bPara(k.miktar*k.fiyat,pb)];
     return new TableRow({children:v.map((x,j)=>C([P(T(x,{color:j==0||k.tip==='b'?LG:undefined,bold:j==4||(k.tip==='k'&&k.sade&&j==1)||k.tip==='b',size:k.tip==='b'?15:undefined}),{al:j>=2?R:undefined})],cols[j],{fill:k.tip==='k'&&i%2?ZEB:undefined,borders:bb,m:{top:k.tip==='k'?120:50,bottom:k.tip==='k'?120:50,left:120,right:120}}))})});
   const tot=TB([new TableRow({children:[C([P(T('Ara toplam'))],2100,{borders:{top:ln,left:ln,right:nb,bottom:ln}}),C([P(T(bPara(h.ara,pb)),{al:R})],1900,{borders:{top:ln,right:ln,left:nb,bottom:ln}})]}),
+    ...(h.ind?[new TableRow({children:[C([P(T(indAd(d)))],2100,{borders:{left:ln,bottom:ln,top:nb,right:nb}}),C([P(T('−'+bPara(h.ind,pb)),{al:R})],1900,{borders:{right:ln,bottom:ln,top:nb,left:nb}})]}),
+      new TableRow({children:[C([P(T('İndirimli toplam'))],2100,{borders:{left:ln,bottom:ln,top:nb,right:nb}}),C([P(T(bPara(h.net,pb)),{al:R})],1900,{borders:{right:ln,bottom:ln,top:nb,left:nb}})]})]:[]),
     new TableRow({children:[C([P(T('KDV %'+d.kdv))],2100,{borders:{left:ln,bottom:ln,top:nb,right:nb}}),C([P(T(bPara(h.kdv,pb)),{al:R})],1900,{borders:{right:ln,bottom:ln,top:nb,left:nb}})]}),
     new TableRow({children:[C([P(T('GENEL TOPLAM',{bold:true,color:NAVY,size:21}))],2100,{fill:'FFF8D6',m:{top:160,bottom:160,left:120,right:120}}),C([P(T(bPara(h.gen,pb),{bold:true,color:NAVY,size:23}),{al:R})],1900,{fill:'FFF8D6',m:{top:160,bottom:160,left:120,right:120}})]})],[2100,1900]);
   const not=[P(T(teklif?'ŞARTLAR':'NOTLAR',{size:14,bold:true,color:LG,sp:30}),{a:80}),...(d.notlar||[]).filter(Boolean).map(n=>P(T(n,{color:'3C4659',size:18}),{num:{reference:'madde',level:0},a:40}))];
@@ -748,6 +754,11 @@ ${_akt}
   ${Array.isArray(d.isler)?`<div class="card"><label for="bi1" style="margin-top:0">Yapılan işler (her satır bir iş · kâğıtta tabloda, işçilik bedelinin üstünde çıkar)</label><textarea id="bi1" rows="${Math.max(3,d.isler.length+1)}" oninput="BELGE.d.isler=this.value.split('\\n');belgeOnizle()">${esc(d.isler.join('\n'))}</textarea></div>`:''}
   <h3 style="margin:14px 0 8px">Kalemler</h3>${d.tur==='PROFORMA FATURA'?`<label class="row" style="flex-wrap:nowrap;gap:8px;align-items:center;margin:0 0 8px;padding:10px;border:1px solid #9fd3b2;background:#eefaf2;border-radius:10px;font-weight:700;cursor:pointer"><input type="checkbox" style="width:20px;height:20px;flex-shrink:0" ${d.malzemeTek!==false?'checked':''} onchange="BELGE.d.malzemeTek=this.checked;belgeOnizle()"> Kâğıtta malzemeler tek satır "Malzeme bedeli" olarak toplansın (ayrıntı ek listede)</label>`:''}${d.tur==='PROFORMA FATURA'?`<div class="muted" style="font-size:12px;margin:-4px 0 8px">Her satır: miktar · birim · birim fiyat. 🧾 Firma sadece sende görünür, müşteri kâğıdına çıkmaz.</div><datalist id="tdkl">${(window._tdk||[]).map(x=>`<option value="${esc(x)}">`).join('')}</datalist>`:''}${d.kalemler.map(kalem).join('')}
   <button class="btn l w" onclick="BELGE.d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0});render()">+ Kalem ekle</button>
+  ${d.indirim?`<div class="card" style="margin-top:10px;border-color:#f0d9a0;background:#fffbea"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0">🏷️ İndirim</h3><button type="button" class="btn s l" style="color:var(--red)" onclick="delete BELGE.d.indirim;render()">× Kaldır</button></div>
+   <div class="row" style="margin-top:8px;flex-wrap:nowrap"><select aria-label="İndirim türü" style="flex:1;min-width:0" onchange="BELGE.d.indirim.tip=this.value;belgeOnizle()"><option value="yuzde" ${d.indirim.tip==='yuzde'?'selected':''}>Yüzde (%)</option><option value="tutar" ${d.indirim.tip!=='yuzde'?'selected':''}>Tutar (${esc(d.pb)})</option></select>
+   <input aria-label="İndirim" type="number" min="0" step="0.01" value="${d.indirim.deger||''}" placeholder="Örn: 10" style="flex:1;min-width:0" oninput="BELGE.d.indirim.deger=Number(this.value)||0;belgeOnizle()"></div>
+   <div class="muted" style="font-size:12px;margin-top:4px">Kâğıtta ara toplamın altında "İndirim" ve "İndirimli toplam" olarak çıkar. KDV indirimli tutardan hesaplanır.</div></div>`
+   :`<button type="button" class="btn l w" style="margin-top:8px" onclick="BELGE.d.indirim={tip:'yuzde',deger:0};render()">🏷️ İndirim ekle</button>`}
   <div class="card" style="margin-top:10px"><label for="bn1" style="margin-top:0">${teklif?'Şartlar':'Notlar'} (her satır bir madde)</label><textarea id="bn1" rows="4" oninput="BELGE.d.notlar=this.value.split('\\n');belgeOnizle()">${esc((d.notlar||[]).join('\n'))}</textarea></div>
   <h3 style="margin:14px 0 8px">Önizleme</h3><div id="onz" style="border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff"></div>
   <div class="card" style="margin-top:12px"><h3>İndir</h3><div class="durumlar"><button class="btn" onclick="indirPDF(BELGE.d)">📄 PDF</button><button class="btn" onclick="indirWord(BELGE.d)">📝 Word</button><button class="btn" onclick="indirPNG(BELGE.d)">🖼️ Fotoğraf</button></div>${d.tur==='PROFORMA FATURA'?'<button class="btn l w" style="margin-top:8px" onclick="ekGor(BELGE.d)">📎 Ek malzeme listesi (müşteriye ek)</button>':''}
