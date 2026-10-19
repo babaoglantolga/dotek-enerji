@@ -375,13 +375,13 @@ const PRJ_PRF={};
 const pRol=id=>(people.find(x=>x.id===id)||{}).rol;
 function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',hz=P?['📞 Ben konuştum, ödeyecek','🔁 Tekrar arayın','⏳ Biraz bekleyelim']:['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
   return`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="muted" style="font-weight:700">📞 Ödeme takibi notları${N.length?' ('+N.length+')':''}</div>
-   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${!n.bildirildi?'':pRol(n.yazan_id)==='patron'?' · 📣 Ofis\'e ve sorumluya bildirildi':me.rol==='patron'?' · 📣 sana bildirildi':' · 📣 Doğuş\'a bildirildi'}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
+   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${!n.bildirildi?'':pRol(n.yazan_id)==='patron'?' · 📣 Ofis\'e ve sorumluya bildirildi':me.rol==='patron'?' · 📣 sana bildirildi':' · 📣 Doğuş\'a ve sorumluya bildirildi'}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
    <div class="durumlar" style="margin-top:8px;flex-wrap:wrap">${hz.map(h=>`<button type="button" class="btn s l" onclick="const i=$('#tn${p.id}');i.value=this.textContent;i.focus()">${h}</button>`).join('')}</div>
    <textarea id="tn${p.id}" rows="2" placeholder="Açıklama yaz… (Örn: Gökçe aradı, açmadı. Yarın tekrar aranacak.)" style="margin-top:6px"></textarea>
-   ${P?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 Ofis'e ve sorumluya bildir</button></div>`:`<button type="button" class="btn w" style="margin-top:6px;background:#e5484d" onclick="tnEkle(${p.id},true)">💾 Kaydet · Doğuş'a bildirim gider</button>`}</div>`}
+   ${P?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 Ofis'e ve sorumluya bildir</button></div>`:`<button type="button" class="btn w" style="margin-top:6px;background:#e5484d" onclick="tnEkle(${p.id},true)">💾 Kaydet · Doğuş'a ve sorumluya bildirim gider</button>`}</div>`}
 async function tnEkle(pid,bildirim){const i=$('#tn'+pid),t=i?i.value.trim():'';if(!t){toast('Önce açıklama yaz');if(i)i.focus();return}
   const {error}=await sb.rpc('tahsilat_not',{p:pid,metin:t,bildir:bildirim});if(hata(error))return;
-  toast(bildirim?(me.rol==='patron'?'Not eklendi, Ofis\'e ve sorumluya bildirildi':'Not eklendi, Doğuş\'a bildirim gitti'):'Not eklendi');render()}
+  toast(bildirim?(me.rol==='patron'?'Not eklendi, Ofis\'e ve sorumluya bildirildi':'Not eklendi, Doğuş\'a ve sorumluya bildirim gitti'):'Not eklendi');render()}
 // Görevlerim / Ana Sayfa: ödemesi beklenen işler (Ofis hepsini, sorumlu kendi bölümünü, Doğuş hepsini görür)
 async function odemeTakipKart(){
   const {data}=await sb.from('projeler').select('*').eq('durum','onaylandi');
@@ -488,7 +488,7 @@ function vPlanEkle(){
    <button class="btn w" style="margin-top:14px">Kaydet</button></form>`;
   sb.from('projeler').select('musteri').then(r=>{const dl=$('#pml');if(dl)dl.innerHTML=[...new Set((r.data||[]).map(x=>(x.musteri||'').trim()).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')});
   $('#pf').onsubmit=async e=>{e.preventDefault();const f=e.target;
-    const {error}=await sb.from('ajanda').insert({sahip_id:me.id,atanan_id:f.k.value,baslik:f.b.value.trim(),musteri:f.mu.value.trim()||null,aciklama:f.a.value.trim()||null,tarih:f.t.value||null,saat:f.s.value||null});
+    const {error}=await sb.rpc('ajanda_ekle',{atanan:f.k.value||null,baslik:f.b.value.trim(),musteri:f.mu.value.trim()||null,aciklama:f.a.value.trim()||null,tarih:f.t.value||null,saat:f.s.value||null});
     if(hata(error))return;toast(f.k.value===me.id?'İş kaydedildi':'İş verildi, bildirim gitti');render()};
 }
 

@@ -289,6 +289,7 @@ let prfSira=47;const rpc0=async(n,a)=>{
   return{data:p.proforma_no,error:null}}
  if(n==='proforma_kaydet'){const p=DB.projeler.find(x=>x.id===a.p);if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma={...a.veri,no:p.proforma_no};return{data:p.proforma_no,error:null}}
  if(n==='teklif_projeye'){const x=DB.teklifler.find(y=>y.id===a.t);if(x.proje_id)return{data:x.proje_id,error:null};const ds=DB.profiller.find(y=>y.rol==='ds'&&y.departman_id===a.dep);const p={id:nid++,departman_id:a.dep,ad:x.proje_adi||x.konu||x.musteri,musteri:x.musteri,adres:x.adres,aciklama:'Teklif '+x.no+' kabul edildi.',para_birimi:x.para_birimi,takipci_id:ds&&ds.id,durum:'acik',iscilik:0,olusturma:new Date().toISOString()};DB.projeler.push(p);x.durum='kabul';x.proje_id=p.id;x.departman_id=a.dep;DB.profiller.filter(y=>y.rol==='ds'&&y.departman_id===a.dep).forEach(y=>bildir(y.id,'Yeni proje (teklif kabul edildi): '+x.musteri,p.id,null,'takip'));DB.profiller.filter(y=>y.rol==='patron'||y.id===x.olusturan).forEach(y=>bildir(y.id,'Teklif kabul edildi: '+x.musteri+' · '+x.no+' → '+((DB.departmanlar.find(d=>d.id===a.dep)||{}).ad||'')+' departmanında proje açıldı',p.id,null,'teklif_kabul'));return{data:p.id,error:null}}
+if(n==='ajanda_ekle'){const r=run({table:'ajanda',op:'insert',filters:[],orders:[],payload:{sahip_id:CUR,atanan_id:a.atanan,baslik:a.baslik,musteri:a.musteri,aciklama:a.aciklama,tarih:a.tarih,saat:a.saat}});kaydet();return{data:null,error:r.error||null}}
 if(n==='sifre_sifirla'){if(meP().rol!=='patron')return{data:null,error:{message:'Şifreyi sadece işveren sıfırlar'}};return{data:null,error:null}}
 if(n==='firma_ata'){const f=(a.firma||'').trim()||null,m=meP();
   (a.kalemler||[]).forEach(e=>{if(e.m!=null){const x=DB.malzemeler.find(y=>y.id===e.m);if(x&&(m.rol==='patron'||ofisM()||takipEder(x.proje_id)))x.tedarikci=f}
@@ -299,7 +300,7 @@ if(n==='tahsilat_not'){const p=DB.projeler.find(x=>x.id===a.p),m=meP();if(!p)ret
   if(!(m.rol==='patron'||ofisM()||(m.rol==='ds'&&p.departman_id===m.departman_id)))return{data:null,error:{message:'Bu işe not yazamazsın'}};
   DB.tahsilat_notlar=DB.tahsilat_notlar||[];DB.tahsilat_notlar.push({id:nid++,proje_id:p.id,yazan_id:CUR,metin:a.metin,bildirildi:!!a.bildir,tarih:new Date().toISOString()});
   DB.bildirimler.filter(x=>x.alici_id===CUR&&x.proje_id===p.id&&x.tur==='tahsilat').forEach(x=>x.islem_yapildi=true);
-  if(a.bildir){const al=m.rol==='patron'?DB.profiller.filter(x=>(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis&&x.rol!=='calisan'||x.id===p.takipci_id):DB.profiller.filter(x=>x.rol==='patron');
+  if(a.bildir){const al=DB.profiller.filter(x=>x.id!==CUR&&(x.rol==='patron'||x.id===p.takipci_id||(x.rol==='ds'&&x.departman_id===p.departman_id)||(m.rol==='patron'&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis&&x.rol!=='calisan')));
     al.forEach(x=>bildir(x.id,pAd(CUR)+' · '+p.ad+(p.musteri?' ('+p.musteri+')':'')+': '+a.metin,p.id,null,'tahsilat'))}
   kaydet();return{data:null,error:null}}
 if(n==='fatura_kes'){const p=DB.projeler.find(x=>x.id===a.p);if(!p||p.durum!=='onaylandi')return{error:null};p.fatura_durum='kesildi';p.odeme_durum=p.odeme_durum||'bekliyor';p.odenen=p.odenen||0;p.fatura_no=(a.no||'').trim()||null;p.fatura_tarihi=new Date().toISOString();p.iletim=a.belge==='proforma'?'proforma':'fatura';
@@ -662,13 +663,13 @@ const PRJ_PRF={};
 const pRol=id=>(people.find(x=>x.id===id)||{}).rol;
 function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',hz=P?['📞 Ben konuştum, ödeyecek','🔁 Tekrar arayın','⏳ Biraz bekleyelim']:['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
   return`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="muted" style="font-weight:700">📞 Ödeme takibi notları${N.length?' ('+N.length+')':''}</div>
-   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${!n.bildirildi?'':pRol(n.yazan_id)==='patron'?' · 📣 Ofis\'e ve sorumluya bildirildi':me.rol==='patron'?' · 📣 sana bildirildi':' · 📣 Doğuş\'a bildirildi'}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
+   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${!n.bildirildi?'':pRol(n.yazan_id)==='patron'?' · 📣 Ofis\'e ve sorumluya bildirildi':me.rol==='patron'?' · 📣 sana bildirildi':' · 📣 Doğuş\'a ve sorumluya bildirildi'}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
    <div class="durumlar" style="margin-top:8px;flex-wrap:wrap">${hz.map(h=>`<button type="button" class="btn s l" onclick="const i=$('#tn${p.id}');i.value=this.textContent;i.focus()">${h}</button>`).join('')}</div>
    <textarea id="tn${p.id}" rows="2" placeholder="Açıklama yaz… (Örn: Gökçe aradı, açmadı. Yarın tekrar aranacak.)" style="margin-top:6px"></textarea>
-   ${P?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 Ofis'e ve sorumluya bildir</button></div>`:`<button type="button" class="btn w" style="margin-top:6px;background:#e5484d" onclick="tnEkle(${p.id},true)">💾 Kaydet · Doğuş'a bildirim gider</button>`}</div>`}
+   ${P?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 Ofis'e ve sorumluya bildir</button></div>`:`<button type="button" class="btn w" style="margin-top:6px;background:#e5484d" onclick="tnEkle(${p.id},true)">💾 Kaydet · Doğuş'a ve sorumluya bildirim gider</button>`}</div>`}
 async function tnEkle(pid,bildirim){const i=$('#tn'+pid),t=i?i.value.trim():'';if(!t){toast('Önce açıklama yaz');if(i)i.focus();return}
   const {error}=await sb.rpc('tahsilat_not',{p:pid,metin:t,bildir:bildirim});if(hata(error))return;
-  toast(bildirim?(me.rol==='patron'?'Not eklendi, Ofis\'e ve sorumluya bildirildi':'Not eklendi, Doğuş\'a bildirim gitti'):'Not eklendi');render()}
+  toast(bildirim?(me.rol==='patron'?'Not eklendi, Ofis\'e ve sorumluya bildirildi':'Not eklendi, Doğuş\'a ve sorumluya bildirim gitti'):'Not eklendi');render()}
 // Görevlerim / Ana Sayfa: ödemesi beklenen işler (Ofis hepsini, sorumlu kendi bölümünü, Doğuş hepsini görür)
 async function odemeTakipKart(){
   const {data}=await sb.from('projeler').select('*').eq('durum','onaylandi');
@@ -775,7 +776,7 @@ function vPlanEkle(){
    <button class="btn w" style="margin-top:14px">Kaydet</button></form>`;
   sb.from('projeler').select('musteri').then(r=>{const dl=$('#pml');if(dl)dl.innerHTML=[...new Set((r.data||[]).map(x=>(x.musteri||'').trim()).filter(Boolean))].map(x=>`<option value="${esc(x)}">`).join('')});
   $('#pf').onsubmit=async e=>{e.preventDefault();const f=e.target;
-    const {error}=await sb.from('ajanda').insert({sahip_id:me.id,atanan_id:f.k.value,baslik:f.b.value.trim(),musteri:f.mu.value.trim()||null,aciklama:f.a.value.trim()||null,tarih:f.t.value||null,saat:f.s.value||null});
+    const {error}=await sb.rpc('ajanda_ekle',{atanan:f.k.value||null,baslik:f.b.value.trim(),musteri:f.mu.value.trim()||null,aciklama:f.a.value.trim()||null,tarih:f.t.value||null,saat:f.s.value||null});
     if(hata(error))return;toast(f.k.value===me.id?'İş kaydedildi':'İş verildi, bildirim gitti');render()};
 }
 
