@@ -515,7 +515,7 @@ function basKalem(d){
   if(d.tur!=='PROFORMA FATURA'||d.malzemeTek===false)return d.kalemler;
   const mal=d.kalemler.filter(k=>!iscMi(k)),isc=d.kalemler.filter(iscMi);if(!mal.length)return d.kalemler;
   const t=Math.round(mal.reduce((a,k)=>a+Number(k.miktar||0)*Number(k.fiyat||0),0)*100)/100;
-  return[{ad:'Malzeme bedeli (ayrıntısı ek malzeme listesinde)',miktar:1,birim:'',fiyat:t},...isc];
+  return[{ad:'Malzeme bedeli',miktar:1,birim:'',fiyat:t},...isc];
 }
 // Proforma tablosu: önce yapılan işler (miktarsız), altında işçilik ve hizmet bedeli, sonra malzeme bedeli
 const isTemiz=x=>String(x||'').replace(/\s*\((?:[\d.,]+\s*(?:kişi|gün)(?:\s*·\s*)?)+\)\s*$/,'').trim();
@@ -1608,6 +1608,10 @@ async function vEkip(m){
      <form id="df" class="row" style="margin-top:8px"><input name="ad" placeholder="Yeni departman adı" required style="flex:1"><button class="btn s">Ekle</button></form></div>`:''}`;
   const df=$('#df');if(df)df.onsubmit=async e=>{e.preventDefault();const {error}=await sb.from('departmanlar').insert({ad:df.ad.value.trim()});if(hata(error))return;toast('Departman eklendi');render()};
 }
+// İşveren unutulan şifreyi sıfırlar (kullanıcılar e-posta kullanmıyor)
+async function sifreSifirla(id,ad){const y=prompt(ad+' için yeni şifre (en az 6 karakter):');if(y===null)return;
+  if(y.trim().length<6)return toast('Şifre en az 6 karakter olmalı');
+  const {error}=await sb.rpc('sifre_sifirla',{kim:id,yeni:y.trim()});if(hata(error))return;toast(ad+' için şifre değiştirildi. Yeni şifreyi kendisine söyle.')}
 async function kSet(id,btn){
   const s=btn.parentNode.querySelectorAll('select');
   const {error}=await sb.from('profiller').update({rol:s[0].value,departman_id:Number(s[1].value)||null}).eq('id',id);
