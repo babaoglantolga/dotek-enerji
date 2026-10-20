@@ -4,7 +4,7 @@
 window.GALERI = window.GALERI || {
   ofis: { bg:null, works:[], items:{} },
   gen:  { bg:null, works:[], items:{} },
-  bob:  { bg:"img/rooms/bob.jpg", works:[], items:{} },
+  bob:  { bg:"img/rooms/bob.jpg", pos:"center 12%", works:[], items:{} },
   p3d:  { bg:null, works:[], items:{} },
   elec: { bg:"img/rooms/elec.jpg", works:[], items:{} }
 };

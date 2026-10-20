@@ -895,7 +895,7 @@ function fillRoom(r){
   const G = (window.GALERI||{})[r.id] || {}; const s0name = roomName(r);
   $("#roomWorks").innerHTML = galHtml(G.works);
   const bg = $("#roomBg");
-  if (G.bg) { bg.classList.add("photo"); bg.style.backgroundImage = `linear-gradient(180deg,rgba(13,21,38,.6),rgba(13,21,38,.94)),url("${G.bg}")`; $("#roomPhotoImg").src = G.bg; $("#roomPhotoImg").alt = s0name; $("#roomPhotoCap").textContent = t.photo_cap; $("#roomPhoto").hidden = false; }
+  if (G.bg) { bg.classList.add("photo"); bg.style.backgroundImage = `linear-gradient(180deg,rgba(13,21,38,.6),rgba(13,21,38,.94)),url("${G.bg}")`; $("#roomPhotoImg").src = G.bg; $("#roomPhotoImg").style.objectPosition = G.pos || "center 35%"; $("#roomPhotoImg").alt = s0name; $("#roomPhotoCap").textContent = t.photo_cap; $("#roomPhoto").hidden = false; }
   else { bg.classList.remove("photo"); bg.style.backgroundImage = ""; $("#roomPhoto").hidden = true; };
 }
 function resetChat(text){
