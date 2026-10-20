@@ -306,7 +306,10 @@ html[dir="rtl"] .room-svc .svc-item b{transform:scaleX(-1)}
 .lightbox{position:fixed;inset:0;z-index:59;background:rgba(0,0,0,.9);display:grid;place-items:center;padding:20px;cursor:zoom-out}
 .lightbox img{max-width:100%;max-height:85%;border-radius:8px}
 .lightbox p{color:#fff;margin-top:10px;text-align:center}
-.room-bg.photo{background-size:cover;background-position:center}
+.room-bg.photo{background-size:cover;background-position:center;filter:blur(3px)}
+.room-photo{margin:0;border-radius:14px;overflow:hidden;border:1px solid var(--line);position:relative;background:var(--panel)}
+.room-photo img{display:block;width:100%;max-height:380px;object-fit:cover}
+.room-photo figcaption{position:absolute;left:12px;bottom:12px;background:rgba(13,21,38,.8);color:var(--fg);font-size:.85rem;padding:5px 10px;border-radius:6px}
 footer{border-top:1px solid var(--line);padding-block:28px;color:var(--muted);font-size:.9rem}
 footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
@@ -689,6 +692,7 @@ footer .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
         <span class="eyebrow" id="roomEyebrow"></span>
       </div>
       <h2 id="roomTitle"></h2>
+      <figure class="room-photo" id="roomPhoto" hidden><img id="roomPhotoImg" alt=""><figcaption id="roomPhotoCap"></figcaption></figure>
       <div class="room-grid">
         <div class="desk">
           <div class="staff">
@@ -888,11 +892,11 @@ function fillRoom(r){
   $("#roomStaff").textContent = t.staff_lbl.replace("{d}", dn);
   $("#roomGreet").textContent = greetFor(r).replace("{d}", dn);
   $("#roomSvcs").innerHTML = r.depts.map(k => { const s = t.svc[k]; return `<article class="room-svc"><span class="eyebrow">${SPEC[k]}</span><h3>${esc(s.n)}</h3><p>${esc(s.d)}</p><ul>${s.i.map((x,ix)=>`<li><button type="button" class="svc-item" data-k="${k}" data-ix="${ix}"><span>${esc(x)}</span><b>›</b></button></li>`).join("")}</ul><p class="tap-hint">${esc(t.tap_hint)}</p></article>`; }).join("");
-  const G = (window.GALERI||{})[r.id] || {};
+  const G = (window.GALERI||{})[r.id] || {}; const s0name = roomName(r);
   $("#roomWorks").innerHTML = galHtml(G.works);
   const bg = $("#roomBg");
-  if (G.bg) { bg.classList.add("photo"); bg.style.backgroundImage = `linear-gradient(180deg,rgba(13,21,38,.55),rgba(13,21,38,.92)),url("${G.bg}")`; }
-  else { bg.classList.remove("photo"); bg.style.backgroundImage = ""; };
+  if (G.bg) { bg.classList.add("photo"); bg.style.backgroundImage = `linear-gradient(180deg,rgba(13,21,38,.6),rgba(13,21,38,.94)),url("${G.bg}")`; $("#roomPhotoImg").src = G.bg; $("#roomPhotoImg").alt = s0name; $("#roomPhotoCap").textContent = t.photo_cap; $("#roomPhoto").hidden = false; }
+  else { bg.classList.remove("photo"); bg.style.backgroundImage = ""; $("#roomPhoto").hidden = true; };
 }
 function resetChat(text){
   try { ctl?.abort(); } catch(_) {}
