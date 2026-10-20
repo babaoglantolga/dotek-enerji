@@ -13,7 +13,14 @@
 <body>
 <title>Dotek Saha Yönetim Sistemi</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="theme-color" content="#14284b">
+<meta name="theme-color" content="#0D1526">
+<link rel="manifest" href="/dotek.webmanifest">
+<link rel="icon" type="image/png" sizes="48x48" href="/ikon/favicon-48.png">
+<link rel="apple-touch-icon" href="/ikon/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Dotek Saha">
 <style>
 :root{--navy:#14284b;--blue:#1f6feb;--bg:#f3f5f9;--text:#1b2433;--muted:#6b7689;--line:#e3e7ef;--green:#1a8f4c;--red:#c62f2f}
 *{box-sizing:border-box}
@@ -1559,7 +1566,8 @@ async function vPlanlama(m){
      ${p.durum==='bitti'&&me.rol!=='patron'?`<button class="btn g w" style="margin-top:8px" onclick="proformaHazirla(${p.id})">📄 İş bitti → Proforma hazırla</button>`:''}
      <button class="btn s l w" style="margin-top:8px" onclick="vGorevEkle(${p.id})">+ Bu projeye görev ekle</button></div>`};
   const ekip=people.filter(x=>x.departman_id===me.departman_id&&['ds','calisan'].includes(x.rol));
-  m.innerHTML=`<div class="durumlar" style="margin-bottom:10px"><button class="btn" onclick="vGorevEkle()">+ Görev planla</button><button class="btn g" onclick="fisOku()">📷 Fiş okut</button><button class="btn l" onclick="teklifAc()">+ Teklif ekle</button></div>`+tk+`
+  const pkD=await planKarti();
+  m.innerHTML=`<div class="durumlar" style="margin-bottom:10px"><button class="btn" onclick="vPlanEkle()">+ İş ekle</button><button class="btn" onclick="vGorevEkle()">+ Görev planla</button><button class="btn g" onclick="fisOku()">📷 Fiş okut</button><button class="btn l" onclick="teklifAc()">+ Teklif ekle</button></div>`+tk+pkD+`
    <h2>Ekibim bugün</h2><div>${kimNerede(ekip,G.filter(t=>t.durum!=='bitti').map(t=>({...t,projeler:P.find(p=>p.id===t.proje_id)||{}})))}</div>
    <div class="muted" style="margin-top:8px">Tüm projeler ve aylık takvim için <span class="click" style="color:var(--blue);font-weight:700" onclick="go('projeler')">Projeler ›</span></div>`;
 }
