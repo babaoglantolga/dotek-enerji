@@ -80,73 +80,8 @@
   ],
   "redirects": [
     {
-      "source": "/dotek",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-ornek",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-giris",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-yedek",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-akis",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-akis.pdf",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
       "source": "/istakip",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/dotek.html",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha.html",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-ornek.html",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-giris.html",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-yedek.html",
-      "destination": "/kapali",
-      "permanent": false
-    },
-    {
-      "source": "/saha-akis.html",
-      "destination": "/kapali",
+      "destination": "/saha",
       "permanent": false
     }
   ]
