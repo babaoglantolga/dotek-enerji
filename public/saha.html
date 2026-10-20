@@ -14,13 +14,13 @@
 <title>Dotek Saha Yönetim Sistemi</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#0D1526">
-<link rel="manifest" href="/dotek.webmanifest">
-<link rel="icon" type="image/png" sizes="48x48" href="/ikon/favicon-48.png">
-<link rel="apple-touch-icon" href="/ikon/apple-touch-icon.png">
+<link rel="manifest" href="/dotek.webmanifest?v=3">
+<link rel="icon" type="image/png" sizes="48x48" href="/ikon/favicon-48.png?v=3">
+<link rel="apple-touch-icon" href="/ikon/apple-touch-icon.png?v=3">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Dotek Saha">
+<meta name="apple-mobile-web-app-title" content="DOTEK DSYS">
 <style>
 :root{--navy:#14284b;--blue:#1f6feb;--bg:#f3f5f9;--text:#1b2433;--muted:#6b7689;--line:#e3e7ef;--green:#1a8f4c;--red:#c62f2f}
 *{box-sizing:border-box}
@@ -515,7 +515,7 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
 function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
@@ -1404,6 +1404,97 @@ async function raporExcel(){toast('Excel hazırlanıyor…');try{const R=await a
   const s2=XLSX.utils.aoa_to_sheet([['Ad','Departman','Görev','Biten görev','Çalışma saati','Açık iş'],...X.kisi.map(k=>[k.ad,k.dep,k.rol,k.gb,Math.round(k.sa*10)/10,k.acik])]);s2['!cols']=[{wch:22},{wch:20},{wch:12},{wch:12},{wch:13},{wch:9}];XLSX.utils.book_append_sheet(wb,s2,'Personel');
   const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});indir(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'Dotek_Rapor_'+R.ad.replace(/\s+/g,'_')+'.xlsx')}catch(e){toast(e.message)}}
 
+// ---------------- Dönem raporu: hangi işler yapıldı, ne zaman bitti, tutar, ödeme ----------------
+function drAralik(){const D=S.dr||(S.dr={tip:'buay'}),n=new Date();n.setHours(0,0,0,0);let b,e;
+  if(D.tip==='buay'){b=new Date(n.getFullYear(),n.getMonth(),1);e=new Date(n.getFullYear(),n.getMonth()+1,1)}
+  else if(D.tip==='gecenay'){b=new Date(n.getFullYear(),n.getMonth()-1,1);e=new Date(n.getFullYear(),n.getMonth(),1)}
+  else if(D.tip==='son3'){b=new Date(n.getFullYear(),n.getMonth()-2,1);e=new Date(n.getFullYear(),n.getMonth()+1,1)}
+  else if(D.tip==='buyil'){b=new Date(n.getFullYear(),0,1);e=new Date(n.getFullYear()+1,0,1)}
+  else{b=D.b?new Date(D.b+'T00:00:00'):new Date(n.getFullYear(),n.getMonth(),1);e=D.e?new Date(D.e+'T00:00:00'):new Date(n);e.setDate(e.getDate()+1)}
+  const son=new Date(e-1);return{b,e,ad:tarih(b)+' – '+tarih(son)}}
+const DR_DURUM={odendi:['Ödendi','#1f8f4a'],kismi:['Kısmi ödendi','#c77700'],odeme:['Ödeme bekleniyor','#d33'],ofis:['Ofiste · fatura bekliyor','#c77700'],patronda:['İşveren onayında','#5b6b8c'],bitti:['Proforma hazırlanıyor','#5b6b8c'],devam:['Devam ediyor','#2a6bd1'],acik:['Başlamadı','#5b6b8c'],iade:['İade edildi','#d33']};
+async function donemVeri(){
+  await loadBase();const A=drAralik(),ici=t=>{if(!t)return false;const d=new Date(t);return d>=A.b&&d<A.e};
+  const [pr,g,th,ml,to]=await Promise.all([sb.from('projeler').select('*'),sb.from('gorevler').select('*'),sb.from('tahsilatlar').select('*'),sb.from('malzemeler').select('*'),sb.from('tedarik_odemeler').select('*')]);
+  const dep=me.rol==='patron'||ofisMi()?(S.dr.dep||null):me.departman_id;
+  let P=(pr.data||[]).filter(p=>!dep||p.departman_id==dep);const G=g.data||[],T=th.data||[],M=ml.data||[],TO=to.data||[];
+  const ids=new Set(P.map(p=>p.id));
+  const gor=p=>G.filter(t=>t.proje_id===p.id);
+  const bas=p=>{const l=gor(p).map(t=>t.olusturma).filter(Boolean).sort();return p.baslangic||l[0]||p.olusturma};
+  const bit=p=>{if(!['bitti','patronda','onaylandi'].includes(p.durum))return null;const l=gor(p).map(t=>t.bitis_tarihi).filter(Boolean).sort();return l.length?l[l.length-1]:(p.gonderim||p.bitis||p.onay_tarihi)};
+  const dk=p=>p.durum!=='onaylandi'?p.durum:p.fatura_durum!=='kesildi'?'ofis':p.odeme_durum==='alindi'?'odendi':p.odeme_durum==='kismi'?'kismi':'odeme';
+  const sat=p=>{const pb=pbP(p),f=Number(p.fiyat||0),o=p.odeme_durum==='alindi'?f:Number(p.odenen||0);
+    return{p,ad:p.ad,musteri:p.musteri||'',dep:dname(p.departman_id),sor:p.takipci_id?pname(p.takipci_id):'',bas:bas(p),bit:bit(p),pb,tutar:p.fiyat==null?null:f,odenen:o,kalan:p.fiyat==null?null:Math.max(0,f-o),dk:dk(p),
+      fat:p.fatura_durum==='kesildi'?(p.iletim==='proforma'?'Proforma '+(p.proforma_no||''):'Fatura '+(p.fatura_no||'')):'',fatT:p.fatura_tarihi,odT:p.odeme_tarihi,
+      gs:gor(p).length,gb:gor(p).filter(t=>t.durum==='bitti').length}};
+  const biten=P.filter(p=>ici(bit(p))).map(sat).sort((x,y)=>new Date(x.bit)-new Date(y.bit));
+  const devam=P.filter(p=>['acik','devam','iade'].includes(p.durum)&&new Date(p.olusturma)<A.e).map(sat);
+  const tah=T.filter(t=>ids.has(t.proje_id)&&ici(t.tarih)).map(t=>({...t,is:(P.find(p=>p.id===t.proje_id)||{}).ad||'',musteri:(P.find(p=>p.id===t.proje_id)||{}).musteri||''})).sort((x,y)=>new Date(x.tarih)-new Date(y.tarih));
+  const acikAl=P.filter(p=>p.fatura_durum==='kesildi'&&p.odeme_durum!=='alindi').map(sat);
+  const mlz=M.filter(x=>ids.has(x.proje_id)&&ici(x.tarih)&&Number(x.birim_fiyat||0)>0).map(x=>({para_birimi:x.para_birimi||(P.find(p=>p.id===x.proje_id)||{}).para_birimi||'TRY',fiyat:Number(x.miktar||0)*Number(x.birim_fiyat||0)}));
+  const tod=dep?[]:TO.filter(x=>ici(x.tarih)).map(x=>({para_birimi:x.para_birimi,fiyat:Number(x.tutar)}));
+  const top=(a,f)=>{const g={};a.forEach(x=>{const c=x.pb||x.para_birimi||'TRY',v=Number(f(x)||0);if(v)g[c]=(g[c]||0)+v});const k=Object.keys(g);return k.length?k.map(c=>tl(g[c],c)).join(' + '):'—'};
+  return{A,dep,biten,devam,tah,acikAl,mlz,tod,top};
+}
+function drFiltre(){const D=S.dr,b=(k,t)=>`<button class="btn s ${D.tip===k?'':'l'}" onclick="S.dr.tip='${k}';render()">${t}</button>`;
+  return`<div class="durumlar" style="margin:6px 0 8px;flex-wrap:wrap">${b('buay','Bu ay')}${b('gecenay','Geçen ay')}${b('son3','Son 3 ay')}${b('buyil','Bu yıl')}${b('ozel','Tarih seç')}</div>
+  ${D.tip==='ozel'?`<div class="row" style="flex-wrap:nowrap;gap:8px"><div style="flex:1;min-width:0"><label for="drb">Başlangıç</label><input id="drb" type="date" value="${D.b||''}" onchange="S.dr.b=this.value;render()"></div><div style="flex:1;min-width:0"><label for="dre">Bitiş</label><input id="dre" type="date" value="${D.e||''}" onchange="S.dr.e=this.value;render()"></div></div>`:''}
+  ${me.rol==='patron'||ofisMi()?`<label for="drd">Departman</label><select id="drd" onchange="S.dr.dep=this.value?Number(this.value):null;render()"><option value="">Tüm şirket</option>${deps.filter(d=>!d.ofis).map(d=>`<option value="${d.id}"${S.dr.dep==d.id?' selected':''}>${esc(d.ad)}</option>`).join('')}</select>`:''}`}
+async function vDonemRapor(m){
+  if(!S.dr)S.dr={tip:'buay'};const R=await donemVeri(),t=R.top;
+  const kutu=(k,v,c,alt)=>`<div class="card" style="margin:0;padding:12px"><div class="muted" style="font-size:12px">${k}</div><div style="font-weight:700;font-size:16px;margin-top:2px;${c?'color:'+c:''}">${v}</div>${alt?`<div class="muted" style="font-size:11.5px">${alt}</div>`:''}</div>`;
+  const chip=k=>{const[a,c]=DR_DURUM[k]||[k,'#5b6b8c'];return`<span class="chip" style="background:${c}1a;color:${c};white-space:nowrap">${a}</span>`};
+  const isKart=x=>`<div class="card click" onclick="S.pid=${x.p.id};render()" style="padding:12px"><div class="row sp" style="flex-wrap:nowrap;gap:8px"><b style="min-width:0">${esc(x.ad)}</b>${chip(x.dk)}</div>
+    <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(x.dep)}${x.sor?' · '+esc(x.sor):''}${x.musteri?' · Müşteri: <b>'+esc(x.musteri)+'</b>':''}</div>
+    <div class="muted" style="font-size:12.5px">Başladı: ${tarih(x.bas)||'—'}${x.bit?' · Bitti: <b>'+tarih(x.bit)+'</b>':''} ${x.gs?'· Görev '+x.gb+'/'+x.gs:''}${x.fat?' · '+esc(x.fat):''}</div>
+    ${x.tutar!=null?`<div class="row sp" style="margin-top:6px;flex-wrap:nowrap"><span>Tutar <b>${tl(x.tutar,x.pb)}</b></span><span>Ödenen <b style="color:var(--green)">${tl(x.odenen,x.pb)}</b></span><span>Kalan <b style="color:${x.kalan>0?'var(--red)':'var(--green)'}">${tl(x.kalan,x.pb)}</b></span></div>`:'<div class="muted" style="margin-top:4px">Fiyat henüz belirlenmedi</div>'}</div>`;
+  m.innerHTML=`<button class="btn s l" onclick="go(S.drDon||tabsFor()[0][0])">← Geri</button>
+   <h2 style="margin-top:10px">📊 Dönem raporu</h2><div class="muted" style="margin:-4px 0 4px">${esc(R.A.ad)}${R.dep?' · '+esc(dname(R.dep)):' · Tüm şirket'}</div>
+   ${drFiltre()}
+   <div class="durumlar" style="margin:10px 0"><button class="btn l" onclick="donemPDF()">📄 PDF indir</button><button class="btn l" onclick="donemExcel()">📊 Excel indir</button></div>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-bottom:12px">
+    ${kutu('Biten iş',R.biten.length+' iş',null,R.devam.length+' iş devam ediyor')}
+    ${kutu('Biten işlerin tutarı',t(R.biten,x=>x.tutar))}
+    ${kutu('Bu işlerden tahsil edilen',t(R.biten,x=>x.odenen),'var(--green)')}
+    ${kutu('Bu işlerden kalan',t(R.biten,x=>x.kalan),'var(--red)')}
+    ${kutu('Dönemde gelen ödeme',t(R.tah.map(x=>({pb:x.para_birimi,v:x.tutar})),x=>x.v),'var(--green)',R.tah.length+' tahsilat')}
+    ${kutu('Toplam açık alacak',t(R.acikAl,x=>x.kalan),'var(--red)',R.acikAl.length+' iş · bugün itibarıyla')}
+    ${kutu('Malzeme alımı',t(R.mlz,x=>x.fiyat))}
+    ${R.dep?'':kutu('Firmalara ödenen',t(R.tod,x=>x.fiyat))}
+   </div>
+   <h3>Biten işler (${R.biten.length})</h3>${R.biten.map(isKart).join('')||'<div class="muted card">Bu dönemde biten iş yok.</div>'}
+   <h3 style="margin-top:14px">Dönemde gelen ödemeler (${R.tah.length})</h3>${R.tah.length?`<div class="card">${R.tah.map(x=>`<div class="row sp" style="padding:5px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap;gap:8px"><span style="min-width:0">${tarih(x.tarih)} · <b>${esc(x.is)}</b>${x.musteri?' <span class="muted">· '+esc(x.musteri)+'</span>':''} <span class="muted">· ${YONTEM[x.yontem]||esc(x.yontem||'')}</span></span><b style="white-space:nowrap;color:var(--green)">${tl(x.tutar,x.para_birimi)}</b></div>`).join('')}</div>`:'<div class="muted card">Bu dönemde ödeme gelmedi.</div>'}
+   <h3 style="margin-top:14px">Devam eden işler (${R.devam.length})</h3>${R.devam.map(isKart).join('')||'<div class="muted card">Devam eden iş yok.</div>'}
+   <h3 style="margin-top:14px">Ödeme bekleyen tüm işler (${R.acikAl.length})</h3>${R.acikAl.map(isKart).join('')||'<div class="muted card">Açık alacak yok.</div>'}`;
+}
+function donemHTML(R){const t=R.top,th=x=>`<th style="background:#0D1526;color:#fff;text-align:left;padding:7px 7px;font-size:9.5px;letter-spacing:.06em">${x}</th>`,td=(x,r,c)=>`<td style="padding:7px 7px;border-bottom:1px solid #e3e7ef;font-size:11px;${r?'text-align:right;white-space:nowrap;':''}${c?'color:'+c:''}">${x}</td>`;
+  const tab=(L,bos)=>L.length?`<table style="width:100%;border-collapse:collapse"><thead><tr>${th('İŞ / MÜŞTERİ')}${th('BÖLÜM')}${th('BAŞLADI')}${th('BİTTİ')}${th('TUTAR')}${th('ÖDENEN')}${th('KALAN')}${th('DURUM')}</tr></thead><tbody>${L.map(x=>`<tr>${td('<b>'+esc(x.ad)+'</b>'+(x.musteri?'<br><span style="color:#6b7488">'+esc(x.musteri)+'</span>':''))}${td(esc(x.dep)+(x.sor?'<br><span style="color:#6b7488">'+esc(x.sor)+'</span>':''))}${td(tarih(x.bas)||'—')}${td(tarih(x.bit)||'—')}${td(x.tutar==null?'—':tl(x.tutar,x.pb),1)}${td(x.tutar==null?'—':tl(x.odenen,x.pb),1,'#1f8f4a')}${td(x.tutar==null?'—':tl(x.kalan,x.pb),1,x.kalan>0?'#d33':'#1f8f4a')}${td((DR_DURUM[x.dk]||[x.dk])[0])}</tr>`).join('')}</tbody></table>`:`<p style="color:#8a94a6">${bos}</p>`;
+  const oz=(k,v)=>`<div style="border:1px solid #e3e7ef;border-radius:8px;padding:9px 11px"><div style="color:#6b7488;font-size:10.5px">${k}</div><b style="font-size:13px">${v}</b></div>`;
+  return`<div class="blg"><div class="u"><div class="mk"><img src="${LOGO_BASKI}" alt=""><div><b>DOTEK</b><span>ENERJİ SİSTEMLERİ</span></div></div><div class="tr"><small>DÖNEM RAPORU</small><strong>${esc(R.A.ad)}</strong></div></div><div class="sr"></div>
+  <div class="ic" style="padding-bottom:30px"><p style="margin:4px 0 12px;color:#0D1526"><b>${R.dep?esc(dname(R.dep)):'Tüm şirket'}</b></p>
+   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">${oz('Biten iş',R.biten.length+' iş · '+R.devam.length+' devam')}${oz('Biten işlerin tutarı',t(R.biten,x=>x.tutar))}${oz('Tahsil edilen',t(R.biten,x=>x.odenen))}${oz('Kalan',t(R.biten,x=>x.kalan))}${oz('Dönemde gelen ödeme',t(R.tah.map(x=>({pb:x.para_birimi,v:x.tutar})),x=>x.v))}${oz('Toplam açık alacak',t(R.acikAl,x=>x.kalan))}${oz('Malzeme alımı',t(R.mlz,x=>x.fiyat))}${R.dep?'':oz('Firmalara ödenen',t(R.tod,x=>x.fiyat))}</div>
+   <h3 style="color:#0D1526;margin:6px 0 8px">Biten işler</h3>${tab(R.biten,'Bu dönemde biten iş yok.')}
+   <h3 style="color:#0D1526;margin:20px 0 8px">Dönemde gelen ödemeler</h3>${R.tah.length?`<table style="width:100%;border-collapse:collapse"><thead><tr>${th('TARİH')}${th('İŞ')}${th('MÜŞTERİ')}${th('YÖNTEM')}${th('TUTAR')}</tr></thead><tbody>${R.tah.map(x=>`<tr>${td(tarih(x.tarih))}${td('<b>'+esc(x.is)+'</b>')}${td(esc(x.musteri))}${td(YONTEM[x.yontem]||esc(x.yontem||''))}${td(tl(x.tutar,x.para_birimi),1,'#1f8f4a')}</tr>`).join('')}</tbody></table>`:'<p style="color:#8a94a6">Bu dönemde ödeme gelmedi.</p>'}
+   <h3 style="color:#0D1526;margin:20px 0 8px">Devam eden işler</h3>${tab(R.devam,'Devam eden iş yok.')}
+   <h3 style="color:#0D1526;margin:20px 0 8px">Ödeme bekleyen tüm işler</h3>${tab(R.acikAl,'Açık alacak yok.')}
+   <p style="color:#8a94a6;font-size:10.5px;margin-top:18px">Hazırlanma: ${saat(new Date())} · Dotek Saha Yönetim Sistemi</p></div>
+  <div class="as"><span><b>${esc(FIRMA.ad)}</b> · ${esc(FIRMA.adres)}</span><span>Ofis: <b>${esc(FIRMA.tel)}</b></span></div></div>`}
+const drDosya=R=>'Dotek_Donem_Raporu_'+gunStr(R.A.b)+'_'+gunStr(new Date(R.A.e-1));
+async function donemPDF(){toast('Rapor PDF hazırlanıyor…');try{const R=await donemVeri();await yukle('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');const c=await belgeTuval(null,donemHTML(R));
+  const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),h=c.height*210/c.width;let y=0;const img=c.toDataURL('image/jpeg',.92);
+  while(y<h){pdf.addImage(img,'JPEG',0,-y,210,h);y+=297;if(y<h)pdf.addPage()}
+  indir(pdf.output('blob'),drDosya(R)+'.pdf')}catch(e){toast(e.message)}}
+async function donemExcel(){toast('Excel hazırlanıyor…');try{const R=await donemVeri();await yukle('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+  const wb=XLSX.utils.book_new(),bas=['İş','Müşteri','Bölüm','Sorumlu','Başladı','Bitti','Para birimi','Tutar','Ödenen','Kalan','Durum','Fatura/Proforma','Fatura tarihi','Ödeme tarihi'];
+  const satir=x=>[x.ad,x.musteri,x.dep,x.sor,tarih(x.bas),tarih(x.bit),x.pb,x.tutar,x.tutar==null?null:x.odenen,x.kalan,(DR_DURUM[x.dk]||[x.dk])[0],x.fat,tarih(x.fatT),tarih(x.odT)];
+  const cols=[{wch:28},{wch:20},{wch:16},{wch:16},{wch:11},{wch:11},{wch:7},{wch:12},{wch:12},{wch:12},{wch:20},{wch:18},{wch:12},{wch:12}];
+  const sh=(ad,L)=>{const s=XLSX.utils.aoa_to_sheet([['Dotek Enerji — Dönem raporu',R.A.ad,R.dep?dname(R.dep):'Tüm şirket'],[],bas,...L.map(satir)]);s['!cols']=cols;XLSX.utils.book_append_sheet(wb,s,ad)};
+  sh('Biten işler',R.biten);
+  const s2=XLSX.utils.aoa_to_sheet([['Tarih','İş','Müşteri','Yöntem','Para birimi','Tutar','Not'],...R.tah.map(x=>[tarih(x.tarih),x.is,x.musteri,YONTEM[x.yontem]||x.yontem,x.para_birimi,Number(x.tutar),x.aciklama||''])]);s2['!cols']=[{wch:11},{wch:28},{wch:20},{wch:14},{wch:8},{wch:12},{wch:24}];XLSX.utils.book_append_sheet(wb,s2,'Gelen ödemeler');
+  sh('Devam eden',R.devam);sh('Ödeme bekleyen',R.acikAl);
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});indir(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),drDosya(R)+'.xlsx')}catch(e){toast(e.message)}}
+const drBtn=()=>`<button class="btn l w" style="margin:4px 0 10px" onclick="S.drDon=S.tab;go('donem')">📊 Dönem raporu · ne yapıldı, ne kadar, ödendi mi ›</button>`;
+
 // ---------------- Kim hangi işte ----------------
 // ---------------- Malzeme alımları: hangi firmadan ne alındı, ne ödendi, ne borç var ----------------
 const firmaKey=a=>String(a||'').trim().toLocaleLowerCase('tr').replace(/\s+/g,' ');
@@ -1466,6 +1557,7 @@ async function vOfisAna(m){
   const G=await acikGorevler(),ekip=aktifler().filter(p=>p.rol!=='patron');
   const calisiyor=ekip.filter(p=>G.some(t=>gKisi(t).includes(p.id)&&calisiyorMu(t.durum))).length;
   await vProjeler(m);
+  m.insertAdjacentHTML('afterbegin',drBtn());
   m.insertAdjacentHTML('beforeend',`<h2 style="margin-top:16px">Kim hangi işte <span class="muted" style="font-weight:400">· ${calisiyor} kişi şu an çalışıyor</span></h2><div>${kimNerede(ekip,G)}</div>`);
 }
 async function acikGorevler(){const {data}=await sb.from('gorevler').select('*, projeler(id,ad,musteri)');return (data||[]).filter(t=>t.durum!=='bitti')}
@@ -1610,7 +1702,7 @@ async function aylikVeri(){
     acik:G.filter(t=>t.durum!=='bitti'&&gKisi(t).includes(pid)).length});
   return{b,ozet,kisi,ad:b.toLocaleDateString('tr-TR',{month:'long',year:'numeric'})};
 }
-function rapBas(R){return`${me.rol==='patron'?`<div class="durumlar" style="margin-bottom:8px"><button class="btn l" onclick="raporPDF()">📄 Raporu PDF indir</button><button class="btn l" onclick="raporExcel()">📊 Excel indir</button></div>`:''}<div class="cal-bas" style="margin-top:4px"><h2 style="text-transform:capitalize">${esc(R.ad)} raporu</h2><div class="row" style="gap:4px;flex-wrap:nowrap">
+function rapBas(R){return`${drBtn()}${me.rol==='patron'?`<div class="durumlar" style="margin-bottom:8px"><button class="btn l" onclick="raporPDF()">📄 Raporu PDF indir</button><button class="btn l" onclick="raporExcel()">📊 Excel indir</button></div>`:''}<div class="cal-bas" style="margin-top:4px"><h2 style="text-transform:capitalize">${esc(R.ad)} raporu</h2><div class="row" style="gap:4px;flex-wrap:nowrap">
   <button class="btn s l" aria-label="Önceki ay" onclick="S.rap--;render()">‹</button><button class="btn s l" onclick="S.rap=0;render()">Bu ay</button><button class="btn s l" aria-label="Sonraki ay" onclick="S.rap++;render()">›</button></div></div>`}
 function rapKart(o,baslik,tikla){
   const sat=(k,v,c)=>`<div class="row sp" style="padding:6px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><span class="muted">${k}</span><b style="white-space:nowrap;${c?'color:'+c:''}">${v}</b></div>`;
@@ -1682,7 +1774,7 @@ async function vProjeler(m){
   const gk=p=>p.durum!=='onaylandi'?p.durum:p.fatura_durum!=='kesildi'?'ofis':p.odeme_durum==='alindi'?'odendi':'odeme';
   const grup=SIRA.map(d=>{const l=list.filter(p=>gk(p)===d);if(!l.length)return'';const h=`${BASLIK[d]} (${l.length})`,k=l.map(p=>projeKart(p,GG||[])).join('');
     return d==='odendi'?`<details style="margin-top:14px"><summary style="font-size:14px;font-weight:700">${h}</summary>${k}</details>`:`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${h}</h3>${k}`}).join('');
-  m.innerHTML=BIT?`<h2>Biten işler</h2><div class="muted" style="margin:-4px 0 6px">İş bitti → proforma → işveren onayı → Ofis fatura → ödeme. Her iş bulunduğu aşamada.</div>
+  m.innerHTML=BIT?`${me.rol!=='calisan'?drBtn():''}<h2>Biten işler</h2><div class="muted" style="margin:-4px 0 6px">İş bitti → proforma → işveren onayı → Ofis fatura → ödeme. Her iş bulunduğu aşamada.</div>
   ${grup||'<div class="card muted">Henüz biten iş yok.</div>'}`
   :tk+`<div class="row sp"><h2>${CAL?'Projelerim':'Devam eden projeler'}</h2>${!CAL&&!ofisMi()?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
   ${grup||'<div class="card muted">Kayıt yok.</div>'}
