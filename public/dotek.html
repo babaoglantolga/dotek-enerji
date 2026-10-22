@@ -219,7 +219,7 @@ async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewL
 function tabsFor(){
   if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
   if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
-  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
+  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
@@ -961,7 +961,7 @@ function vTeklifIste(){
 async function vTeklifler(m){
   const {data,error}=await sb.from('teklifler').select('*').order('tarih',{ascending:false});if(hata(error))return;
   const TD={istendi:'Doğuş gönderdi · hazırlanacak',taslak:'Hazırlanıyor',gonderildi:'Gönderildi',kabul:'Kabul edildi',red:'Reddedildi'},TC={istendi:'c-iade',taslak:'c-bekliyor',gonderildi:'c-acik',kabul:'c-bitti',red:'c-iade'};
-  m.innerHTML=`${ofisMi()?'':'<button class="btn s l" onclick="go(tabsFor()[0][0])">← Geri</button>'}<div class="row sp"${ofisMi()?'':' style="margin-top:10px"'}><h2>Teklifler</h2><button class="btn s" onclick="teklifAc()">+ Yeni teklif</button></div>
+  const TS=tabsFor().some(x=>x[0]==='teklif');m.innerHTML=`${TS?'':'<button class="btn s l" onclick="go(tabsFor()[0][0])">← Geri</button>'}<div class="row sp"${TS?'':' style="margin-top:10px"'}><h2>Teklifler</h2><button class="btn s" onclick="teklifAc()">+ Yeni teklif</button></div>
    ${(data||[]).map(t=>{const h=bHesap({kalemler:(t.kalemler||[]),kdv:t.kdv});return`<div class="card click" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(t.musteri)}</h3><span class="chip ${TC[t.durum]}">${t.durum==='istendi'?esc((pname(t.olusturan)||'Doğuş').split(' ')[0])+' gönderdi · hazırlanacak':TD[t.durum]}</span></div>
      <div class="muted">${esc(t.no||'')} · ${esc(t.konu||'')}${t.departman_id?' · '+esc(dname(t.departman_id)):''}${t.olusturan&&t.durum!=='istendi'?' · Hazırlayan: '+esc(pname(t.acan||t.olusturan)):''}</div><div style="margin-top:6px;font-weight:800;color:var(--green)">${bPara(h.gen,t.para_birimi)}</div></div>`}).join('')||'<div class="card muted">Henüz teklif yok. "+ Yeni teklif" ile başla.</div>'}`;
 }
