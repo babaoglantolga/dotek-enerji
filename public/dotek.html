@@ -985,7 +985,8 @@ async function vTeklifler(m){
 const teklifDuzenler=t=>ofisMi()||(t.olusturan===me.id&&!t.acan&&t.durum==='taslak');
 const teklifAcGor=id=>`${'${'}0${'}'}`;
 const tkK=t=>(t.kalemler||[]).filter(k=>!k._indirim&&k._toplam==null),tkT=t=>((t.kalemler||[]).find(k=>k._toplam!=null)||{})._toplam,tkD=t=>({kalemler:tkK(t),kdv:t.kdv,indirim:((t.kalemler||[]).find(k=>k._indirim)||{})._indirim,toplamEl:tkT(t)});
-const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:tkK(t),indirim:tkD(t).indirim,...(tkT(t)!=null?{toplamEl:tkT(t)}:{}),notlar:(t.sartlar||'').split('\n'),imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
+const TEKLIF_SART=['Ödemeler, iş tesliminden sonra yetkili kişi tarafından onaylandıktan sonra faturalandırılıp ödeme talep edilecektir.','Teklifimiz 1 ay geçerlidir.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'];
+const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:tkK(t),indirim:tkD(t).indirim,...(tkT(t)!=null?{toplamEl:tkT(t)}:{}),notlar:(t.sartlar||'').trim()?t.sartlar.split('\n'):[...TEKLIF_SART],imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
 // İşveren ve sorumlular teklifi izler: ne istendi, nerede, içinde ne var, müşteri ne dedi
 async function teklifGor(id){
   const r=await sb.from('teklifler').select('*').eq('id',id).single();if(hata(r.error))return;const t=r.data,m=$('#m');
@@ -1045,8 +1046,8 @@ async function teklifAc(id){
   let t=null;if(id){const r=await sb.from('teklifler').select('*').eq('id',id).single();if(hata(r.error))return;t=r.data}
   if(t&&t.durum==='istendi'&&!t.acilma_tarih&&ofisMi()){const u=await sb.from('teklifler').update({acilma_tarih:new Date().toISOString(),acan:me.id}).eq('id',t.id);if(!u.error){t.acilma_tarih=new Date().toISOString();t.acan=me.id}}
   const d=t?teklifBelge(t)
-    :{tur:'FİYAT TEKLİFİ',no:'',tarih:bugunStr(),son:gunEkle(15),musteri:{ad:'',ilgili:'',adres:''},proje:'',konu:'',pb:'TRY',kdv:16,kalemler:[{ad:'',miktar:1,birim:'adet',fiyat:0}],
-      notlar:['Teklif geçerlilik tarihine kadar geçerlidir.','Ödeme: %50 sipariş onayında, %50 iş tesliminde.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'],imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]};
+    :{tur:'FİYAT TEKLİFİ',no:'',tarih:bugunStr(),son:gunEkle(30),musteri:{ad:'',ilgili:'',adres:''},proje:'',konu:'',pb:'TRY',kdv:16,kalemler:[{ad:'',miktar:1,birim:'adet',fiyat:0}],
+      notlar:[...TEKLIF_SART],imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]};
   const durum=t?t.durum:'taslak';
   const ekstra=t?`<div style="margin-top:12px"><label for="tdp">Hangi departmanın işi?</label><select id="tdp"${me.rol==='ds'&&!ofisMi()?' disabled':''}>${deps.filter(x=>!x.ofis).map(x=>`<option value="${x.id}" ${x.id===t.departman_id?'selected':''}>${esc(x.ad)}</option>`).join('')}</select>
     <div style="margin-top:10px"><b>Müşteriye nasıl gönderdin?</b>${t.gonderim_kanal?`<div class="muted">Gönderildi: ${esc(t.gonderim_kanal)} · ${saat(t.gonderim_tarih)} · ${esc(pname(t.gonderen))}</div>`:'<div class="muted">PDF\'i indirip müşteriye ilettikten sonra işaretle'+(me.rol==='patron'?', kaydı kalsın.':', Doğuş görsün.')+'</div>'}</div>
