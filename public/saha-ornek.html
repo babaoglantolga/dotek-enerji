@@ -2014,7 +2014,8 @@ async function vEkip(m){
   const satir=p=>(isP&&p.id!==me.id)?`<div class="card"><div class="row sp"><b>${esc(p.ad)}</b><span class="muted">@${esc(p.kullanici_adi)}</span></div>
      <div class="row" style="margin-top:8px"><select style="flex:1;min-width:130px">${Object.keys(ROL).map(k=>`<option value="${k}" ${p.rol===k?'selected':''}>${ROL[k]}</option>`).join('')}</select>
      <select style="flex:1;min-width:130px"><option value="">Departman yok</option>${deps.map(d=>`<option value="${d.id}" ${p.departman_id===d.id?'selected':''}>${esc(d.ad)}</option>`).join('')}</select>
-     <button class="btn s" onclick="kSet('${p.id}',this)">Kaydet</button></div></div>`
+     <button class="btn s" onclick="kSet('${p.id}',this)">Kaydet</button></div>
+     <button class="btn s l" style="margin-top:8px" onclick="sifreSifirla('${p.id}','${esc(p.ad).replace(/'/g,'')}')">🔑 Şifresini unuttu · yeni şifre ver</button></div>`
     :`<div class="card"><b>${esc(p.ad)}</b><div class="muted">${ROL[p.rol]} · ${esc(dname(p.departman_id))}</div></div>`;
   const bek=list.filter(p=>p.rol==='bekliyor'),dig=list.filter(p=>p.rol!=='bekliyor');
   const kn=!isP?`<h2>Kim hangi işte</h2><div>${kimNerede(dig.filter(p=>['ds','calisan'].includes(p.rol)),await acikGorevler())}</div>`:'';
