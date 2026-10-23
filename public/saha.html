@@ -1547,7 +1547,7 @@ async function donemExcel(){toast('Excel hazırlanıyor…');try{const R=await d
 const drBtn=()=>`<button class="btn l w" style="margin:4px 0 10px" onclick="S.drDon=S.tab;go('donem')">📊 Dönem raporu · ne yapıldı, ne kadar, ödendi mi ›</button>`;
 
 // ---------------- Kontrol paneli: kim girdi, kim çıktı, kim ne yaptı ----------------
-const kontrolMu=()=>me&&(me.rol==='patron'||me.kullanici_adi==='tolgababaoglan');
+const kontrolMu=()=>me&&me.kullanici_adi==='tolgababaoglan';
 const cihazAd=()=>{const u=navigator.userAgent;const os=/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':'Cihaz';const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'';return os+(br?' · '+br:'')+(matchMedia('(display-mode: standalone)').matches?' · uygulama':'')};
 function oturumKaydet(tur){try{if(!sb||!me)return;sb.rpc('oturum_kaydet',{tur,cihaz:cihazAd()}).then(()=>{},()=>{})}catch(e){}}
 function oturumAcildi(){let tur='acti';if(window._yeniGiris){tur='giris';window._yeniGiris=false}else{try{const k='dsys_acti_'+me.id,s=Number(localStorage.getItem(k)||0);if(Date.now()-s<30*60e3)tur='aktif';localStorage.setItem(k,String(Date.now()))}catch(e){}}oturumKaydet(tur);window._sonAktif=Date.now()}
@@ -1580,7 +1580,7 @@ async function vKontrol(m){
   const sayi=id=>(lg.data||[]).filter(x=>x.kim===id&&x.tablo!=='oturum').length;
   const gunler={};L.forEach(x=>{const g=new Date(x.tarih).toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});(gunler[g]=gunler[g]||[]).push(x)});
   const btn=(k,v,t)=>`<button class="btn s ${String(K[k])===String(v)?'':'l'}" onclick="S.kt.${k}=${typeof v==='number'?v:`'${v}'`};render()">${t}</button>`;
-  m.innerHTML=`<h2>🛡️ Kontrol paneli</h2><div class="muted" style="margin:-4px 0 10px">Kim girdi, kim çıktı, kim ne yaptı. Sadece sen ${me.rol==='patron'?'':'ve Doğuş '}görürsün.</div>
+  m.innerHTML=`<h2>🛡️ Kontrol paneli</h2><div class="muted" style="margin:-4px 0 10px">Kim girdi, kim çıktı, kim ne yaptı. Sadece sen görürsün.</div>
    <div class="card"><h3 style="margin:0 0 6px">Kim ne zaman uygulamadaydı? <span class="muted" style="font-weight:400">· ${C.filter(on).length} kişi şu an açık</span></h3>
     ${sirali.map(p=>{const c=sonu(p);return`<div class="row sp click" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:8px" onclick="S.kt.kisi='${p.id}';render()"><span style="min-width:0"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c&&on(c)?'var(--green)':'#c5ccd8'};margin-right:6px"></span><b>${esc(p.ad)}</b> <span class="muted" style="font-size:12px">${esc(dname(p.departman_id))}</span>${c&&c.cihaz?`<div class="muted" style="font-size:12px;margin-left:15px">${esc(c.cihaz)}</div>`:''}</span><span style="text-align:right;white-space:nowrap"><span class="${c&&on(c)?'':'muted'}" style="${c&&on(c)?'color:var(--green);font-weight:700':''}">${c?(on(c)?'Şu an açık':ne(simdi-new Date(c.son))):'Henüz kayıt yok'}</span><div class="muted" style="font-size:12px">${sayi(p.id)} işlem</div></span></div>`}).join('')}</div>
    <div class="durumlar" style="margin:10px 0 0;flex-wrap:wrap">${btn('gun',1,'Bugün')}${btn('gun',7,'Son 7 gün')}${btn('gun',30,'Son 30 gün')}</div>
