@@ -471,7 +471,7 @@ async function init(){
   if(window._girisDil){if(me.dil!==window._girisDil){sb.rpc('dil_kaydet',{d:window._girisDil});me.dil=window._girisDil}window._girisDil=null}
   {const pd=DILLER[me.dil]?me.dil:'tr';if(pd!==DIL)dilSec(pd);}
   if(!['patron','ds','calisan'].includes(me.rol)) return viewWait();
-  await loadBase();oturumAcildi();
+  await loadBase();oturumAcildi();planUyari();
   if(!S.tab) S.tab=me.rol==='patron'?'onay':ofisMi()?'ofisana':me.rol==='ds'?'planlama':'gorevlerim';
   render();
   clearInterval(window._bt);window._bt=setInterval(bildirimKontrol,20000);
@@ -1554,6 +1554,15 @@ const drBtn=()=>`<button class="btn l w" style="margin:4px 0 10px" onclick="S.dr
 const kontrolMu=()=>me&&me.kullanici_adi==='tolgababaoglan';
 const cihazAd=()=>{const u=navigator.userAgent;const os=/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':'Cihaz';const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'';return os+(br?' · '+br:'')+(matchMedia('(display-mode: standalone)').matches?' · uygulama':'')};
 function oturumKaydet(tur){try{if(!sb||!me)return;sb.rpc('oturum_kaydet',{tur,cihaz:cihazAd()}).then(()=>{},()=>{})}catch(e){}}
+// Sorumlu açılışta: açtığı işte görev planlamadıysa uyar
+async function planUyari(){try{if(!me||me.rol!=='ds'||document.getElementById('planUyari'))return;
+  const [pr,g]=await Promise.all([sb.from('projeler').select('id,ad,musteri,olusturma,durum,departman_id,takipci_id').in('durum',['acik','devam','iade']),sb.from('gorevler').select('proje_id')]);
+  const var_=new Set((g.data||[]).map(t=>t.proje_id)),l=(pr.data||[]).filter(p=>p.departman_id===me.departman_id&&!var_.has(p.id));if(!l.length)return;
+  const k=document.createElement('div');k.id='planUyari';k.style.cssText='position:fixed;inset:0;background:rgba(13,21,38,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px';
+  k.innerHTML=`<div class="card" role="dialog" aria-modal="true" style="max-width:420px;width:100%;margin:0;border:2px solid var(--red)"><h3 style="margin:0 0 6px;color:var(--red)">⚠️ Planlama yapmadın!</h3><div class="muted" style="margin-bottom:8px">Bu ${l.length} işte henüz kimseye görev verilmedi:</div>
+   ${l.map(p=>{const gn=Math.max(0,Math.floor((Date.now()-new Date(p.olusturma||Date.now()))/864e5));return`<div class="row sp" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><b>${esc(p.ad)}</b><div class="muted" style="font-size:12px">${p.musteri?esc(p.musteri)+' · ':''}${gn?gn+' gündür bekliyor':'bugün açıldı'}</div></div><button class="btn s r" onclick="document.getElementById('planUyari').remove();vGorevEkle(${p.id})">Planla</button></div>`}).join('')}
+   <button class="btn s l w" style="margin-top:10px" onclick="document.getElementById('planUyari').remove()">Sonra</button></div>`;
+  document.body.appendChild(k)}catch(e){}}
 function oturumAcildi(){let tur='acti';if(window._yeniGiris){tur='giris';window._yeniGiris=false}else{try{const k='dsys_acti_'+me.id,s=Number(localStorage.getItem(k)||0);if(Date.now()-s<30*60e3)tur='aktif';localStorage.setItem(k,String(Date.now()))}catch(e){}}oturumKaydet(tur);window._sonAktif=Date.now()}
 const KT_TABLO={projeler:'Proje',gorevler:'Görev',teklifler:'Teklif',tahsilatlar:'Tahsilat',malzemeler:'Malzeme',ajanda:'İş',profiller:'Kullanıcı',departmanlar:'Departman',tedarik_odemeler:'Firma ödemesi',tahsilat_notlar:'Ödeme notu',islemler:'Çalışma kaydı',mesajlar:'Mesaj'};
 const KT_ISLEM={insert:'ekledi',update:'güncelledi',delete:'sildi'};
@@ -1682,6 +1691,8 @@ function asamaTakip(p){
 }
 const salt=p=>me.rol==='patron'&&!prfGor(p)&&['bitti','iade','onaylandi'].includes(p.durum);
 
+// Açık işte hiç görev yoksa: planlama yapılmamış
+const planYok=(p,G)=>['acik','devam','iade'].includes(p.durum)&&!G.some(t=>t.proje_id===p.id);
 // ---------------- Proje kartı (kim yapıyor, ne aşamada) ----------------
 function projeKart(p,G){
   const T=G.filter(t=>t.proje_id===p.id),bit=T.filter(t=>t.durum==='bitti').length,yz=T.length?Math.round(bit*100/T.length):0;
@@ -1693,17 +1704,19 @@ function projeKart(p,G){
     :p.durum==='bitti'?'İş bitti'+(prfGor(p)?' · proforma hazırlanacak':'')
     :simdi?'Şu an: '+simdi.baslik:acik.length?'Sırada: '+acik[0].baslik:'Henüz görev planlanmadı';
   const yon=me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id);
-  return`<div class="card click" onclick="openP(${p.id},'gorev')">
+  const py=planYok(p,G),pg=py?Math.max(0,Math.floor((Date.now()-new Date(p.olusturma||Date.now()))/864e5)):0;
+  return`<div class="card click" onclick="openP(${p.id},'gorev')"${py&&yon?' style="border:2px solid var(--red)"':''}>
    <div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3>${p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'<span class="chip c-bitti">Ödendi</span>':p.fatura_durum==='kesildi'?'<span class="chip c-onaylandi">Ödeme bekleniyor</span>':'<span class="chip c-patronda">Ofiste</span>'):chip(p.durum,DURUM)}</div>
    <div class="muted" style="margin-top:3px">${esc(dname(p.departman_id))}${p.musteri?' · '+esc(p.musteri):''} · Takip: ${esc(pname(p.takipci_id))}</div>
    ${me.rol==='patron'&&!prfGor(p)&&['bitti','iade','patronda','onaylandi'].includes(p.durum)?asamaTakip(p)+(p.durum==='patronda'?`<button class="btn g w" style="margin-top:8px" onclick="event.stopPropagation();go('onay')">📄 Faturayı gör · onayla</button>`:'')+'<div hidden>':''}
+   ${py&&yon?`<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:#fdecec;color:var(--red);font-weight:700;font-size:14px">⚠️ ${me.id===p.takipci_id?'Planlama yapmadın!':esc(pname(p.takipci_id)||'Sorumlu')+' planlama yapmadı!'} <span style="font-weight:500">İş ${pg?pg+' gündür':'bugün'} açık, kimseye görev verilmedi.</span></div>`:''}
    <div class="ilerle" aria-label="İlerleme %${yz}"><span style="width:${yz}%"></span></div>
    <div class="row sp" style="margin-top:4px;flex-wrap:nowrap"><b style="font-size:14px;min-width:0">${esc(asama)}</b><span class="muted" style="white-space:nowrap">${T.length?bit+'/'+T.length+' görev':''}</span></div>
    ${acik.length&&!['patronda','onaylandi'].includes(p.durum)?`<div style="margin-top:6px">${acik.map(t=>`<div class="row sp" style="padding:6px 0;border-top:1px solid var(--line);flex-wrap:nowrap"><div style="min-width:0"><span style="font-weight:600">${esc(kisiAd(t))}</span><span class="muted"> · ${ic(t.baslik)}${t.plan_tarih?' · '+tarih(t.plan_tarih):''}</span></div>${chip(t.durum,GDURUM)}</div>`).join('')}</div>`:''}
    ${me.rol!=='calisan'&&p.fiyat!=null&&['patronda','onaylandi'].includes(p.durum)?`<div style="margin-top:6px;font-weight:800;color:var(--green)">${tl(p.fiyat,p.para_birimi)}</div>`:''}
    ${!prfGor(p)&&p.durum==='bitti'?''
      :yon&&p.durum==='bitti'?`<div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:8px"><button class="btn g" style="flex:2" onclick="event.stopPropagation();proformaHazirla(${p.id})">📄 Proforma hazırla</button><button class="btn s l" style="flex:1" onclick="event.stopPropagation();vGorevEkle(${p.id})">+ Görev</button></div>`
-     :yon&&['acik','devam','iade'].includes(p.durum)?`<button class="btn s l w" style="margin-top:8px" onclick="event.stopPropagation();vGorevEkle(${p.id})">+ Görev planla</button>`:''}
+     :yon&&['acik','devam','iade'].includes(p.durum)?`<button class="btn s ${py?'r':'l'} w" style="margin-top:8px" onclick="event.stopPropagation();vGorevEkle(${p.id})">+ Görev planla${py?' · şimdi':''}</button>`:''}
    ${me.rol!=='calisan'&&p.proforma_no&&['patronda','onaylandi','iade'].includes(p.durum)?`<button class="btn s l w" style="margin-top:6px" onclick="event.stopPropagation();${proformaBtn(p)}">📄 Proforma ${esc(p.proforma_no)}</button>`:''}
    ${me.rol==='patron'&&!prfGor(p)&&['bitti','iade','patronda','onaylandi'].includes(p.durum)?'</div>':''}
   </div>`;
@@ -1875,7 +1888,8 @@ async function vProjeler(m){
     return d==='odendi'?`<details style="margin-top:14px"><summary style="font-size:14px;font-weight:700">${h}</summary>${k}</details>`:`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">${h}</h3>${k}`}).join('');
   m.innerHTML=BIT?`${me.rol!=='calisan'?drBtn():''}<h2>Biten işler</h2><div class="muted" style="margin:-4px 0 6px">İş bitti → proforma → işveren onayı → Ofis fatura → ödeme. Her iş bulunduğu aşamada.</div>
   ${grup||'<div class="card muted">Henüz biten iş yok.</div>'}`
-  :tk+`<div class="row sp"><h2>${CAL?'Projelerim':'Devam eden projeler'}</h2>${!CAL&&!ofisMi()?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
+  :tk+(()=>{if(CAL)return'';const l=list.filter(p=>planYok(p,GG||[])&&(me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id)));if(!l.length)return'';
+     return`<div class="card" style="border:2px solid var(--red);background:#fdecec;color:var(--red)"><b style="font-size:16px">⚠️ ${l.length} işte planlama yapılmadı</b><div style="margin-top:4px;font-size:14px;color:#7a1f1f">${l.map(p=>`<div class="click" style="padding:3px 0" onclick="vGorevEkle(${p.id})">• <b>${esc(p.ad)}</b>${me.rol==='patron'?' · '+esc(pname(p.takipci_id)||''):''} — görev ver ›</div>`).join('')}</div></div>`})()+`<div class="row sp"><h2>${CAL?'Projelerim':'Devam eden projeler'}</h2>${!CAL&&!ofisMi()?'<button class="btn s" onclick="vYeni()">+ Yeni Proje</button>':''}</div>
   ${grup||'<div class="card muted">Kayıt yok.</div>'}
   ${!CAL&&data.some(p=>['bitti','patronda','onaylandi'].includes(p.durum))?`<div class="click card" style="margin-top:10px;color:var(--blue);font-weight:700" onclick="go('biten')">Biten işler (${data.filter(p=>['bitti','patronda','onaylandi'].includes(p.durum)).length}) · alttaki "Biten İş" sekmesinde ›</div>`:''}`;
 }
