@@ -227,7 +227,13 @@ function ajProje(r){const k=DB.profiller.find(p=>p.id===r.atanan_id);if(r.proje_
 DB.ajanda.forEach(ajProje);
 const gorunur={teklifler:r=>ofisM()||meP().rol==='patron'||(meP().rol==='ds'&&(r.departman_id===meP().departman_id||r.olusturan===CUR)),ajanda_notlar:r=>{const a=DB.ajanda.find(x=>x.id===r.ajanda_id)||{};return a.sahip_id===CUR||a.atanan_id===CUR||meP().rol==='patron'},ajanda:r=>r.sahip_id===CUR||r.atanan_id===CUR||meP().rol==='patron',bildirimler:r=>r.alici_id===CUR,projeler:r=>erisim(r.id),gorevler:r=>takipEder(r.proje_id)||kis(r).includes(CUR)||ofisM(),islemler:r=>takipEder(r.proje_id)||r.kullanici_id===CUR,malzemeler:r=>takipEder(r.proje_id)||ofisM()};
 const varsay={tedarik_odemeler:()=>({giren:CUR,olusturma:new Date().toISOString()}),teklifler:()=>({durum:'taslak',olusturan:CUR,tarih:new Date().toISOString()}),projeler:{durum:'acik',iscilik:0,para_birimi:'TRY'},gorevler:{durum:'bekliyor'},islemler:()=>({kullanici_id:CUR,tarih:new Date().toISOString()}),malzemeler:()=>({birim:'adet',para_birimi:'TRY',giren:CUR,tarih:new Date().toISOString()}),ajanda:{durum:'bekliyor',para_birimi:'TRY'},ajanda_notlar:()=>({yazan_id:CUR,tarih:new Date().toISOString()}),mesajlar:()=>({gonderen_id:CUR,tarih:new Date().toISOString()})};
+function mlog(t,op,r,d){if(!['projeler','gorevler','teklifler','tahsilatlar','malzemeler','ajanda','profiller','tedarik_odemeler','tahsilat_notlar'].includes(t))return;DB.islem_log=DB.islem_log||[];DB.islem_log.push({id:nid++,tarih:new Date().toISOString(),kim:CUR,tablo:t,islem:op,kayit_id:String(r.id),ad:r.ad||r.baslik||r.musteri||r.firma||r.no||null,degisen:d||null})}
 function run(st){
+ if(st.op==='insert'){const _r=__run(st);try{const x=Array.isArray(_r.data)?_r.data[0]:_r.data;if(x)mlog(st.table,'insert',x)}catch(e){}return _r}
+ if(st.op==='update'){const tb=DB[st.table]||[];const fl=r=>st.filters.every(([c,v,ne])=>ne===2?v.includes(r[c]):ne?r[c]!=v:r[c]==v);const once=tb.filter(fl).map(r=>JSON.parse(JSON.stringify(r)));const _r=__run(st);try{once.forEach(o=>{const n=tb.find(x=>x.id===o.id);if(!n)return;const d={};Object.keys(st.payload||{}).forEach(k=>{if(JSON.stringify(o[k])!==JSON.stringify(n[k]))d[k]=[o[k]??null,n[k]??null]});if(Object.keys(d).length)mlog(st.table,'update',n,d)})}catch(e){}return _r}
+ if(st.op==='delete'){const tb=DB[st.table]||[];const fl=r=>st.filters.every(([c,v,ne])=>ne===2?v.includes(r[c]):ne?r[c]!=v:r[c]==v);const once=tb.filter(fl).map(r=>({...r}));const _r=__run(st);try{once.forEach(o=>mlog(st.table,'delete',o))}catch(e){}return _r}
+ return __run(st)}
+function __run(st){
  const t=st.table, tab=DB[t], fl=r=>st.filters.every(([c,v,ne])=>ne===2?v.includes(r[c]):ne?r[c]!=v:r[c]==v), vis=gorunur[t]||(()=>true);
  if(st.op==='insert'){const d=typeof varsay[t]==='function'?varsay[t]():(varsay[t]||{});const r={id:nid++,olusturma:new Date().toISOString(),...d,...st.payload};tab.push(r);
    if(t==='teklifler'){r.no='TKL-2026-'+String(r.id).padStart(4,'0');if(r.durum==='istendi')DB.profiller.filter(x=>['ds','calisan'].includes(x.rol)&&(DB.departmanlar.find(d=>d.id===x.departman_id)||{}).ofis).forEach(x=>bildir(x.id,pAd(CUR)+' teklif istedi: '+r.musteri+(r.konu?' · '+r.konu.slice(0,60):''),null,null,'teklif'))}
@@ -296,6 +302,9 @@ let prfSira=47;const rpc0=async(n,a)=>{
   return{data:p.proforma_no,error:null}}
  if(n==='proforma_kaydet'){const p=DB.projeler.find(x=>x.id===a.p);if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma={...a.veri,no:p.proforma_no};return{data:p.proforma_no,error:null}}
  if(n==='teklif_projeye'){const x=DB.teklifler.find(y=>y.id===a.t);if(x.proje_id)return{data:x.proje_id,error:null};const ds=DB.profiller.find(y=>y.rol==='ds'&&y.departman_id===a.dep);const p={id:nid++,departman_id:a.dep,ad:x.proje_adi||x.konu||x.musteri,musteri:x.musteri,adres:x.adres,aciklama:'Teklif '+x.no+' kabul edildi.',para_birimi:x.para_birimi,takipci_id:ds&&ds.id,durum:'acik',iscilik:0,olusturma:new Date().toISOString()};DB.projeler.push(p);x.durum='kabul';x.proje_id=p.id;x.departman_id=a.dep;DB.profiller.filter(y=>y.rol==='ds'&&y.departman_id===a.dep).forEach(y=>bildir(y.id,'Yeni proje (teklif kabul edildi): '+x.musteri,p.id,null,'takip'));DB.profiller.filter(y=>y.rol==='patron'||y.id===x.olusturan).forEach(y=>bildir(y.id,'Teklif kabul edildi: '+x.musteri+' · '+x.no+' → '+((DB.departmanlar.find(d=>d.id===a.dep)||{}).ad||'')+' departmanında proje açıldı',p.id,null,'teklif_kabul'));return{data:p.id,error:null}}
+if(n==='oturum_kaydet'){DB.cevrimici=DB.cevrimici||[];let c=DB.cevrimici.find(x=>x.kim===CUR);if(!c){c={kim:CUR};DB.cevrimici.push(c)}c.son=new Date().toISOString();c.cihaz=a.cihaz||c.cihaz;if(['giris','acti','cikis'].includes(a.tur)){DB.islem_log=DB.islem_log||[];DB.islem_log.push({id:nid++,tarih:new Date().toISOString(),kim:CUR,tablo:'oturum',islem:a.tur,ad:a.cihaz||null,degisen:null})}kaydet();return{data:null,error:null}}
+if(n==='kontrol_log'){const m_=DB.profiller.find(x=>x.id===CUR);if(!m_||m_.rol!=='patron')return{data:null,error:{message:'Yetkiniz yok'}};const sin=Date.now()-a.gun*864e5;return{data:(DB.islem_log||[]).filter(x=>new Date(x.tarih)>sin&&(!a.kisi||x.kim===a.kisi)).slice().reverse(),error:null}}
+if(n==='kontrol_cevrimici'){return{data:(DB.cevrimici||[]).slice().sort((x,y)=>y.son.localeCompare(x.son)),error:null}}
 if(n==='ajanda_projeye'){const x=DB.ajanda.find(y=>y.id===a.a);if(!x)return{data:null,error:{message:'İş bulunamadı'}};if(x.proje_id)return{data:x.proje_id,error:null};const me_=DB.profiller.find(y=>y.id===CUR);const r=run({table:'projeler',op:'insert',filters:[],orders:[],payload:{departman_id:me_.departman_id,ad:x.baslik,musteri:x.musteri||null,aciklama:x.aciklama||'Verilen iş',takipci_id:CUR,baslangic:x.tarih||null}});if(r.error)return r;const pid=(Array.isArray(r.data)?r.data[0]:r.data).id;x.proje_id=pid;x.durum='planlandi';kaydet();return{data:pid,error:null}}
 if(n==='ajanda_ekle'){const r=run({table:'ajanda',op:'insert',filters:[],orders:[],payload:{sahip_id:CUR,atanan_id:a.atanan,baslik:a.baslik,musteri:a.musteri,aciklama:a.aciklama,tarih:a.tarih,saat:a.saat}});kaydet();return{data:null,error:r.error||null}}
 if(n==='sifre_sifirla'){if(meP().rol!=='patron')return{data:null,error:{message:'Şifreyi sadece işveren sıfırlar'}};return{data:null,error:null}}
@@ -459,7 +468,7 @@ async function init(){
   if(window._girisDil){if(me.dil!==window._girisDil){sb.rpc('dil_kaydet',{d:window._girisDil});me.dil=window._girisDil}window._girisDil=null}
   {const pd=DILLER[me.dil]?me.dil:'tr';if(pd!==DIL)dilSec(pd);}
   if(!['patron','ds','calisan'].includes(me.rol)) return viewWait();
-  await loadBase();
+  await loadBase();oturumAcildi();
   if(!S.tab) S.tab=me.rol==='patron'?'onay':ofisMi()?'ofisana':me.rol==='ds'?'planlama':'gorevlerim';
   render();
   clearInterval(window._bt);window._bt=setInterval(bildirimKontrol,20000);
@@ -493,7 +502,7 @@ function viewLogin(mode){
       const {error}=await sb.auth.signInWithPassword({email,password});
       if(error) return toast(g('hatali'));
     }
-    window._girisDil=DIL;init();
+    window._girisDil=DIL;window._yeniGiris=true;init();
   };
 }
 function viewWait(){
@@ -502,7 +511,7 @@ function viewWait(){
   <button class="btn w l" onclick="init()">${g('yenile')}</button>
   <button class="btn w r" style="margin-top:8px" onclick="cikis()">${g('cikis')}</button></div></div>`;
 }
-async function cikis(){await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewLogin()}
+async function cikis(){try{if(me)await sb.rpc('oturum_kaydet',{tur:'cikis',cihaz:cihazAd()})}catch(e){}await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewLogin()}
 
 // ---------------- Kabuk ----------------
 function tabsFor(){
@@ -512,11 +521,11 @@ function tabsFor(){
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
-  app.innerHTML=`<header class="top"><div><b>Dotek Saha Yönetim Sistemi</b><div style="font-size:12px;opacity:.85">${esc(me.ad)} · ${ROL[me.rol]}${me.departman_id?' · '+esc(dname(me.departman_id)):''}</div></div><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-nocevir aria-label="Dil" onchange="dilDegis(this.value)" style="width:auto;padding:7px 6px;font-size:13px;font-weight:700">${Object.entries(DILLER).map(([k,v])=>`<option value="${k}" ${k===DIL?'selected':''}>${v.k}</option>`).join('')}</select><button class="btn s l zil" aria-label="Bildirimler" onclick="go('bildirim')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span id="rozet" class="rozet" hidden></span></button><button class="btn s l" onclick="go('akis')" aria-label="Sistem nasıl çalışır" title="Sistem nasıl çalışır">📖</button><button class="btn s l" onclick="cikis()">Çıkış</button></div></header>
+  app.innerHTML=`<header class="top"><div><b>Dotek Saha Yönetim Sistemi</b><div style="font-size:12px;opacity:.85">${esc(me.ad)} · ${ROL[me.rol]}${me.departman_id?' · '+esc(dname(me.departman_id)):''}</div></div><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-nocevir aria-label="Dil" onchange="dilDegis(this.value)" style="width:auto;padding:7px 6px;font-size:13px;font-weight:700">${Object.entries(DILLER).map(([k,v])=>`<option value="${k}" ${k===DIL?'selected':''}>${v.k}</option>`).join('')}</select><button class="btn s l zil" aria-label="Bildirimler" onclick="go('bildirim')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span id="rozet" class="rozet" hidden></span></button>${kontrolMu()?`<button class="btn s l" onclick="go('kontrol')" aria-label="Kontrol paneli" title="Kontrol paneli">🛡️</button>`:''}<button class="btn s l" onclick="go('akis')" aria-label="Sistem nasıl çalışır" title="Sistem nasıl çalışır">📖</button><button class="btn s l" onclick="cikis()">Çıkış</button></div></header>
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({kontrol:vKontrol,donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
 function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
@@ -553,7 +562,7 @@ async function navSayilar(L){
     departmanlar:[0,'g']};
   document.querySelectorAll('[data-nb]').forEach(e=>{const [v,c]=N[e.dataset.nb]||[0];e.hidden=!v;e.textContent=v>99?'99+':v;e.className='nb'+(c==='g'?' g':'')});
 }
-async function bildirimKontrol(){
+async function bildirimKontrol(){if(me&&Date.now()-(window._sonAktif||0)>2*60e3&&document.visibilityState==='visible'){window._sonAktif=Date.now();oturumKaydet('aktif')}
   if(!me)return;
   const {data}=await sb.from('bildirimler').select('id,tur,metin').eq('islem_yapildi',false);
   const L=data||[],n=L.length,say=t=>L.filter(x=>x.tur===t).length,r=$('#rozet'),m=$('#m');
@@ -1536,6 +1545,50 @@ async function donemExcel(){toast('Excel hazırlanıyor…');try{const R=await d
   sh('Devam eden',R.devam);sh('Ödeme bekleyen',R.acikAl);
   const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});indir(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),drDosya(R)+'.xlsx')}catch(e){toast(e.message)}}
 const drBtn=()=>`<button class="btn l w" style="margin:4px 0 10px" onclick="S.drDon=S.tab;go('donem')">📊 Dönem raporu · ne yapıldı, ne kadar, ödendi mi ›</button>`;
+
+// ---------------- Kontrol paneli: kim girdi, kim çıktı, kim ne yaptı ----------------
+const kontrolMu=()=>me&&(me.rol==='patron'||me.kullanici_adi==='tolgababaoglan');
+const cihazAd=()=>{const u=navigator.userAgent;const os=/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':'Cihaz';const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'';return os+(br?' · '+br:'')+(matchMedia('(display-mode: standalone)').matches?' · uygulama':'')};
+function oturumKaydet(tur){try{if(!sb||!me)return;sb.rpc('oturum_kaydet',{tur,cihaz:cihazAd()}).then(()=>{},()=>{})}catch(e){}}
+function oturumAcildi(){let tur='acti';if(window._yeniGiris){tur='giris';window._yeniGiris=false}else{try{const k='dsys_acti_'+me.id,s=Number(localStorage.getItem(k)||0);if(Date.now()-s<30*60e3)tur='aktif';localStorage.setItem(k,String(Date.now()))}catch(e){}}oturumKaydet(tur);window._sonAktif=Date.now()}
+const KT_TABLO={projeler:'Proje',gorevler:'Görev',teklifler:'Teklif',tahsilatlar:'Tahsilat',malzemeler:'Malzeme',ajanda:'İş',profiller:'Kullanıcı',departmanlar:'Departman',tedarik_odemeler:'Firma ödemesi',tahsilat_notlar:'Ödeme notu',islemler:'Çalışma kaydı',mesajlar:'Mesaj'};
+const KT_ISLEM={insert:'ekledi',update:'güncelledi',delete:'sildi'};
+const KT_ALAN={durum:'Durum',fiyat:'Fiyat',iscilik:'İşçilik',odenen:'Ödenen',odeme_durum:'Ödeme',fatura_durum:'Fatura',fatura_no:'Fatura no',proforma:'Proforma',proforma_no:'Proforma no',kalemler:'Kalemler',plan_tarih:'Plan tarihi',baslik:'Başlık',ad:'Ad',musteri:'Müşteri',aciklama:'Açıklama',atanan_id:'Atanan',atananlar:'Atananlar',takipci_id:'Sorumlu',rol:'Rol',departman_id:'Departman',tutar:'Tutar',miktar:'Miktar',birim_fiyat:'Birim fiyat',tarih:'Tarih',saat:'Saat',bitis_tarihi:'Bitiş',onay_tarihi:'Onay',gonderim:'Gönderim',iletim:'Müşteriye iletim',gonderim_kanal:'Gönderim kanalı',proje_id:'Proje',sartlar:'Şartlar',kdv:'KDV',para_birimi:'Para birimi',tedarikci:'Firma',patron_notu:'İşveren notu',fiyat_notu:'Fiyat notu',dil:'Dil',kullanici_adi:'Kullanıcı adı'};
+const KT_GIZLE=['olusturma','olusturan','id','acilma_tarih','gonderim_tarih','odeme_tarihi','fatura_tarihi'];
+function ktDeger(k,v){if(v==null||v==='')return'—';if(typeof v==='object')return Array.isArray(v)?v.length+' öğe':'…';const s=String(v);
+  if(/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(s))return pname(s);if(k==='departman_id')return dname(Number(s));
+  if(k==='durum')return DURUM[s]||GDURUM[s]||AJD[s]||s;if(/^\d{4}-\d{2}-\d{2}T/.test(s))return saat(s);if(/^\d{4}-\d{2}-\d{2}$/.test(s))return tarih(s);return s.length>60?s.slice(0,60)+'…':s}
+function ktSatir(x){const kim=x.kim?pname(x.kim):'Sistem';
+  if(x.tablo==='oturum'){const t={giris:'🔑 Giriş yaptı',acti:'📱 Uygulamayı açtı',cikis:'🚪 Çıkış yaptı',aktif:'📱 Uygulamada'}[x.islem]||x.islem;
+    return`<div class="row" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:10px;align-items:flex-start"><span class="muted" style="white-space:nowrap;min-width:42px">${new Date(x.tarih).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</span><div style="min-width:0"><b>${esc(kim)}</b> <span style="color:${x.islem==='cikis'?'var(--red)':'var(--green)'};font-weight:700">${t}</span>${x.ad?`<div class="muted" style="font-size:12px">${esc(x.ad)}</div>`:''}</div></div>`}
+  const d=x.degisen?Object.entries(x.degisen).filter(([k])=>!KT_GIZLE.includes(k)):[];
+  const det=d.slice(0,6).map(([k,[a,b]])=>`<div style="font-size:12.5px"><span class="muted">${esc(KT_ALAN[k]||k)}:</span> ${k==='proforma'||k==='kalemler'?'düzenlendi':esc(ktDeger(k,a))+' → <b>'+esc(ktDeger(k,b))+'</b>'}</div>`).join('');
+  const ic={insert:'➕',update:'✏️',delete:'🗑️'}[x.islem]||'•';
+  return`<div class="row" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:10px;align-items:flex-start"><span class="muted" style="white-space:nowrap;min-width:42px">${new Date(x.tarih).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</span><div style="min-width:0"><b>${esc(kim)}</b> ${ic} ${esc(KT_TABLO[x.tablo]||x.tablo)} ${KT_ISLEM[x.islem]||x.islem}${x.ad?`: <span style="font-weight:600">${esc(x.ad)}</span>`:''}${det}</div></div>`}
+async function vKontrol(m){
+  if(!kontrolMu()){m.innerHTML='<div class="card muted">Bu sayfa sadece yöneticiye açık.</div>';return}
+  const K=S.kt||(S.kt={gun:1,kisi:'',tur:''});await loadBase();
+  const [lg,cv]=await Promise.all([sb.rpc('kontrol_log',{gun:K.gun,kisi:K.kisi||null}),sb.rpc('kontrol_cevrimici')]);
+  if(lg.error||cv.error){m.innerHTML=`<div class="card">Kontrol paneli henüz kurulmadı ya da yetki yok.<div class="muted">${esc((lg.error||cv.error).message)}</div></div>`;return}
+  let L=(lg.data||[]).filter(x=>!(x.tablo==='oturum'&&x.islem==='aktif'));
+  if(K.tur==='oturum')L=L.filter(x=>x.tablo==='oturum');if(K.tur==='islem')L=L.filter(x=>x.tablo!=='oturum');
+  const C=cv.data||[],simdi=Date.now(),on=c=>simdi-new Date(c.son)<3*60e3;
+  const ne=ms=>{const dk=Math.round(ms/60e3);return dk<1?'şimdi':dk<60?dk+' dk önce':dk<1440?Math.round(dk/60)+' saat önce':Math.round(dk/1440)+' gün önce'};
+  const aktifler=people.filter(p=>['patron','ds','calisan'].includes(p.rol));
+  const sonu=p=>C.find(c=>c.kim===p.id);
+  const sirali=aktifler.slice().sort((a,b)=>{const x=sonu(a),y=sonu(b);return(y?new Date(y.son):0)-(x?new Date(x.son):0)});
+  const sayi=id=>(lg.data||[]).filter(x=>x.kim===id&&x.tablo!=='oturum').length;
+  const gunler={};L.forEach(x=>{const g=new Date(x.tarih).toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});(gunler[g]=gunler[g]||[]).push(x)});
+  const btn=(k,v,t)=>`<button class="btn s ${String(K[k])===String(v)?'':'l'}" onclick="S.kt.${k}=${typeof v==='number'?v:`'${v}'`};render()">${t}</button>`;
+  m.innerHTML=`<h2>🛡️ Kontrol paneli</h2><div class="muted" style="margin:-4px 0 10px">Kim girdi, kim çıktı, kim ne yaptı. Sadece sen ${me.rol==='patron'?'':'ve Doğuş '}görürsün.</div>
+   <div class="card"><h3 style="margin:0 0 6px">Kim ne zaman uygulamadaydı? <span class="muted" style="font-weight:400">· ${C.filter(on).length} kişi şu an açık</span></h3>
+    ${sirali.map(p=>{const c=sonu(p);return`<div class="row sp click" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:8px" onclick="S.kt.kisi='${p.id}';render()"><span style="min-width:0"><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c&&on(c)?'var(--green)':'#c5ccd8'};margin-right:6px"></span><b>${esc(p.ad)}</b> <span class="muted" style="font-size:12px">${esc(dname(p.departman_id))}</span>${c&&c.cihaz?`<div class="muted" style="font-size:12px;margin-left:15px">${esc(c.cihaz)}</div>`:''}</span><span style="text-align:right;white-space:nowrap"><span class="${c&&on(c)?'':'muted'}" style="${c&&on(c)?'color:var(--green);font-weight:700':''}">${c?(on(c)?'Şu an açık':ne(simdi-new Date(c.son))):'Henüz kayıt yok'}</span><div class="muted" style="font-size:12px">${sayi(p.id)} işlem</div></span></div>`}).join('')}</div>
+   <div class="durumlar" style="margin:10px 0 0;flex-wrap:wrap">${btn('gun',1,'Bugün')}${btn('gun',7,'Son 7 gün')}${btn('gun',30,'Son 30 gün')}</div>
+   <div class="durumlar" style="margin:6px 0 0;flex-wrap:wrap;border-top:0;padding-top:0">${btn('tur','','Hepsi')}${btn('tur','oturum','Giriş / çıkış')}${btn('tur','islem','Yapılan işlemler')}</div>
+   <label for="ktk">Kişi</label><select id="ktk" onchange="S.kt.kisi=this.value;render()"><option value="">Herkes</option>${aktifler.map(p=>`<option value="${p.id}" ${K.kisi===p.id?'selected':''}>${esc(p.ad)}</option>`).join('')}</select>
+   <h3 style="margin:14px 0 6px">Hareketler (${L.length})</h3>
+   ${Object.keys(gunler).length?Object.entries(gunler).map(([g,a])=>`<div class="card" style="padding:8px 14px"><div style="font-weight:800;text-transform:capitalize;margin-bottom:2px">${esc(g)}</div>${a.map(ktSatir).join('')}</div>`).join(''):'<div class="card muted">Bu aralıkta hareket yok. Kayıt tutma kurulduktan sonraki hareketler burada görünür.</div>'}`;
+}
 
 // ---------------- Kim hangi işte ----------------
 // ---------------- Malzeme alımları: hangi firmadan ne alındı, ne ödendi, ne borç var ----------------
