@@ -277,12 +277,12 @@ function __run(st){
  let rows=tab.filter(vis).filter(fl).map(r=>({...r}));
  for(const [c,asc] of st.orders.slice().reverse())rows.sort((a,b)=>{const x=a[c],y=b[c];if(x==null&&y==null)return 0;if(x==null)return 1;if(y==null)return -1;return(x<y?-1:x>y?1:0)*(asc?1:-1)});
  if(st.embed==='projeler')rows.forEach(r=>r.projeler={...DB.projeler.find(p=>p.id===r.proje_id)});
- if(st.single)return rows[0]?{data:rows[0],error:null}:{data:null,error:{message:'Kayıt yok'}};
+ if(st.single)return rows[0]?{data:rows[0],error:null}:st.single==='m'?{data:null,error:null}:{data:null,error:{message:'Kayıt yok'}};
  return{data:rows,error:null};
 }
 function from(table){const st={table,op:'select',filters:[],orders:[],single:false,embed:null,payload:null};
  const b={select(s){if(st.op==='select'){const m=/(\w+)\(/.exec(s||'');if(m)st.embed=m[1]}return b},eq(c,v){st.filters.push([c,v]);return b},neq(c,v){st.filters.push([c,v,1]);return b},in(c,v){st.filters.push([c,v,2]);return b},
-  order(c,o={}){st.orders.push([c,o.ascending!==false]);return b},single(){st.single=true;return b},
+  order(c,o={}){st.orders.push([c,o.ascending!==false]);return b},single(){st.single=true;return b},maybeSingle(){st.single='m';return b},
   insert(r){st.op='insert';st.payload=r;return b},update(o){st.op='update';st.payload=o;return b},delete(){st.op='delete';return b},
   then(ok){const r=run(st);if(st.op!=='select')kaydet();ok(r)}};return b}
 const auth={getSession:async()=>({data:{session:CUR?{user:{id:CUR}}:null}}),signOut:async()=>{CUR=null},
@@ -307,6 +307,9 @@ if(n==='kontrol_log'){const m_=DB.profiller.find(x=>x.id===CUR);if(!m_||m_.rol!=
 if(n==='kontrol_cevrimici'){return{data:(DB.cevrimici||[]).slice().sort((x,y)=>y.son.localeCompare(x.son)),error:null}}
 if(n==='malzeme_kullandim'){const t=DB.gorevler.find(y=>y.id===a.g);if(!t)return{data:null,error:{message:'Görev bulunamadı'}};const pr=DB.projeler.find(y=>y.id===t.proje_id);if(['patronda','onaylandi'].includes(pr.durum))return{data:null,error:{message:'İş kapandı, malzeme eklenemez. Sorumluna söyle.'}};const r=__run({table:'malzemeler',op:'insert',filters:[],orders:[],payload:{proje_id:t.proje_id,tur:'kullanilan',ad:a.ad,miktar:a.miktar,birim:a.birim,birim_fiyat:0,para_birimi:pr.para_birimi||'TRY',giren:CUR,gorev_id:a.g,tarih:new Date().toISOString()}});DB.profiller.filter(x=>x.id!==CUR&&(x.id===pr.takipci_id||(x.rol==='ds'&&x.departman_id===pr.departman_id))).forEach(x=>bildir(x.id,pAd(CUR)+' malzeme kullandı: '+a.miktar+' '+a.birim+' '+a.ad+' · '+pr.ad,pr.id,null,'malzeme'));kaydet();return{data:1,error:null}}
 if(n==='malzeme_geri_al'){DB.malzemeler=DB.malzemeler.filter(x=>!(x.id===a.m&&x.giren===CUR));kaydet();return{data:null,error:null}}
+if(n==='cari_hakedis'){DB.cari_ayar=DB.cari_ayar||[];let x=DB.cari_ayar.find(y=>y.anahtar===a.a);if(!x){x={anahtar:a.a};DB.cari_ayar.push(x)}x.ad=a.ad;x.hakedis=a.h;kaydet();return{data:null,error:null}}
+if(n==='hakedis_kaydet'){DB.hakedisler=DB.hakedisler||[];let x=DB.hakedisler.find(y=>y.anahtar===a.a&&y.donem===a.d);if(!x){x={id:nid++,anahtar:a.a,donem:a.d,durum:'taslak',olusturma:new Date().toISOString()};DB.hakedisler.push(x)}x.veri=a.veri;x.projeler=a.pids||[];if(!x.no)x.no='HKD-'+a.d.replace('-','')+'-'+String(x.id).padStart(3,'0');kaydet();return{data:x.no,error:null}}
+if(n==='hakedis_verildi'){const x=(DB.hakedisler||[]).find(y=>y.anahtar===a.a&&y.donem===a.d);if(x){x.durum='verildi';x.verilme=x.verilme||new Date().toISOString()}kaydet();return{data:null,error:null}}
 if(n==='proje_sil'){const pr=DB.projeler.find(y=>y.id===a.p);if(!pr)return{data:null,error:{message:'Proje bulunamadı'}};if(pr.fatura_durum==='kesildi'||DB.tahsilatlar.some(x=>x.proje_id===a.p))return{data:null,error:{message:'Faturası kesilmiş ya da ödemesi alınmış iş silinemez'}};DB.teklifler.forEach(x=>{if(x.proje_id===a.p){x.proje_id=null;x.durum='gonderildi'}});DB.ajanda.forEach(x=>{if(x.proje_id===a.p){x.proje_id=null;x.durum='bekliyor'}});['gorevler','malzemeler','islemler','bildirimler'].forEach(t=>{DB[t]=DB[t].filter(x=>x.proje_id!==a.p)});DB.projeler=DB.projeler.filter(x=>x.id!==a.p);kaydet();return{data:null,error:null}}
 if(n==='ajanda_projeye'){const x=DB.ajanda.find(y=>y.id===a.a);if(!x)return{data:null,error:{message:'İş bulunamadı'}};if(x.proje_id)return{data:x.proje_id,error:null};const me_=DB.profiller.find(y=>y.id===CUR);const r=run({table:'projeler',op:'insert',filters:[],orders:[],payload:{departman_id:me_.departman_id,ad:x.baslik,musteri:x.musteri||null,aciklama:x.aciklama||'Verilen iş',takipci_id:CUR,baslangic:x.tarih||null}});if(r.error)return r;const pid=(Array.isArray(r.data)?r.data[0]:r.data).id;x.proje_id=pid;x.durum='planlandi';kaydet();return{data:pid,error:null}}
 if(n==='ajanda_ekle'){const r=run({table:'ajanda',op:'insert',filters:[],orders:[],payload:{sahip_id:CUR,atanan_id:a.atanan,baslik:a.baslik,musteri:a.musteri,aciklama:a.aciklama,tarih:a.tarih,saat:a.saat}});kaydet();return{data:null,error:r.error||null}}
@@ -352,6 +355,7 @@ if(TEMIZ)Object.keys(DB).forEach(t=>{if(!['departmanlar','profiller'].includes(t
 const KAYIT=TEMIZ?'dotek_temiz_v1':'dotek_demo_v3';
 function kaydet(){try{localStorage.setItem(KAYIT,JSON.stringify({DB,nid,prfSira}))}catch(e){}}
 try{const k=JSON.parse(localStorage.getItem(KAYIT)||'null');if(k&&k.DB){Object.keys(k.DB).forEach(t=>{DB[t]=k.DB[t]});nid=k.nid||nid;prfSira=k.prfSira||prfSira}}catch(e){}
+['cari_ayar','hakedisler'].forEach(t=>{if(!DB[t])DB[t]=[]});
 function isBittiBildir(r){const ds=DB.profiller.find(x=>x.rol==='ds'&&x.departman_id===r.departman_id);DB.profiller.filter(x=>x.rol==='patron').forEach(x=>DB.bildirimler.push({id:nid++,alici_id:x.id,tur:'is_bitti',proje_id:r.id,departman_id:null,islem_yapildi:false,tarih:new Date().toISOString(),metin:(pAd(r.takipci_id)||(ds&&ds.ad)||pAd(CUR))+' işi bitirdi: '+r.ad+(r.musteri?' · '+r.musteri:'')}))}
 DB.bildirimler.forEach(b=>{if(b.tur==='is_bitti')b.metin=b.metin.replace(' · proforma hazırlanacak','')});
 // Proformadaki para birimi işe de yazılır (USD proforma TL görünmesin)
@@ -946,7 +950,7 @@ async function belgeTuval(d,html){
   const k=document.createElement('div');k.style.cssText='position:fixed;left:-12000px;top:0;width:794px;z-index:-1';k.setAttribute('data-nocevir','');k.innerHTML=html||belgeHTML(d);document.body.appendChild(k);
   try{await new Promise(r=>setTimeout(r,60));return await html2canvas(k.firstElementChild,{scale:2,backgroundColor:'#ffffff'})}finally{k.remove()}
 }
-const dosyaAdi=d=>d.ek?'Dotek_Ek_Malzeme_Listesi_'+(d.ana||'taslak'):'Dotek_'+(d.tur==='FİYAT TEKLİFİ'?'Teklif':'Proforma')+'_'+(d.no||'taslak');
+const dosyaAdi=d=>d.ek?'Dotek_Ek_Malzeme_Listesi_'+(d.ana||'taslak'):'Dotek_'+(d.tur==='FİYAT TEKLİFİ'?'Teklif':d.tur==='HAKEDİŞ'?'Hakedis':'Proforma')+'_'+(d.no||'taslak');
 async function indirPNG(d){toast('Fotoğraf hazırlanıyor…');try{const c=await belgeTuval(d);c.toBlob(b=>indir(b,dosyaAdi(d)+'.png'),'image/png')}catch(e){toast(e.message)}}
 async function pdfBlob(d){await yukle('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');const c=await belgeTuval(d);
   const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'});const h=Math.min(297,c.height*210/c.width);pdf.addImage(c.toDataURL('image/jpeg',.95),'JPEG',0,0,210,h);return pdf.output('blob')}
@@ -961,8 +965,8 @@ async function teklifWA(id,d){const b=$('#waKutu');if(!b)return;b.innerHTML='<di
     b.innerHTML=pay?`<button class="btn g w" onclick="teklifWAPaylas()">📤 Şimdi WhatsApp'ta paylaş</button><div class="muted" style="margin-top:4px">Açılan listeden WhatsApp'ı, sonra müşteriyi seç. PDF ve mesaj birlikte gider.</div>`
       :`<button class="btn g w" onclick="teklifWAWeb()">💬 WhatsApp'ı aç</button><div class="muted" style="margin-top:4px">Bilgisayardasın: PDF indirilecek, WhatsApp açılacak. Müşteriyi seçip mesajı gönder, PDF'i de sohbete sürükle.</div>`;
   }catch(e){b.innerHTML='';toast(e.message)}}
-async function teklifWAPaylas(){if(!WA)return;try{await navigator.share({files:[WA.file],text:WA.metin,title:WA.ad});await teklifGonderildi(WA.id,'WhatsApp')}catch(e){if(e&&e.name!=='AbortError')toast('Paylaşılamadı: '+e.message)}}
-async function teklifWAWeb(){if(!WA)return;indir(WA.blob,WA.ad);window.open('https://wa.me/?text='+encodeURIComponent(WA.metin),'_blank');await teklifGonderildi(WA.id,'WhatsApp')}
+async function teklifWAPaylas(){if(!WA)return;try{await navigator.share({files:[WA.file],text:WA.metin,title:WA.ad});await (WA.sonra?WA.sonra():teklifGonderildi(WA.id,'WhatsApp'))}catch(e){if(e&&e.name!=='AbortError')toast('Paylaşılamadı: '+e.message)}}
+async function teklifWAWeb(){if(!WA)return;indir(WA.blob,WA.ad);window.open('https://wa.me/?text='+encodeURIComponent(WA.metin),'_blank');await (WA.sonra?WA.sonra():teklifGonderildi(WA.id,'WhatsApp'))}
 async function teklifGonderildi(id,k){const r=await sb.from('teklifler').select('durum').eq('id',id).single();if(r.data&&['kabul','red'].includes(r.data.durum))return;
   const {error}=await sb.from('teklifler').update({durum:'gonderildi',gonderim_kanal:k,gonderim_tarih:new Date().toISOString(),gonderen:me.id}).eq('id',id);if(hata(error))return;toast('Teklif müşteriye gönderildi olarak işaretlendi ('+k+')');const w=$('#waKutu');if(w)w.innerHTML='<div class="muted">✓ WhatsApp ile gönderildi.</div>'}
 async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('docx.umd.js');const X=window.docx;
@@ -1079,7 +1083,7 @@ function vBelge(m){
     ${d.tur==='PROFORMA FATURA'&&k.birim!=='iş'&&!/işçilik/i.test(k.ad||'')?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;align-items:center;gap:6px"><span style="font-size:12px;font-weight:700;color:#8a5a00;white-space:nowrap">🧾 Kimden alındı:</span><input aria-label="Kimden alındı (firma)" list="tdkl" value="${esc(k.firma||'')}" placeholder="Firma yaz (sadece sende görünür)" oninput="BELGE.d.kalemler[${i}].firma=this.value" onchange="kalemFirma(${i})" style="flex:1;min-width:0;background:#fff8e6;border-color:#f0d9a0"></div>`:''}</div>`;
   const _akt=window._aktarHTML&&BELGE.ekstra.includes(window._aktarHTML)?window._aktarHTML:'',_eks=_akt?BELGE.ekstra.replace(_akt,''):BELGE.ekstra;
   m.innerHTML=`<button class="btn s l" onclick="S.belge=false;BELGE.geri()">← Geri</button>
-  <h2 style="margin-top:10px">${teklif?'Fiyat teklifi':'Proforma fatura'} <span class="muted" style="font-weight:600">${esc(d.no||'yeni')}</span></h2>
+  <h2 style="margin-top:10px">${teklif?'Fiyat teklifi':d.tur==='HAKEDİŞ'?'📑 Hak ediş':'Proforma fatura'} <span class="muted" style="font-weight:600">${esc(d.no||'yeni')}</span></h2>
 ${_akt}
   <div class="card"><h3>Müşteri</h3>
    <label for="bm1">Firma / kişi *</label><input id="bm1" value="${esc(d.musteri.ad||'')}" oninput="BELGE.d.musteri.ad=this.value;belgeOnizle()">
@@ -1231,11 +1235,73 @@ function vAkis(m){
 async function akisPDF(){try{const r=await fetch('saha-akis.pdf');if(r.ok)return indir(await r.blob(),'Dotek_Saha_Yonetim_Sistemi_Is_Akisi.pdf')}catch(e){}
   if(window.AKIS_PDF){const b=Uint8Array.from(atob(window.AKIS_PDF),c=>c.charCodeAt(0));return indir(new Blob([b],{type:'application/pdf'}),'Dotek_Saha_Yonetim_Sistemi_Is_Akisi.pdf')}
   toast('PDF bulunamadı')}
+// ---------------- HAK EDİŞ: bazı müşterilerden ödeme aylık hak edişle alınır ----------------
+const AYAD=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+const donemAd=d=>AYAD[+d.slice(5,7)-1]+' '+d.slice(0,4);
+const buDonem=()=>bugunStr().slice(0,7);
+const donemOnce=(d,n)=>{const x=new Date(+d.slice(0,4),+d.slice(5,7)-1-n,1);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')};
+function hakedisKart(k,ad,acik,L){const ks=esc(k).replace(/'/g,"\\'"),as=esc(ad).replace(/'/g,"\\'");const bu=buDonem(),buVar=L.find(x=>x.donem===bu);
+  return`<div class="card" style="border:2px solid ${acik?'#b79cf0':'var(--line)'};${acik?'background:#faf7ff':''}">
+   <label class="row" style="flex-wrap:nowrap;gap:10px;align-items:center;margin:0;cursor:pointer;font-weight:700;color:var(--text)"><input type="checkbox" style="width:22px;height:22px;flex-shrink:0" ${acik?'checked':''} onchange="cariHakedis('${ks}','${as}',this.checked)"><span>📑 Bu müşteriden ödeme <u>hak ediş</u> ile alınır<div class="muted" style="font-weight:500;font-size:12px">İşaretlersen bu müşteri için bütün departmanlarda yapılan işler ay sonu hak edişe düşer.</div></span></label>
+   ${acik?`<button class="btn w" style="margin-top:10px;background:#6b3fd0" onclick="hakedisAc('${ks}','${bu}')">📑 ${donemAd(bu)} hak edişini ${buVar?'aç':'hazırla'}</button>
+   <button class="btn s l w" style="margin-top:6px" onclick="hakedisAc('${ks}','${donemOnce(bu,1)}')">Geçen ay (${donemAd(donemOnce(bu,1))}) hak edişi</button>
+   ${L.length?`<div style="margin-top:10px">${L.map(x=>`<div class="row sp click" style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap" onclick="hakedisAc('${ks}','${x.donem}')"><div style="min-width:0"><b style="font-weight:600">${esc(x.no||'')} · ${donemAd(x.donem)}</b><div class="muted">${(x.projeler||[]).length} iş${x.veri?' · '+bPara(bHesap(x.veri).gen,x.veri.pb):''}</div></div><span class="chip ${x.durum==='verildi'?'c-bitti':'c-bekliyor'}">${x.durum==='verildi'?'Müşteriye verildi':'Hazırlandı'}</span></div>`).join('')}</div>`:''}`:''}</div>`}
+async function cariHakedis(k,ad,h){const {error}=await sb.rpc('cari_hakedis',{a:k,ad,h});if(hata(error))return;toast(h?'📑 Hak edişli müşteri olarak işaretlendi':'Hak ediş kaldırıldı');render()}
+// Projenin bittiği gün: son görevin bittiği gün
+const pBitis=(p,G)=>{const l=G.filter(t=>t.proje_id===p.id&&t.bitis_tarihi).map(t=>t.bitis_tarihi).sort();return(l.length?l[l.length-1]:p.gonderim||p.olusturma||'').slice(0,10)};
+let HK=null;
+async function hakedisAc(k,donem,yeniden){
+  const [pr,hk,ca]=await Promise.all([sb.from('projeler').select('*'),sb.from('hakedisler').select('*').eq('anahtar',k),sb.from('cari_ayar').select('*').eq('anahtar',k).maybeSingle()]);
+  if(hata(pr.error))return;
+  const P=(pr.data||[]).filter(p=>cariAnahtar(p.musteri)===k),ids=P.map(p=>p.id);
+  const {data:G}=ids.length?await sb.from('gorevler').select('proje_id,bitis_tarihi').in('proje_id',ids):{data:[]};
+  const bu=(hk.data||[]).find(x=>x.donem===donem),baska=new Set((hk.data||[]).filter(x=>x.donem!==donem).flatMap(x=>x.projeler||[]));
+  const ad=(ca.data&&ca.data.ad)||(P[0]&&P[0].musteri)||k;
+  if(bu&&!yeniden)return hakedisBelge(k,donem,JSON.parse(JSON.stringify(bu.veri)),bu);
+  const son=donem+'-31',bitmis=p=>!['acik','devam'].includes(p.durum);
+  const L=P.filter(p=>!baska.has(p.id)).map(p=>({p,bit:bitmis(p)?pBitis(p,G||[]):'',sec:bu?(bu.projeler||[]).includes(p.id):bitmis(p)&&pBitis(p,G||[])<=son})).filter(x=>x.sec||!x.bit||x.bit<=son)
+    .sort((a,b)=>(b.sec-a.sec)||String(a.bit).localeCompare(String(b.bit)));
+  HK={k,donem,ad,L,bu};S.belge=false;
+  const m=$('#m');m.innerHTML=`<button class="btn s l" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()">← ${esc(ad)}</button>
+   <h2 style="margin-top:10px">📑 ${donemAd(donem)} hak edişi</h2><div class="muted" style="margin:-4px 0 8px">${esc(ad)} için bütün departmanlarda yapılan işler. Bu ay biten işler işaretli geldi; hak edişe girmeyecek olanın işaretini kaldır, devam eden işi eklemek istersen işaretle.</div>
+   <div class="row" style="flex-wrap:nowrap;gap:6px;margin-bottom:8px"><button class="btn s l" onclick="hakedisAc(HK.k,donemOnce(HK.donem,1),1)">‹ Önceki ay</button><b style="flex:1;text-align:center">${donemAd(donem)}</b><button class="btn s l" onclick="hakedisAc(HK.k,donemOnce(HK.donem,-1),1)">Sonraki ay ›</button></div>
+   <div class="card" style="padding-block:4px">${L.map((x,i)=>{const p=x.p;return`<label class="row" style="flex-wrap:nowrap;gap:10px;align-items:flex-start;margin:0;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer;color:var(--text)"><input type="checkbox" style="width:22px;height:22px;flex-shrink:0;margin-top:2px" ${x.sec?'checked':''} onchange="HK.L[${i}].sec=this.checked"><div style="flex:1;min-width:0"><b>${esc(p.ad)}</b><div class="muted">${esc(dname(p.departman_id))} · ${x.bit?'bitti '+tarih(x.bit):'devam ediyor'}</div></div><b style="white-space:nowrap">${p.fiyat!=null?tl(p.fiyat,p.para_birimi):'<span class="muted" style="font-weight:500">fiyat yok</span>'}</b></label>`}).join('')||'<div class="muted" style="padding:10px 0">Bu müşteri için hak edişe girecek iş yok. Yine de hazırlayıp kalemleri elle ekleyebilirsin.</div>'}</div>
+   <button class="btn w" style="background:#6b3fd0" onclick="hakedisHazirla()">📑 Hak edişi hazırla →</button>
+   <div class="muted" style="font-size:12px;margin-top:6px">Sonraki ekranda ay sonu eklenecek başka şey varsa "+ Kalem ekle" ile eklersin; PDF, Word ve WhatsApp oradan.</div>`;
+  scrollTo(0,0)}
+async function hakedisHazirla(){const x=HK,S_=x.L.filter(y=>y.sec);await kurAl();
+  const pb=(S_[0]&&S_[0].p.para_birimi)||'TRY';
+  const tutar=p=>{let v=p.fiyat!=null?Number(p.fiyat):p.proforma?bHesap(p.proforma).net:0;const c=paraCevir(v,p.para_birimi||'TRY',pb);return Math.round((c??v)*100)/100};
+  const kal=S_.map(y=>({ad:y.p.ad+' · '+dname(y.p.departman_id)+(y.bit?' · '+tarih(y.bit):' · devam eden iş'),miktar:1,birim:'iş',fiyat:tutar(y.p),_pid:y.p.id}));
+  const eski=x.bu&&x.bu.veri;
+  const d=eski?{...JSON.parse(JSON.stringify(eski)),kalemler:[...kal,...(eski.kalemler||[]).filter(k=>!k._pid)]}:{tur:'HAKEDİŞ',no:null,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:x.ad,ilgili:'',adres:(S_[0]&&S_[0].p.adres)||''},proje:donemAd(x.donem)+' dönemi',konu:donemAd(x.donem)+' hak edişi',pb,kdv:16,kalemler:kal.length?kal:[{ad:'',miktar:1,birim:'iş',fiyat:0}],
+    notlar:[donemAd(x.donem)+' dönemi içinde yapılan işleri kapsar.','Ödeme nakit, havale veya banka çeki ile yapılabilir.','Açıklamaya hak ediş numarasını yazmanız rica olunur.'],imza:[['Hazırlayan',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]};
+  hakedisBelge(x.k,x.donem,d,x.bu)}
+function hakedisBelge(k,donem,d,kayit){d.tur='HAKEDİŞ';if(kayit&&kayit.no)d.no=kayit.no;
+  // işten gelen kalemde _pid var; elle eklenenlerde yok (işler yeniden seçilince elle eklenenler kalır)
+  const kaydet=async()=>{if(!BELGE.d.musteri.ad.trim()){toast('Müşteri adını yaz');return false}const pids=(BELGE.d.kalemler||[]).filter(x=>x._pid).map(x=>x._pid);const {data,error}=await sb.rpc('hakedis_kaydet',{a:k,d:donem,veri:BELGE.d,pids});if(hata(error))return false;if(data)BELGE.d.no=data;toast('Hak ediş kaydedildi: '+BELGE.d.no);return true};
+  const ks=esc(k).replace(/'/g,"\\'");
+  vBelgeAc(d,async()=>{if(await kaydet())render()},()=>{S.cari=k;go2cari(k)},
+   `<div class="card" style="margin-top:10px;border-color:#9fd3b2"><h3 style="margin:0 0 8px">💬 Müşteriye gönder</h3><div id="waKutu"></div><button class="btn g w" onclick="hakedisWA('${ks}','${donem}')">💬 WhatsApp'tan gönder (PDF)</button>
+    <button class="btn s l w" style="margin-top:6px" onclick="hakedisAc('${ks}','${donem}',1)">↺ İşleri yeniden seç</button>
+    ${kayit&&kayit.durum==='verildi'?`<div class="muted" style="margin-top:6px">✓ Müşteriye verildi${kayit.verilme?' · '+tarih(kayit.verilme):''}</div>`:`<button class="btn s l w" style="margin-top:6px" onclick="hakedisVerildi('${ks}','${donem}')">✓ Elden verdim, verildi olarak işaretle</button>`}</div>`);
+  window._hkKaydet=kaydet}
+function go2cari(k){S.belge=false;S.tab='cari';S.cari=k;S.pid=null;S.aj=null;render();scrollTo(0,0)}
+async function hakedisVerildi(k,donem){if(window._hkKaydet&&!(await window._hkKaydet()))return;const {error}=await sb.rpc('hakedis_verildi',{a:k,d:donem});if(hata(error))return;toast('Hak ediş müşteriye verildi olarak işaretlendi')}
+async function hakedisWA(k,donem){if(window._hkKaydet&&!(await window._hkKaydet()))return;const b=$('#waKutu');if(!b)return;const d=BELGE.d;b.innerHTML='<div class="muted">PDF hazırlanıyor…</div>';
+  try{const blob=await pdfBlob(d),ad=dosyaAdi(d)+'.pdf',file=new File([blob],ad,{type:'application/pdf'});
+    const metin='Merhaba'+(d.musteri&&d.musteri.ad?' '+d.musteri.ad:'')+', '+(d.konu||'hak ediş')+' ektedir ('+(d.no||'')+'). Toplam: '+bPara(bHesap(d).gen,d.pb)+'. Ödeme nakit, havale veya banka çeki ile yapılabilir. Sorunuz olursa bize yazabilirsiniz. '+FIRMA.ad+' · '+FIRMA.tel;
+    WA={id:null,blob,ad,file,metin,sonra:async()=>{await sb.rpc('hakedis_verildi',{a:k,d:donem});toast('Hak ediş gönderildi olarak işaretlendi');const w=$('#waKutu');if(w)w.innerHTML='<div class="muted">✓ WhatsApp ile gönderildi.</div>'}};
+    const pay=navigator.canShare&&navigator.canShare({files:[file]});
+    b.innerHTML=pay?`<button class="btn g w" onclick="teklifWAPaylas()">📤 Şimdi WhatsApp'ta paylaş</button><div class="muted" style="margin-top:4px">Açılan listeden WhatsApp'ı, sonra müşteriyi seç. PDF ve mesaj birlikte gider.</div>`
+      :`<button class="btn g w" onclick="teklifWAWeb()">💬 WhatsApp'ı aç</button><div class="muted" style="margin-top:4px">Bilgisayardasın: PDF indirilecek, WhatsApp açılacak. Müşteriyi seçip mesajı gönder, PDF'i de sohbete sürükle.</div>`;
+  }catch(e){b.innerHTML='';toast(e.message)}}
 // ---------------- Müşteri (cari): müşteriye yapılan bütün işler, faturalar, ödemeler, teklifler ----------------
 const cariAnahtar=ad=>(ad||'').trim().replace(/\s+/g,' ').toLocaleUpperCase('tr');
 async function vCari(m){
-  const [pr,tk]=await Promise.all([sb.from('projeler').select('*').order('olusturma',{ascending:false}),sb.from('teklifler').select('*').order('tarih',{ascending:false})]);
+  const [pr,tk,ca,hk]=await Promise.all([sb.from('projeler').select('*').order('olusturma',{ascending:false}),sb.from('teklifler').select('*').order('tarih',{ascending:false}),sb.from('cari_ayar').select('*'),sb.from('hakedisler').select('*').order('donem',{ascending:false})]);
   if(hata(pr.error))return;
+  const HA={};(ca.data||[]).forEach(x=>HA[x.anahtar]=x);const hkMi=k=>!!(HA[k]&&HA[k].hakedis);
   const C={};const ekle=(ad,tur,x,tarih)=>{const k=cariAnahtar(ad);if(!k)return;(C[k]=C[k]||{ad:ad.trim(),is:[],tk:[],son:0})[tur].push(x);C[k].son=Math.max(C[k].son,new Date(tarih||0).getTime())};
   (pr.data||[]).forEach(p=>ekle(p.musteri,'is',p,p.olusturma));(tk.data||[]).forEach(t=>ekle(t.musteri,'tk',t,t.tarih));
   // Alacak: fiyatı belli olup ödemesi alınmamış her iş (onayda, ofiste, faturalı)
@@ -1252,6 +1318,7 @@ async function vCari(m){
      <div class="card" style="margin-top:10px"><h2 style="margin:0">${esc(c.ad)}</h2><div class="muted">${esc([...new Set(I.map(p=>p.adres).filter(Boolean))].join(' · ')||'')}</div>
       <div class="row" style="margin-top:10px"><div class="stat"><span class="muted">Toplam iş</span><b>${I.length}</b></div><div class="stat"><span class="muted">Faturalanan</span><b>${I.filter(fat).length?sumPB(I.filter(fat)):'—'}</b></div></div>
       <div class="row" style="margin-top:8px"><div class="stat"><span class="muted">Tahsil edilen</span><b style="color:var(--green)">${I.some(p=>Number(p.odenen)>0)?sumPB(I.filter(p=>Number(p.odenen)>0),p=>p.odenen):'—'}</b></div><div class="stat"><span class="muted">Kalan alacak</span><b style="color:${I.some(p=>kal(p)>0)?'var(--red)':'var(--text)'}">${I.some(p=>kal(p)>0)?sumPB(I.filter(p=>kal(p)>0),kal):'Yok'}</b></div></div></div>
+     ${me.rol!=='calisan'?hakedisKart(S.cari,c.ad,hkMi(S.cari),(hk.data||[]).filter(x=>x.anahtar===S.cari)):''}
      ${devam.length?`<h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">Devam eden işler (${devam.length})</h3>${devam.map(isKart).join('')}`:''}
      <h3 style="margin:14px 0 8px;color:var(--muted);font-size:14px">Biten işler (${bit.length})</h3>${bit.map(isKart).join('')||'<div class="card muted">Henüz biten iş yok.</div>'}
      ${c.tk.length?`<h3 style="margin:14px 0 2px;color:var(--muted);font-size:14px">Verilen teklifler (${c.tk.length})</h3><div class="muted" style="font-size:12px;margin-bottom:8px">Sadece bilgi: teklif cariye borç yazılmaz. İşe dönerse hesap o işin faturasından yazılır.</div><div class="card" style="padding-block:4px">${c.tk.map(t=>{const h=bHesap(tkD(t));return`<div class="row sp click" style="padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div style="min-width:0"><b style="font-weight:600">${esc(t.no||'')} · ${ic(t.konu||'')}</b><div class="muted">${tarih(t.tarih)} · Teklif verildi${h.gen?' · teklif tutarı '+bPara(h.gen,t.para_birimi):''}</div>${t.proje_id?'<div style="font-size:12px;font-weight:700;color:var(--green)">✓ İşe döndü · hesap işten yazılır</div>':''}</div><span class="chip ${t.durum==='kabul'?'c-bitti':t.durum==='red'?'c-iade':'c-bekliyor'}">${TKD[t.durum]||t.durum}</span></div>`}).join('')}</div>`:''}`;
@@ -1259,7 +1326,7 @@ async function vCari(m){
   const L=Object.entries(C).sort((a,b)=>b[1].son-a[1].son),adsiz=(pr.data||[]).filter(p=>!cariAnahtar(p.musteri));
   m.innerHTML=paraDurumuKart(pr.data||[])+(me.rol==='patron'?`<button class="btn l w" style="margin-top:-2px" onclick="go('tedarik')">🧾 Malzeme alımları · firmalara borç ›</button>`:'')+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
    <input id="cq" type="search" placeholder="Müşteri ara…" style="margin-bottom:8px">
-   <div class="kareler">${L.map(([k,c])=>{const ak=c.is.filter(p=>kal(p)>0),bt=c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length,dv=c.is.length-bt;return`<div class="kare click cr" style="border:2px solid ${ak.length?'#e5484d':'#1a9c55'};background:${ak.length?'#fdecec':'#eaf7ef'}" data-q="${esc(k.toLocaleLowerCase('tr'))}" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()"><b style="line-height:1.2">${esc(c.ad)}</b>
+   <div class="kareler">${L.map(([k,c])=>{const ak=c.is.filter(p=>kal(p)>0),bt=c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length,dv=c.is.length-bt;return`<div class="kare click cr" style="border:2px solid ${ak.length?'#e5484d':'#1a9c55'};background:${ak.length?'#fdecec':'#eaf7ef'}" data-q="${esc(k.toLocaleLowerCase('tr'))}" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()"><b style="line-height:1.2">${esc(c.ad)}</b>${hkMi(k)?'<div style="margin-top:4px"><span class="chip" style="background:#efe6ff;color:#5b2bb5">📑 Hak ediş</span></div>':''}
      <div class="muted" style="font-size:12px;margin-top:4px">${c.is.length} iş${dv?' · '+dv+' devam':''}${bt?' · '+bt+' biten':''}${c.tk.length?' · '+c.tk.length+' teklif':''}</div>
      <div style="margin-top:auto;padding-top:8px;font-size:13px;font-weight:700;color:${ak.length?'var(--red)':'var(--green)'}">${ak.length?'Alacak: '+sumPB(ak,kal):'✓ Borcu yok'}</div></div>`}).join('')}</div>${L.length?'':'<div class="card muted">Henüz müşteri yok. Projelere ve tekliflere yazılan müşteri adları burada toplanır.</div>'}
    ${adsiz.length?`<div class="card" style="border-color:#f3d36b;background:#fffbea;margin-top:10px"><b>Müşterisi yazılmamış işler (${adsiz.length})</b><div class="muted" style="font-size:13px">İşi açıp "Müşteri" kutusuna adı yaz, buraya düşer.</div>${adsiz.map(p=>`<div class="row sp click" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap" onclick="openP(${p.id},'gorev')"><span style="min-width:0">${esc(p.ad)} <span class="muted">· ${esc(dname(p.departman_id))}</span></span><b style="color:var(--blue)">Yaz ›</b></div>`).join('')}</div>`:''}`;
@@ -1906,19 +1973,21 @@ function vYeni(){
   if(!isP&&!me.departman_id) return toast('Önce işveren sana departman vermeli');
   m.innerHTML=`<button class="btn s l" onclick="render()">← Geri</button><h2 style="margin-top:10px">Yeni Proje</h2><form id="f" class="card">
    <label>Proje adı *</label><input name="ad" required placeholder="Örn: Villa elektrik tesisatı">
-   <label>Müşteri</label><input name="musteri">
+   <label>Müşteri</label><input name="musteri" oninput="const a=(window._HA||{})[cariAnahtar(this.value)];if(a&&a.hakedis)this.form.hakedis.checked=true">
+   <label class="row" style="flex-wrap:nowrap;gap:8px;align-items:center;margin:8px 0 0;cursor:pointer;color:var(--text);font-weight:600"><input type="checkbox" name="hakedis" style="width:20px;height:20px;flex-shrink:0"><span>📑 Bu müşteriden ödeme hak ediş ile alınır <span class="muted" style="font-weight:500">(iş ay sonu hak edişe düşer)</span></span></label>
    <label>Adres / yer</label><input name="adres">
    <label>Açıklama</label><textarea name="aciklama" rows="3"></textarea>
    ${isP?`<label>Departman *</label><select name="dep" required onchange="$('#takip').innerHTML=opts(ekipOf(this.value),'',this.value)"><option value="">— seçin —</option>${deps.map(d=>`<option value="${d.id}">${esc(d.ad)}</option>`).join('')}</select>`:''}
    <label>Projeyi takip eden</label><select name="takip" id="takip">${opts(ekipOf(isP?'':me.departman_id),isP?'':me.id,isP?'':me.departman_id)}</select>
    <div class="row"><div style="flex:1"><label>Başlangıç</label><input type="date" name="bas"></div><div style="flex:1"><label>Hedef bitiş</label><input type="date" name="bit"></div></div>
    <button class="btn w" style="margin-top:14px">Projeyi aç</button></form>`;
+  sb.from('cari_ayar').select('*').then(r=>{window._HA={};(r.data||[]).forEach(x=>window._HA[x.anahtar]=x)});
   $('#f').onsubmit=async e=>{
     e.preventDefault();const f=e.target;
     const row={ad:f.ad.value.trim(),musteri:f.musteri.value.trim()||null,adres:f.adres.value.trim()||null,aciklama:f.aciklama.value.trim()||null,
       departman_id:isP?Number(f.dep.value):me.departman_id,takipci_id:f.takip.value||null,baslangic:f.bas.value||null,bitis:f.bit.value||null};
     const {data,error}=await sb.from('projeler').insert(row).select().single();
-    if(hata(error))return;toast('Proje açıldı, şimdi görevleri planla');openP(data.id,'gorev');
+    if(hata(error))return;if(f.hakedis.checked&&row.musteri)await sb.rpc('cari_hakedis',{a:cariAnahtar(row.musteri),ad:row.musteri,h:true});toast('Proje açıldı, şimdi görevleri planla');openP(data.id,'gorev');
   };
 }
 
