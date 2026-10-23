@@ -1254,6 +1254,9 @@ const kontrolMu=()=>me&&me.kullanici_adi==='tolgababaoglan';
 const cihazAd=()=>{const u=navigator.userAgent;const os=/Android/i.test(u)?'Android':/iPhone|iPad/i.test(u)?'iPhone':/Windows/i.test(u)?'Windows':/Mac/i.test(u)?'Mac':'Cihaz';const br=/Edg\//.test(u)?'Edge':/Chrome\//.test(u)?'Chrome':/Safari\//.test(u)?'Safari':/Firefox\//.test(u)?'Firefox':'';return os+(br?' · '+br:'')+(matchMedia('(display-mode: standalone)').matches?' · uygulama':'')};
 function oturumKaydet(tur){try{if(!sb||!me)return;sb.rpc('oturum_kaydet',{tur,cihaz:cihazAd()}).then(()=>{},()=>{})}catch(e){}}
 // Sorumlu açılışta: açtığı işte görev planlamadıysa uyar
+// Telefonda uygulama kapanmadan geri açılınca da (2 dk'dan uzun arka planda kaldıysa) tekrar sor
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){window._gizlendi=Date.now();return}
+  if(window._gizlendi&&Date.now()-window._gizlendi>2*60e3){window._gizlendi=0;planUyari()}});
 async function planUyari(){try{if(!me||me.rol!=='ds'||document.getElementById('planUyari'))return;
   const [pr,g]=await Promise.all([sb.from('projeler').select('id,ad,musteri,olusturma,durum,departman_id,takipci_id').in('durum',['acik','devam','iade']),sb.from('gorevler').select('proje_id')]);
   const var_=new Set((g.data||[]).map(t=>t.proje_id)),l=(pr.data||[]).filter(p=>p.departman_id===me.departman_id&&!var_.has(p.id));if(!l.length)return;
