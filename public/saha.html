@@ -296,6 +296,7 @@ let prfSira=47;const rpc0=async(n,a)=>{
   return{data:p.proforma_no,error:null}}
  if(n==='proforma_kaydet'){const p=DB.projeler.find(x=>x.id===a.p);if(!p.proforma_no)p.proforma_no='PRF-2026-'+String(++prfSira).padStart(4,'0');p.proforma={...a.veri,no:p.proforma_no};return{data:p.proforma_no,error:null}}
  if(n==='teklif_projeye'){const x=DB.teklifler.find(y=>y.id===a.t);if(x.proje_id)return{data:x.proje_id,error:null};const ds=DB.profiller.find(y=>y.rol==='ds'&&y.departman_id===a.dep);const p={id:nid++,departman_id:a.dep,ad:x.proje_adi||x.konu||x.musteri,musteri:x.musteri,adres:x.adres,aciklama:'Teklif '+x.no+' kabul edildi.',para_birimi:x.para_birimi,takipci_id:ds&&ds.id,durum:'acik',iscilik:0,olusturma:new Date().toISOString()};DB.projeler.push(p);x.durum='kabul';x.proje_id=p.id;x.departman_id=a.dep;DB.profiller.filter(y=>y.rol==='ds'&&y.departman_id===a.dep).forEach(y=>bildir(y.id,'Yeni proje (teklif kabul edildi): '+x.musteri,p.id,null,'takip'));DB.profiller.filter(y=>y.rol==='patron'||y.id===x.olusturan).forEach(y=>bildir(y.id,'Teklif kabul edildi: '+x.musteri+' · '+x.no+' → '+((DB.departmanlar.find(d=>d.id===a.dep)||{}).ad||'')+' departmanında proje açıldı',p.id,null,'teklif_kabul'));return{data:p.id,error:null}}
+if(n==='ajanda_projeye'){const x=DB.ajanda.find(y=>y.id===a.a);if(!x)return{data:null,error:{message:'İş bulunamadı'}};if(x.proje_id)return{data:x.proje_id,error:null};const me_=DB.profiller.find(y=>y.id===CUR);const r=run({table:'projeler',op:'insert',filters:[],orders:[],payload:{departman_id:me_.departman_id,ad:x.baslik,musteri:x.musteri||null,aciklama:x.aciklama||'Verilen iş',takipci_id:CUR,baslangic:x.tarih||null}});if(r.error)return r;const pid=(Array.isArray(r.data)?r.data[0]:r.data).id;x.proje_id=pid;x.durum='planlandi';kaydet();return{data:pid,error:null}}
 if(n==='ajanda_ekle'){const r=run({table:'ajanda',op:'insert',filters:[],orders:[],payload:{sahip_id:CUR,atanan_id:a.atanan,baslik:a.baslik,musteri:a.musteri,aciklama:a.aciklama,tarih:a.tarih,saat:a.saat}});kaydet();return{data:null,error:r.error||null}}
 if(n==='sifre_sifirla'){if(meP().rol!=='patron')return{data:null,error:{message:'Şifreyi sadece işveren sıfırlar'}};return{data:null,error:null}}
 if(n==='firma_ata'){const f=(a.firma||'').trim()||null,m=meP();
@@ -704,9 +705,8 @@ const iletAd=p=>p.iletim==='proforma'?'Proforma verildi':'Fatura kesildi';
 const AJD={bekliyor:'Bekliyor',bakiyor:'Bakıyorum',planlandi:'Planlandı',devam:'Devam ediyor',bitti:'Bitti'};
 async function ajPlanla(id){
   const r0=await sb.from('ajanda').select('*').eq('id',id).single();if(hata(r0.error))return;const x=r0.data;
-  const {data:p,error}=await sb.from('projeler').insert({departman_id:me.departman_id,ad:x.baslik,musteri:x.musteri||null,aciklama:x.aciklama||(pname(x.sahip_id)+' tarafından verildi'),takipci_id:me.id,baslangic:x.tarih||null}).select().single();if(hata(error))return;
-  const r=await sb.from('ajanda').update({proje_id:p.id,durum:'planlandi'}).eq('id',id);if(hata(r.error))return;
-  toast(x.sahip_id===x.atanan_id?'Proje açıldı. Şimdi ekibine görev ata':'Proje açıldı. Şimdi ekibine görev ata, '+pname(x.sahip_id)+' planlandı olarak görecek');vGorevEkle(p.id);
+  const {data:pid,error}=await sb.rpc('ajanda_projeye',{a:id});if(hata(error))return;
+  toast(x.sahip_id===x.atanan_id?'Proje açıldı. Şimdi ekibine görev ata':'Proje açıldı. Şimdi ekibine görev ata, '+pname(x.sahip_id)+' planlandı olarak görecek');vGorevEkle(pid);
 }
 async function ajDurum(id,d){const {error}=await sb.from('ajanda').update({durum:d}).eq('id',id);if(hata(error))return;toast(AJD[d]+' olarak işaretlendi');render()}
 function ajSatir(a){
