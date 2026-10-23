@@ -1002,7 +1002,7 @@ const teklifAcGor=id=>`${'${'}0${'}'}`;
 const tkK=t=>(t.kalemler||[]).filter(k=>!k._indirim&&k._toplam==null),tkT=t=>((t.kalemler||[]).find(k=>k._toplam!=null)||{})._toplam,tkD=t=>({kalemler:tkK(t),kdv:t.kdv,indirim:((t.kalemler||[]).find(k=>k._indirim)||{})._indirim,toplamEl:tkT(t)});
 const TEKLIF_SART=['Ödemeler, iş tesliminden sonra yetkili kişi tarafından onaylandıktan sonra faturalandırılıp ödeme talep edilecektir.','Teklifimiz 1 ay geçerlidir.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'];
 // Eski tekliflerde kayıtlı eski varsayılan şartlar (%50 sipariş onayında…) yerine yeni şartlar çıksın; elle yazılmış özel şart varsa o kalır
-const tkSart=t=>{const x=(t.sartlar||'').trim();if(!x||/%50 sipariş onayında|geçerlilik tarihine kadar geçerlidir/i.test(x))return[...TEKLIF_SART];return x.split('\n')};
+const tkSart=t=>{const x=(t.sartlar||'').trim();if(!x||/%50 sip|tarihine kadar ge/i.test(x))return[...TEKLIF_SART];return x.split('\n')};
 const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:tkK(t),indirim:tkD(t).indirim,...(tkT(t)!=null?{toplamEl:tkT(t)}:{}),notlar:tkSart(t),imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
 // İşveren ve sorumlular teklifi izler: ne istendi, nerede, içinde ne var, müşteri ne dedi
 async function teklifGor(id){
