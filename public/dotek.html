@@ -1001,7 +1001,9 @@ const teklifDuzenler=t=>ofisMi()||(t.olusturan===me.id&&!t.acan&&t.durum==='tasl
 const teklifAcGor=id=>`${'${'}0${'}'}`;
 const tkK=t=>(t.kalemler||[]).filter(k=>!k._indirim&&k._toplam==null),tkT=t=>((t.kalemler||[]).find(k=>k._toplam!=null)||{})._toplam,tkD=t=>({kalemler:tkK(t),kdv:t.kdv,indirim:((t.kalemler||[]).find(k=>k._indirim)||{})._indirim,toplamEl:tkT(t)});
 const TEKLIF_SART=['Ödemeler, iş tesliminden sonra yetkili kişi tarafından onaylandıktan sonra faturalandırılıp ödeme talep edilecektir.','Teklifimiz 1 ay geçerlidir.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'];
-const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:tkK(t),indirim:tkD(t).indirim,...(tkT(t)!=null?{toplamEl:tkT(t)}:{}),notlar:(t.sartlar||'').trim()?t.sartlar.split('\n'):[...TEKLIF_SART],imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
+// Eski tekliflerde kayıtlı eski varsayılan şartlar (%50 sipariş onayında…) yerine yeni şartlar çıksın; elle yazılmış özel şart varsa o kalır
+const tkSart=t=>{const x=(t.sartlar||'').trim();if(!x||/%50 sipariş onayında|geçerlilik tarihine kadar geçerlidir/i.test(x))return[...TEKLIF_SART];return x.split('\n')};
+const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:tkK(t),indirim:tkD(t).indirim,...(tkT(t)!=null?{toplamEl:tkT(t)}:{}),notlar:tkSart(t),imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
 // İşveren ve sorumlular teklifi izler: ne istendi, nerede, içinde ne var, müşteri ne dedi
 async function teklifGor(id){
   const r=await sb.from('teklifler').select('*').eq('id',id).single();if(hata(r.error))return;const t=r.data,m=$('#m');
@@ -1030,7 +1032,7 @@ async function teklifGor(id){
      <div class="row sp" style="padding:6px 0;border-top:1px solid var(--line)"><span class="muted">${tkT(t)!=null?'Toplam fiyat':'Ara toplam'}</span><span>${bPara(h.ara,t.para_birimi)}</span></div>
      ${h.ind?`<div class="row sp" style="padding:2px 0"><span class="muted">${indAd(tkD(t))}</span><span>−${bPara(h.ind,t.para_birimi)}</span></div>`:''}${h.kdvL.filter(x=>x.tutar).map(x=>`<div class="row sp" style="padding:2px 0"><span class="muted">KDV %${yO(x.oran)}</span><span>${bPara(x.tutar,t.para_birimi)}</span></div>`).join('')}
      <div class="row sp" style="padding:6px 0;border-top:2px solid var(--text)"><b>Genel toplam</b><b style="color:var(--green)">${bPara(h.gen,t.para_birimi)}</b></div>
-     ${t.sartlar?`<div class="muted" style="margin-top:6px;white-space:pre-wrap">${esc(t.sartlar)}</div>`:''}</div>`:''}
+     <div class="muted" style="margin-top:6px;white-space:pre-wrap">${esc(tkSart(t).join("\n"))}</div></div>`:''}
    ${t.durum==='gonderildi'?`<div class="card" style="border-color:#bfe3cc"><h3 style="margin:0 0 6px">Müşteri ne dedi?</h3>
      <label for="tgd">Hangi departman yapacak?</label><select id="tgd">${deps.filter(x=>!x.ofis).map(x=>`<option value="${x.id}" ${x.id===(t.departman_id||me.departman_id)?'selected':''}>${esc(x.ad)}</option>`).join('')}</select>
      <button class="btn g w" style="margin-top:10px" id="tgk">✓ Kabul etti → Projeye çevir</button>
