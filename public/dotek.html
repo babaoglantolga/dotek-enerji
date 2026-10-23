@@ -227,7 +227,7 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({kontrol:vKontrol,donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({kontrol:vKontrol,donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
 function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
@@ -969,7 +969,7 @@ async function hakedisHazirla(){const x=HK,S_=x.L.filter(y=>y.sec);await kurAl()
   const tutar=p=>{let v=p.fiyat!=null?Number(p.fiyat):p.proforma?bHesap(p.proforma).net:0;const c=paraCevir(v,p.para_birimi||'TRY',pb);return Math.round((c??v)*100)/100};
   const kal=S_.map(y=>({ad:y.p.ad+' · '+dname(y.p.departman_id)+(y.bit?' · '+tarih(y.bit):' · devam eden iş'),miktar:1,birim:'iş',fiyat:tutar(y.p),_pid:y.p.id}));
   const eski=x.bu&&x.bu.veri;
-  const d=eski?{...JSON.parse(JSON.stringify(eski)),kalemler:[...kal,...(eski.kalemler||[]).filter(k=>!k._pid)]}:{tur:'HAKEDİŞ',no:null,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:x.ad,ilgili:'',adres:(S_[0]&&S_[0].p.adres)||''},proje:donemAd(x.donem)+' dönemi',konu:donemAd(x.donem)+' hak edişi',pb,kdv:16,kalemler:kal.length?kal:[{ad:'',miktar:1,birim:'iş',fiyat:0}],
+  const d=eski?{...JSON.parse(JSON.stringify(eski)),kalemler:[...kal,...(eski.kalemler||[]).filter(k=>!k._pid)]}:{tur:'HAKEDİŞ',no:null,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:x.ad,ilgili:'',adres:(S_[0]&&S_[0].p.adres)||''},proje:donemAd(x.donem)+' dönemi',konu:donemAd(x.donem)+' hak edişi',pb,kdv:16,kalemler:kal,
     notlar:[donemAd(x.donem)+' dönemi içinde yapılan işleri kapsar.','Ödeme nakit, havale veya banka çeki ile yapılabilir.','Açıklamaya hak ediş numarasını yazmanız rica olunur.'],imza:[['Hazırlayan',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]};
   hakedisBelge(x.k,x.donem,d,x.bu)}
 function hakedisBelge(k,donem,d,kayit){d.tur='HAKEDİŞ';if(kayit&&kayit.no)d.no=kayit.no;
@@ -991,6 +991,23 @@ async function hakedisWA(k,donem){if(window._hkKaydet&&!(await window._hkKaydet(
     b.innerHTML=pay?`<button class="btn g w" onclick="teklifWAPaylas()">📤 Şimdi WhatsApp'ta paylaş</button><div class="muted" style="margin-top:4px">Açılan listeden WhatsApp'ı, sonra müşteriyi seç. PDF ve mesaj birlikte gider.</div>`
       :`<button class="btn g w" onclick="teklifWAWeb()">💬 WhatsApp'ı aç</button><div class="muted" style="margin-top:4px">Bilgisayardasın: PDF indirilecek, WhatsApp açılacak. Müşteriyi seçip mesajı gönder, PDF'i de sohbete sürükle.</div>`;
   }catch(e){b.innerHTML='';toast(e.message)}}
+// Bütün hak edişler: numara, müşteri, dönem, işler, tutar, kim hazırladı, ne zaman verildi
+let HKF={q:'',d:''};
+async function vHakedisler(m){
+  const {data,error}=await sb.from('hakedisler').select('*').order('no',{ascending:false});if(hata(error))return;
+  const L=(data||[]).filter(x=>(!HKF.d||x.durum===HKF.d)&&(!HKF.q||((x.no||'')+' '+((x.veri&&x.veri.musteri&&x.veri.musteri.ad)||x.anahtar)+' '+donemAd(x.donem)).toLocaleLowerCase('tr').includes(HKF.q.toLocaleLowerCase('tr'))));
+  const top={};L.forEach(x=>{if(!x.veri)return;const pb=x.veri.pb||'TRY';top[pb]=(top[pb]||0)+bHesap(x.veri).gen});
+  m.innerHTML=`<button class="btn s l" onclick="go('cari')">← Müşteri</button><h2 style="margin-top:10px">📑 Hak edişler (${(data||[]).length})</h2>
+   <div class="muted" style="margin:-4px 0 8px">Numara sırası otomatik (HKD-yıl-sıra). Satıra dokun, hak edişi aç: PDF, Word, WhatsApp.</div>
+   <input type="search" placeholder="Numara, müşteri veya ay ara…" value="${esc(HKF.q)}" oninput="HKF.q=this.value;clearTimeout(window._hkt);window._hkt=setTimeout(()=>{render();const i=$('#m input[type=search]');if(i){i.focus();i.setSelectionRange(i.value.length,i.value.length)}},300)" style="margin-bottom:8px">
+   <div class="row" style="gap:6px;margin-bottom:8px">${[['','Hepsi'],['taslak','Hazırlandı'],['verildi','Müşteriye verildi']].map(([k,a])=>`<button class="btn s ${HKF.d===k?'':'l'}" onclick="HKF.d='${k}';render()">${a}</button>`).join('')}</div>
+   ${Object.keys(top).length?`<div class="card" style="background:#faf7ff;border-color:#b79cf0"><span class="muted">Listedeki toplam (KDV dahil)</span><div style="font-size:20px;font-weight:800">${Object.entries(top).map(([p,v])=>bPara(v,p)).join(' · ')}</div></div>`:''}
+   ${L.map(x=>{const v=x.veri||{},h=v.kalemler?bHesap(v):null,ad=(v.musteri&&v.musteri.ad)||x.anahtar,a=esc(x.anahtar).replace(/'/g,"\\'");return`<div class="card">
+     <div class="row sp click" style="flex-wrap:nowrap" onclick="hakedisAc('${a}','${x.donem}')"><div style="min-width:0"><div style="font-size:17px;font-weight:800;color:#5b2bb5">${esc(x.no||'—')}</div><b>${esc(ad)}</b><div class="muted">${donemAd(x.donem)} · ${(x.projeler||[]).length} iş · ${(v.kalemler||[]).length} kalem</div></div>
+      <div style="text-align:right;flex-shrink:0">${h?`<div style="font-weight:800;font-size:16px">${bPara(h.gen,v.pb)}</div><div class="muted" style="font-size:12px">KDV hariç ${bPara(h.net,v.pb)}</div>`:''}<span class="chip ${x.durum==='verildi'?'c-bitti':'c-bekliyor'}" style="margin-top:4px">${x.durum==='verildi'?'Müşteriye verildi':'Hazırlandı'}</span></div></div>
+     <div class="muted" style="font-size:12px;margin-top:6px">Hazırlayan: ${esc(pname(x.olusturan)||'—')} · ${tarih(x.olusturma)}${x.guncelleme&&x.guncelleme!==x.olusturma?' · son düzenleme '+tarih(x.guncelleme):''}${x.verilme?' · verildi '+tarih(x.verilme):''}</div>
+     ${(v.kalemler||[]).length?`<details style="margin-top:6px"><summary style="cursor:pointer;font-weight:600;font-size:14px">İçindekiler</summary>${v.kalemler.map((k,i)=>`<div class="row sp" style="padding:6px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:8px"><span style="min-width:0">${i+1}. ${esc(k.ad||'—')}${k._pid?'':' <span class="chip" style="font-size:11px">ek</span>'}</span><b style="white-space:nowrap">${bPara(kTut(k),v.pb)}</b></div>`).join('')}</details>`:''}</div>`}).join('')||'<div class="card muted">Hak ediş yok. Müşteri sayfasında müşteriyi "hak ediş ile alınır" yapıp ay sonu hazırlayabilirsin.</div>'}`;
+}
 // ---------------- Müşteri (cari): müşteriye yapılan bütün işler, faturalar, ödemeler, teklifler ----------------
 const cariAnahtar=ad=>(ad||'').trim().replace(/\s+/g,' ').toLocaleUpperCase('tr');
 async function vCari(m){
@@ -1019,7 +1036,8 @@ async function vCari(m){
      ${c.tk.length?`<h3 style="margin:14px 0 2px;color:var(--muted);font-size:14px">Verilen teklifler (${c.tk.length})</h3><div class="muted" style="font-size:12px;margin-bottom:8px">Sadece bilgi: teklif cariye borç yazılmaz. İşe dönerse hesap o işin faturasından yazılır.</div><div class="card" style="padding-block:4px">${c.tk.map(t=>{const h=bHesap(tkD(t));return`<div class="row sp click" style="padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div style="min-width:0"><b style="font-weight:600">${esc(t.no||'')} · ${ic(t.konu||'')}</b><div class="muted">${tarih(t.tarih)} · Teklif verildi${h.gen?' · teklif tutarı '+bPara(h.gen,t.para_birimi):''}</div>${t.proje_id?'<div style="font-size:12px;font-weight:700;color:var(--green)">✓ İşe döndü · hesap işten yazılır</div>':''}</div><span class="chip ${t.durum==='kabul'?'c-bitti':t.durum==='red'?'c-iade':'c-bekliyor'}">${TKD[t.durum]||t.durum}</span></div>`}).join('')}</div>`:''}`;
     return scrollTo(0,0)}
   const L=Object.entries(C).sort((a,b)=>b[1].son-a[1].son),adsiz=(pr.data||[]).filter(p=>!cariAnahtar(p.musteri));
-  m.innerHTML=paraDurumuKart(pr.data||[])+(me.rol==='patron'?`<button class="btn l w" style="margin-top:-2px" onclick="go('tedarik')">🧾 Malzeme alımları · firmalara borç ›</button>`:'')+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
+  const hkL=hk.data||[];
+  m.innerHTML=paraDurumuKart(pr.data||[])+(me.rol!=='calisan'?`<button class="btn w" style="margin:-2px 0 8px;background:#6b3fd0" onclick="go('hakedis')">📑 Hak edişler${hkL.length?' ('+hkL.length+')':''} ›</button>`:'')+(me.rol==='patron'?`<button class="btn l w" style="margin-top:-2px" onclick="go('tedarik')">🧾 Malzeme alımları · firmalara borç ›</button>`:'')+`<h2 style="margin-top:16px">Müşteriler</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye bugüne kadar ne iş yapıldı, ne fatura edildi, ne ödendi, ne teklif verildi.</div>
    <input id="cq" type="search" placeholder="Müşteri ara…" style="margin-bottom:8px">
    <div class="kareler">${L.map(([k,c])=>{const ak=c.is.filter(p=>kal(p)>0),bt=c.is.filter(p=>!['acik','devam','iade'].includes(p.durum)).length,dv=c.is.length-bt;return`<div class="kare click cr" style="border:2px solid ${ak.length?'#e5484d':'#1a9c55'};background:${ak.length?'#fdecec':'#eaf7ef'}" data-q="${esc(k.toLocaleLowerCase('tr'))}" onclick="S.cari='${esc(k).replace(/'/g,"\\'")}';render()"><b style="line-height:1.2">${esc(c.ad)}</b>${hkMi(k)?'<div style="margin-top:4px"><span class="chip" style="background:#efe6ff;color:#5b2bb5">📑 Hak ediş</span></div>':''}
      <div class="muted" style="font-size:12px;margin-top:4px">${c.is.length} iş${dv?' · '+dv+' devam':''}${bt?' · '+bt+' biten':''}${c.tk.length?' · '+c.tk.length+' teklif':''}</div>
