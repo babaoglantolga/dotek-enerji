@@ -932,8 +932,23 @@ async function belgeTuval(d,html){
 }
 const dosyaAdi=d=>d.ek?'Dotek_Ek_Malzeme_Listesi_'+(d.ana||'taslak'):'Dotek_'+(d.tur==='FİYAT TEKLİFİ'?'Teklif':'Proforma')+'_'+(d.no||'taslak');
 async function indirPNG(d){toast('Fotoğraf hazırlanıyor…');try{const c=await belgeTuval(d);c.toBlob(b=>indir(b,dosyaAdi(d)+'.png'),'image/png')}catch(e){toast(e.message)}}
-async function indirPDF(d){toast('PDF hazırlanıyor…');try{await yukle('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');const c=await belgeTuval(d);
-  const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'});const h=Math.min(297,c.height*210/c.width);pdf.addImage(c.toDataURL('image/jpeg',.95),'JPEG',0,0,210,h);indir(pdf.output('blob'),dosyaAdi(d)+'.pdf')}catch(e){toast(e.message)}}
+async function pdfBlob(d){await yukle('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');const c=await belgeTuval(d);
+  const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'});const h=Math.min(297,c.height*210/c.width);pdf.addImage(c.toDataURL('image/jpeg',.95),'JPEG',0,0,210,h);return pdf.output('blob')}
+async function indirPDF(d){toast('PDF hazırlanıyor…');try{indir(await pdfBlob(d),dosyaAdi(d)+'.pdf')}catch(e){toast(e.message)}}
+// Teklifi WhatsApp'tan müşteriye gönder: önce PDF hazırlanır, sonra tek dokunuşla paylaşılır (telefonda WhatsApp seçilir)
+let WA=null;
+async function teklifWA(id,d){const b=$('#waKutu');if(!b)return;b.innerHTML='<div class="muted">PDF hazırlanıyor…</div>';
+  try{const blob=await pdfBlob(d),ad=dosyaAdi(d)+'.pdf',file=new File([blob],ad,{type:'application/pdf'});
+    const metin='Merhaba'+(d.musteri&&d.musteri.ad?' '+d.musteri.ad:'')+', '+(d.konu?d.konu+' için ':'')+'fiyat teklifimiz ektedir ('+(d.no||'')+'). Genel toplam: '+bPara(bHesap(d).gen,d.pb)+'. Sorunuz olursa bize yazabilirsiniz. '+FIRMA.ad+' · '+FIRMA.tel;
+    WA={id,blob,ad,file,metin};
+    const pay=navigator.canShare&&navigator.canShare({files:[file]});
+    b.innerHTML=pay?`<button class="btn g w" onclick="teklifWAPaylas()">📤 Şimdi WhatsApp'ta paylaş</button><div class="muted" style="margin-top:4px">Açılan listeden WhatsApp'ı, sonra müşteriyi seç. PDF ve mesaj birlikte gider.</div>`
+      :`<button class="btn g w" onclick="teklifWAWeb()">💬 WhatsApp'ı aç</button><div class="muted" style="margin-top:4px">Bilgisayardasın: PDF indirilecek, WhatsApp açılacak. Müşteriyi seçip mesajı gönder, PDF'i de sohbete sürükle.</div>`;
+  }catch(e){b.innerHTML='';toast(e.message)}}
+async function teklifWAPaylas(){if(!WA)return;try{await navigator.share({files:[WA.file],text:WA.metin,title:WA.ad});await teklifGonderildi(WA.id,'WhatsApp')}catch(e){if(e&&e.name!=='AbortError')toast('Paylaşılamadı: '+e.message)}}
+async function teklifWAWeb(){if(!WA)return;indir(WA.blob,WA.ad);window.open('https://wa.me/?text='+encodeURIComponent(WA.metin),'_blank');await teklifGonderildi(WA.id,'WhatsApp')}
+async function teklifGonderildi(id,k){const r=await sb.from('teklifler').select('durum').eq('id',id).single();if(r.data&&['kabul','red'].includes(r.data.durum))return;
+  const {error}=await sb.from('teklifler').update({durum:'gonderildi',gonderim_kanal:k,gonderim_tarih:new Date().toISOString(),gonderen:me.id}).eq('id',id);if(hata(error))return;toast('Teklif müşteriye gönderildi olarak işaretlendi ('+k+')');const w=$('#waKutu');if(w)w.innerHTML='<div class="muted">✓ WhatsApp ile gönderildi.</div>'}
 async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('docx.umd.js');const X=window.docx;
   const {Document,Packer,Paragraph,TextRun,Table,TableRow,TableCell,WidthType,ShadingType,AlignmentType,BorderStyle,ImageRun,VerticalAlign,Footer,TabStopType,LevelFormat,TableLayoutType}=X;
   const NAVY='0D1526',AMB='F5D90A',GRAY='5B667A',LG='8A94A6',LINE='E3E7EF',ZEB='F6F8FB',pb=d.pb,h=bHesap(d),teklif=d.tur==='FİYAT TEKLİFİ';
@@ -1268,7 +1283,7 @@ async function vTeklifler(m){
   const TD={istendi:'Doğuş gönderdi · hazırlanacak',taslak:'Hazırlanıyor',gonderildi:'Gönderildi',kabul:'Kabul edildi',red:'Reddedildi'},TC={istendi:'c-iade',taslak:'c-bekliyor',gonderildi:'c-acik',kabul:'c-bitti',red:'c-iade'};
   const TS=tabsFor().some(x=>x[0]==='teklif');m.innerHTML=`${TS?'':'<button class="btn s l" onclick="go(tabsFor()[0][0])">← Geri</button>'}<div class="row sp"${TS?'':' style="margin-top:10px"'}><h2>Teklifler</h2><button class="btn s" onclick="teklifAc()">+ Yeni teklif</button></div>
    ${(data||[]).map(t=>{const h=bHesap(tkD(t));return`<div class="card click" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(t.musteri)}</h3><span class="chip ${TC[t.durum]}">${t.durum==='istendi'?esc((pname(t.olusturan)||'Doğuş').split(' ')[0])+' gönderdi · hazırlanacak':TD[t.durum]}</span></div>
-     <div class="muted">${esc(t.no||'')} · ${esc(t.konu||'')}${t.departman_id?' · '+esc(dname(t.departman_id)):''}${t.olusturan&&t.durum!=='istendi'?' · Hazırlayan: '+esc(pname(t.acan||t.olusturan)):''}</div><div style="margin-top:6px;font-weight:800;color:var(--green)">${bPara(h.gen,t.para_birimi)}</div></div>`}).join('')||'<div class="card muted">Henüz teklif yok. "+ Yeni teklif" ile başla.</div>'}`;
+     <div class="muted">${esc(t.no||'')} · ${esc(t.konu||'')}${t.departman_id?' · '+esc(dname(t.departman_id)):''}${t.olusturan&&t.durum!=='istendi'?' · Hazırlayan: '+esc(pname(t.acan||t.olusturan)):''}</div><div style="margin-top:6px;font-weight:800;color:var(--green)">${bPara(h.gen,t.para_birimi)}</div>${t.proje_id?`<div class="row sp" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);flex-wrap:nowrap"><b style="color:var(--green)">✓ Projeye döndü</b><button class="btn s l" onclick="event.stopPropagation();openP(${t.proje_id},'gorev')">Projeyi aç ›</button></div>`:t.gonderim_kanal&&t.durum==='gonderildi'?`<div class="muted" style="margin-top:4px">Müşteriye gönderildi · ${esc(t.gonderim_kanal)} · ${tarih(t.gonderim_tarih)}</div>`:''}</div>`}).join('')||'<div class="card muted">Henüz teklif yok. "+ Yeni teklif" ile başla.</div>'}`;
 }
 const teklifDuzenler=t=>ofisMi()||(t.olusturan===me.id&&!t.acan&&t.durum==='taslak');
 const teklifAcGor=id=>`${'${'}0${'}'}`;
@@ -1319,6 +1334,8 @@ async function teklifGor(id){
    ${istek&&ofisDep&&!['kabul','red'].includes(t.durum)?`<div class="card"><h3 style="margin:0 0 6px">Ofise not yaz</h3>
      <div class="row" style="flex-wrap:nowrap"><input id="tgn" placeholder="Örn: Fiyatı bugün çıkarın, müşteri acele ediyor" style="flex:1;min-width:0"><button class="btn" id="tgs">Gönder</button></div>
      <div class="muted" style="margin-top:4px">Ofis kanalına bu teklifin numarasıyla gider.</div></div>`:''}
+   ${haz&&!['red'].includes(t.durum)?`<div class="card" style="border-color:#9fd3b2;background:#f3fbf6"><b>💬 Müşteriye WhatsApp'tan gönder</b><div class="muted" style="font-size:12px">${t.gonderim_kanal?'Daha önce gönderildi: '+esc(t.gonderim_kanal)+' · '+saat(t.gonderim_tarih)+'. Tekrar gönderebilirsin.':'Teklifin PDF\'i hazırlanır, WhatsApp\'ta müşteriye paylaşırsın.'}</div>
+     <button class="btn g w" style="margin-top:8px" id="tgw">💬 PDF'i hazırla ve WhatsApp'tan gönder</button><div id="waKutu" style="margin-top:8px"></div></div>`:''}
    ${haz?`<details class="card"><summary style="margin:0;color:var(--text);font-weight:700">📄 Teklif kâğıdını gör · indir</summary>
     <div class="durumlar" style="margin-top:10px"><button class="btn s l" id="tgp">📄 PDF</button><button class="btn s l" id="tgf">🖼 Fotoğraf</button></div>
     <div id="tgk2" style="margin-top:10px;overflow:hidden;border:1px solid var(--line);border-radius:10px"><div id="tgi" data-nocevir style="width:794px;transform-origin:0 0">${belgeHTML(teklifBelge(t))}</div></div></details>`:''}`;
@@ -1326,6 +1343,7 @@ async function teklifGor(id){
   if(haz){const k=$('#tgk2'),i=$('#tgi'),olc=()=>{if(!k.clientWidth)return;const z=k.clientWidth/794;i.style.transform='scale('+z+')';k.style.height=(i.offsetHeight*z)+'px'};
     k.closest('details').addEventListener('toggle',olc);addEventListener('resize',olc);
     $('#tgp').onclick=()=>indirPDF(teklifBelge(t));$('#tgf').onclick=()=>indirPNG(teklifBelge(t))}
+  if($('#tgw'))$('#tgw').onclick=()=>teklifWA(t.id,teklifBelge(t));
   if($('#tgk'))$('#tgk').onclick=async()=>{const dep=Number($('#tgd').value);const {error}=await sb.rpc('teklif_projeye',{t:t.id,dep});if(hata(error))return;toast('Proje açıldı, '+dname(dep)+' sorumlusuna bildirim gitti');teklifGor(t.id)};
   if($('#tgr'))$('#tgr').onclick=async()=>{const {error}=await sb.from('teklifler').update({durum:'red'}).eq('id',t.id);if(hata(error))return;toast('Reddedildi olarak işaretlendi');teklifGor(t.id)};
   if($('#tgs'))$('#tgs').onclick=async()=>{const v=$('#tgn').value.trim();if(!v)return;const {error}=await sb.from('mesajlar').insert({departman_id:ofisDep.id,metin:'['+(t.no||'Teklif')+' · '+t.musteri+'] '+v});if(hata(error))return;$('#tgn').value='';toast('Ofise iletildi')};
@@ -1338,7 +1356,9 @@ async function teklifAc(id){
       notlar:[...TEKLIF_SART],imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]};
   const durum=t?t.durum:'taslak';
   const ekstra=t?`<div style="margin-top:12px"><label for="tdp">Hangi departmanın işi?</label><select id="tdp"${me.rol==='ds'&&!ofisMi()?' disabled':''}>${deps.filter(x=>!x.ofis).map(x=>`<option value="${x.id}" ${x.id===t.departman_id?'selected':''}>${esc(x.ad)}</option>`).join('')}</select>
-    <div style="margin-top:10px"><b>Müşteriye nasıl gönderdin?</b>${t.gonderim_kanal?`<div class="muted">Gönderildi: ${esc(t.gonderim_kanal)} · ${saat(t.gonderim_tarih)} · ${esc(pname(t.gonderen))}</div>`:'<div class="muted">PDF\'i indirip müşteriye ilettikten sonra işaretle'+(me.rol==='patron'?', kaydı kalsın.':', Doğuş görsün.')+'</div>'}</div>
+    <div class="card" style="margin-top:10px;border-color:#9fd3b2;background:#f3fbf6"><b>💬 Müşteriye WhatsApp'tan gönder</b><div class="muted" style="font-size:12px">Önce kaydeder, teklifin PDF'ini hazırlar, sonra WhatsApp'ta paylaşırsın.</div>
+     <button class="btn g w" style="margin-top:8px" onclick="teklifWAEditor(${t.id})">💬 PDF'i hazırla ve WhatsApp'tan gönder</button><div id="waKutu" style="margin-top:8px"></div></div>
+    <div style="margin-top:10px"><b>Başka yoldan gönderdiysen işaretle</b>${t.gonderim_kanal?`<div class="muted">Gönderildi: ${esc(t.gonderim_kanal)} · ${saat(t.gonderim_tarih)} · ${esc(pname(t.gonderen))}</div>`:'<div class="muted">PDF\'i indirip müşteriye ilettikten sonra işaretle'+(me.rol==='patron'?', kaydı kalsın.':', Doğuş görsün.')+'</div>'}</div>
     <div class="durumlar" style="margin-top:6px"><button class="btn ${t.gonderim_kanal==='WhatsApp'?'':'l'}" onclick="teklifGonder(${t.id},'WhatsApp')">💬 WhatsApp</button><button class="btn ${t.gonderim_kanal==='E-posta'?'':'l'}" onclick="teklifGonder(${t.id},'E-posta')">✉️ E-posta</button><button class="btn ${t.gonderim_kanal==='Elden'?'':'l'}" onclick="teklifGonder(${t.id},'Elden')">🤝 Elden</button></div>
     <button class="btn s l w" style="margin-top:6px;color:var(--red)" onclick="teklifDurum(${t.id},'red')">✕ Müşteri reddetti</button>
     ${t.proje_id?'<div class="muted" style="margin-top:8px">✓ Kabul edildi, projeye dönüştürüldü.</div>':`<button class="btn g w" style="margin-top:8px" onclick="teklifKabul(${t.id})">✓ Kabul edildi → Projeye dönüştür</button>`}</div>`:'';
@@ -1348,6 +1368,9 @@ async function teklifAc(id){
     const r=t?await sb.from('teklifler').update(row).eq('id',t.id):await sb.from('teklifler').insert(row).select().single();
     if(hata(r.error))return;toast('Teklif kaydedildi');if(!t&&r.data)return teklifAc(r.data.id);teklifAc(t.id)},()=>{if(ofisMi())S.tab='teklif';render()},ekstra);
 }
+async function teklifWAEditor(id){if(!BELGE||!BELGE.d.musteri.ad.trim())return toast('Müşteri adını yaz');const x=JSON.parse(JSON.stringify(BELGE.d));
+  const row={musteri:x.musteri.ad.trim(),ilgili:x.musteri.ilgili||null,adres:x.musteri.adres||null,konu:x.konu||null,proje_adi:x.konu||null,para_birimi:x.pb,kdv:x.kdv,gecerlilik:x.son||null,sartlar:(x.notlar||[]).join('\n'),kalemler:[...x.kalemler,...(x.indirim&&Number(x.indirim.deger)>0?[{_indirim:x.indirim}]:[]),...(elT(x)?[{_toplam:Number(x.toplamEl)}]:[])]};
+  const {error}=await sb.from('teklifler').update(row).eq('id',id);if(hata(error))return;await teklifWA(id,x)}
 async function teklifGonder(id,k){const {error}=await sb.from('teklifler').update({durum:'gonderildi',gonderim_kanal:k,gonderim_tarih:new Date().toISOString(),gonderen:me.id,departman_id:Number(($('#tdp')||{}).value)||null}).eq('id',id);if(hata(error))return;toast('Gönderildi olarak işaretlendi ('+k+')');teklifAc(id)}
 async function teklifDurum(id,d){const {error}=await sb.from('teklifler').update({durum:d,departman_id:Number(($('#tdp')||{}).value)||null}).eq('id',id);if(hata(error))return;toast('Durum: '+({gonderildi:'Gönderildi',red:'Reddedildi'})[d]);teklifAc(id)}
 async function teklifKabul(id){const dep=Number(($('#tdp')||{}).value);if(!dep)return toast('Departman seç');
