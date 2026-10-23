@@ -906,7 +906,7 @@ function belgeHTML(d){
   ${d.tur!=='PROFORMA FATURA'&&(d.isler||[]).filter(Boolean).length?`<div class="yi"><h4>YAPILAN İŞLER</h4><ul>${d.isler.filter(Boolean).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
   <table><thead><tr><th>NO</th><th>AÇIKLAMA</th><th class="n">MİKTAR</th>${EL?'':'<th class="n">BİRİM FİYAT</th><th class="n">TUTAR</th>'}</tr></thead><tbody>${tr}</tbody></table>
   <div class="al"><div class="nt"><h4>${d.tur==='FİYAT TEKLİFİ'?'ŞARTLAR':'NOTLAR'}</h4><ul>${(d.notlar||[]).filter(Boolean).map(n=>`<li>${esc(n)}</li>`).join('')}</ul>
-   ${d.tur==='FİYAT TEKLİFİ'?'':`<div class="bk"><h4>ÖDEME BİLGİLERİ</h4><dl><dt>Banka</dt><dd>${esc(FIRMA.banka)}</dd><dt>Hesap adı</dt><dd>${esc(FIRMA.ad)}</dd><dt>IBAN</dt><dd>${esc(FIRMA.iban)}</dd></dl></div>`}</div>
+   ${d.tur==='FİYAT TEKLİFİ'&&!(FIRMA.iban&&FIRMA.iban!=='—')?'':`<div class="bk"><h4>ÖDEME BİLGİLERİ</h4><dl><dt>Banka</dt><dd>${esc(FIRMA.banka)}</dd><dt>Hesap adı</dt><dd>${esc(FIRMA.ad)}</dd><dt>IBAN</dt><dd>${esc(FIRMA.iban)}</dd></dl></div>`}</div>
    <div><div class="tp"><div><span>${EL?'Toplam fiyat':'Ara toplam'}</span><span>${bPara(h.ara,pb)}</span></div>${h.ind?`<div><span>${indAd(d)}</span><span>−${bPara(h.ind,pb)}</span></div><div><span>İndirimli toplam</span><span>${bPara(h.net,pb)}</span></div>`:''}${h.kdvL.map(x=>`<div><span>KDV %${yO(x.oran)}</span><span>${bPara(x.tutar,pb)}</span></div>`).join('')}<div class="g"><span>GENEL TOPLAM</span><span>${bPara(h.gen,pb)}</span></div></div>
    <div class="yz">Yalnız: <b>${esc(yaziyla(h.gen,pb))}</b></div>${kdvNot(d)?`<div class="kn2">${esc(kdvNot(d))}</div>`:''}</div></div>
   <div class="im">${(d.imza||[]).map(imzaYaz).map(([x,y])=>`<div><b>${esc(x)}</b>${esc(y)}<br>Kaşe / İmza</div>`).join('')}</div></div>
@@ -988,7 +988,7 @@ async function indirWord(d){toast('Word hazırlanıyor…');try{await yukle('doc
     ...h.kdvL.map(x=>new TableRow({children:[C([P(T('KDV %'+yO(x.oran)))],2100,{borders:{left:ln,bottom:ln,top:nb,right:nb}}),C([P(T(bPara(x.tutar,pb)),{al:R})],1900,{borders:{right:ln,bottom:ln,top:nb,left:nb}})]})),
     new TableRow({children:[C([P(T('GENEL TOPLAM',{bold:true,color:NAVY,size:21}))],2100,{fill:'FFF8D6',m:{top:160,bottom:160,left:120,right:120}}),C([P(T(bPara(h.gen,pb),{bold:true,color:NAVY,size:23}),{al:R})],1900,{fill:'FFF8D6',m:{top:160,bottom:160,left:120,right:120}})]})],[2100,1900]);
   const not=[P(T(teklif?'ŞARTLAR':'NOTLAR',{size:14,bold:true,color:LG,sp:30}),{a:80}),...(d.notlar||[]).filter(Boolean).map(n=>P(T(n,{color:'3C4659',size:18}),{num:{reference:'madde',level:0},a:40}))];
-  if(!teklif){const bl=(k,v)=>P([T(k,{color:LG,size:18}),T('\t'+v,{bold:true,size:18})],{tabs:[{type:TabStopType.LEFT,position:1300}],a:30});not.push(P(T(' '),{a:80}));
+  if(!teklif||(FIRMA.iban&&FIRMA.iban!=='—')){const bl=(k,v)=>P([T(k,{color:LG,size:18}),T('\t'+v,{bold:true,size:18})],{tabs:[{type:TabStopType.LEFT,position:1300}],a:30});not.push(P(T(' '),{a:80}));
     not.push(TB([new TableRow({children:[C([P(T('ÖDEME BİLGİLERİ',{size:14,bold:true,color:LG,sp:30}),{a:60}),bl('Banka',FIRMA.banka),bl('Hesap adı',FIRMA.ad),bl('IBAN',FIRMA.iban)],5600,{fill:'FDFBE8',borders:{left:{style:BorderStyle.SINGLE,size:30,color:AMB},top:nb,right:nb,bottom:nb},m:{top:140,bottom:140,left:220,right:160}})]})],[5600]))}
   const alt=TB([new TableRow({children:[C(not,5900,{m:{top:0,bottom:0,left:0,right:120}}),C([P(T(' '))],306),C([tot,P([T('Yalnız: ',{color:GRAY,size:17}),T(yaziyla(h.gen,pb),{bold:true,size:17})],{b:100}),...(kdvNot(d)?[P(T(kdvNot(d),{bold:true,size:17,color:NAVY}),{b:80})]:[])],4000,{m:{top:0,bottom:0,left:0,right:0}})]})],[5900,306,4000]);
   const tl={top:{style:BorderStyle.SINGLE,size:6,color:'9AA4B6'},bottom:nb,left:nb,right:nb};
@@ -1301,9 +1301,9 @@ async function vTeklifler(m){
 const teklifDuzenler=t=>ofisMi()||(t.olusturan===me.id&&!t.acan&&t.durum==='taslak');
 const teklifAcGor=id=>`${'${'}0${'}'}`;
 const tkK=t=>(t.kalemler||[]).filter(k=>!k._indirim&&k._toplam==null),tkT=t=>((t.kalemler||[]).find(k=>k._toplam!=null)||{})._toplam,tkD=t=>({kalemler:tkK(t),kdv:t.kdv,indirim:((t.kalemler||[]).find(k=>k._indirim)||{})._indirim,toplamEl:tkT(t)});
-const TEKLIF_SART=['Ödemeler, iş tesliminden sonra yetkili kişi tarafından onaylandıktan sonra faturalandırılıp ödeme talep edilecektir.','Teklifimiz 1 ay geçerlidir.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'];
+const TEKLIF_SART=['Ödeme iş bitiminde nakit, havale veya banka çeki ile yapılabilir.','Teklifimiz 1 ay geçerlidir.','Fiyatlara KDV dahil değildir; KDV ayrıca gösterilmiştir.'];
 // Eski tekliflerde kayıtlı eski varsayılan şartlar (%50 sipariş onayında…) yerine yeni şartlar çıksın; elle yazılmış özel şart varsa o kalır
-const tkSart=t=>{const x=(t.sartlar||'').trim();if(!x||/%50 sip|tarihine kadar ge/i.test(x))return[...TEKLIF_SART];return x.split('\n')};
+const tkSart=t=>{const x=(t.sartlar||'').trim();if(!x||/%50 sip|tarihine kadar ge|tesliminden sonra yetkili/i.test(x))return[...TEKLIF_SART];return x.split('\n')};
 const teklifBelge=t=>({tur:'FİYAT TEKLİFİ',no:t.no,tarih:(t.tarih||'').slice(0,10)||bugunStr(),son:t.gecerlilik,musteri:{ad:t.musteri,ilgili:t.ilgili,adres:t.adres},proje:t.proje_adi,konu:t.konu,pb:t.para_birimi,kdv:Number(t.kdv),kalemler:tkK(t),indirim:tkD(t).indirim,...(tkT(t)!=null?{toplamEl:tkT(t)}:{}),notlar:tkSart(t),imza:[['Teklifi veren',FIRMA.ad],['Müşteri onayı','Ad Soyad · İmza · Tarih']]});
 // İşveren ve sorumlular teklifi izler: ne istendi, nerede, içinde ne var, müşteri ne dedi
 async function teklifGor(id){
