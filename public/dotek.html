@@ -1081,6 +1081,19 @@ async function vTeklifler(m){
    ${(data||[]).map(t=>{const h=bHesap(tkD(t));return`<div class="card click" onclick="${teklifDuzenler(t)?'teklifAc':'teklifGor'}(${t.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(t.musteri)}</h3><span class="chip ${TC[t.durum]}">${t.durum==='istendi'?esc((pname(t.olusturan)||'Doğuş').split(' ')[0])+' gönderdi · hazırlanacak':TD[t.durum]}</span></div>
      <div class="muted">${esc(t.no||'')} · ${esc(t.konu||'')}${t.departman_id?' · '+esc(dname(t.departman_id)):''}${t.olusturan&&t.durum!=='istendi'?' · Hazırlayan: '+esc(pname(t.acan||t.olusturan)):''}</div><div style="margin-top:6px;font-weight:800;color:var(--green)">${bPara(h.gen,t.para_birimi)}</div>${t.proje_id?`<div class="row sp" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--line);flex-wrap:nowrap"><b style="color:var(--green)">✓ Projeye döndü</b><button class="btn s l" onclick="event.stopPropagation();openP(${t.proje_id},'gorev')">Projeyi aç ›</button></div>`:t.gonderim_kanal&&t.durum==='gonderildi'?`<div class="muted" style="margin-top:4px">Müşteriye gönderildi · ${esc(t.gonderim_kanal)} · ${tarih(t.gonderim_tarih)}</div>`:''}</div>`}).join('')||'<div class="card muted">Henüz teklif yok. "+ Yeni teklif" ile başla.</div>'}`;
 }
+// Teklif silme: işveren, ofis, ya da teklifi yazan / aynı departmanın sorumlusu. Projeye dönmüş teklif silinmez (önce proje silinir).
+const teklifSilebilir=t=>!t.proje_id&&(me.rol==='patron'||ofisMi()||(me.rol==='ds'&&(t.olusturan===me.id||t.departman_id===me.departman_id)));
+async function teklifSilSor(id){const r=await sb.from('teklifler').select('*').eq('id',id).single();if(hata(r.error))return;const t=r.data;
+  const k=document.createElement('div');k.id='silSor';k.style.cssText='position:fixed;inset:0;background:rgba(13,21,38,.55);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px';
+  k.innerHTML=`<div class="card" role="dialog" aria-modal="true" style="max-width:420px;width:100%;margin:0;border:2px solid var(--red)"><h3 style="margin:0 0 8px;color:var(--red)">🗑️ Teklifi silmek istediğine emin misin?</h3>
+   <div style="font-weight:700">${esc(t.no||'')} · ${esc(t.musteri||'')}</div><div class="muted">${esc(t.konu||'')}</div>
+   <div style="margin:10px 0;padding:10px;border-radius:10px;background:#fdecec;color:#8a1c1c;font-size:14px">Teklif ve içindeki bütün kalemler silinir. <b>Geri alınamaz.</b></div>
+   <label for="tsOk">Emin isen kutuya <b>SİL</b> yaz:</label><input id="tsOk" autocomplete="off" oninput="$('#tsBtn').disabled=this.value.trim().toLocaleUpperCase('tr')!=='SİL'">
+   <div class="row" style="margin-top:12px;flex-wrap:nowrap;gap:8px"><button class="btn l" style="flex:1" onclick="$('#silSor').remove()">Vazgeç</button><button class="btn r" id="tsBtn" style="flex:1" disabled onclick="teklifSil(${id})">Evet, sil</button></div></div>`;
+  document.body.appendChild(k);setTimeout(()=>$('#tsOk').focus(),30)}
+async function teklifSil(id){let {error}=await sb.rpc('teklif_sil',{t:id});
+  if(error&&(error.code==='PGRST202'||/function|schema cache/i.test(error.message||''))){const r=await sb.from('teklifler').delete().eq('id',id).select('id');error=r.error||(r.data&&r.data.length?null:{message:'Bu teklifi silme yetkin yok'})}
+  if(hata(error))return;$('#silSor')&&$('#silSor').remove();toast('Teklif silindi');S.tab='teklif';render()}
 const teklifDuzenler=t=>ofisMi()||(t.olusturan===me.id&&!t.acan&&t.durum==='taslak');
 const teklifAcGor=id=>`${'${'}0${'}'}`;
 const tkK=t=>(t.kalemler||[]).filter(k=>!k._indirim&&k._toplam==null),tkT=t=>((t.kalemler||[]).find(k=>k._toplam!=null)||{})._toplam,tkD=t=>({kalemler:tkK(t),kdv:t.kdv,indirim:((t.kalemler||[]).find(k=>k._indirim)||{})._indirim,toplamEl:tkT(t)});
@@ -1102,7 +1115,7 @@ async function teklifGor(id){
     :t.durum==='taslak'?['🟡',`${esc(pname(t.acan||t.olusturan))} teklifi hazırlıyor, müşteriye henüz gitmedi.`]
     :t.durum==='gonderildi'?(gun(t.gonderim_tarih)>=3?['🔴',`Müşteriye ${gun(t.gonderim_tarih)} gün önce gönderildi, cevap yok. Aranması iyi olur.`]:['🔵',`Müşteriye gönderildi, cevap bekleniyor.`])
     :t.durum==='kabul'?['🟢','Müşteri kabul etti, proje açıldı.']:['🔴','Müşteri reddetti.'];
-  m.innerHTML=`<div class="row sp"><button class="btn s l" onclick="render()">← Geri</button>${t.olusturan===me.id&&!t.acan&&!['istendi','kabul','red'].includes(t.durum)?`<button class="btn s" onclick="teklifAc(${t.id})">✏️ Düzenle</button>`:''}</div>
+  m.innerHTML=`<div class="row sp"><button class="btn s l" onclick="render()">← Geri</button><div class="row" style="gap:6px">${t.olusturan===me.id&&!t.acan&&!['istendi','kabul','red'].includes(t.durum)?`<button class="btn s" onclick="teklifAc(${t.id})">✏️ Düzenle</button>`:''}${teklifSilebilir(t)?`<button class="btn s" style="background:#fdecec;color:var(--red);border:1px solid #f3b9b9" onclick="teklifSilSor(${t.id})">🗑️ Teklifi sil</button>`:''}</div></div>
    <div class="card" style="margin-top:10px"><div class="row sp" style="flex-wrap:nowrap"><h2 style="margin:0;min-width:0">${esc(t.musteri)}</h2><span class="muted" style="white-space:nowrap">${esc(t.no||'')}</span></div>
     <div style="margin-top:6px;padding:10px 12px;border-radius:10px;background:var(--bg,#f4f6fa);font-weight:600">${simdi[0]} ${simdi[1]}</div>
     ${satir('İş',ic(t.konu||'—'))}
@@ -1739,7 +1752,7 @@ async function vProje(m){
   if(para)sek.push(['fiyat','Fiyat']);
   if(!sek.find(s=>s[0]===S.ptab))S.ptab='gorev';
 
-  let ust=`<button class="btn s l" onclick="S.pid=null;render()">← Geri</button>
+  let ust=`<div class="row sp"><button class="btn s l" onclick="S.pid=null;render()">← Geri</button>${yon&&p.fatura_durum!=='kesildi'?`<button class="btn s" style="background:#fdecec;color:var(--red);border:1px solid #f3b9b9" onclick="projeSilSor(${id})">🗑️ Projeyi sil</button>`:''}</div>
   <div class="card" style="margin-top:10px"><div class="row sp"><h2 style="margin:0">${esc(p.ad)}</h2>${chip(p.durum,DURUM)}</div>
    <div class="muted" style="margin-top:4px">${esc(dname(p.departman_id))}${p.musteri?' · Müşteri: '+esc(p.musteri):''}${p.adres?' · '+esc(p.adres):''}</div>
    <div class="muted">Takip eden: <b>${esc(pname(p.takipci_id))}</b>${p.baslangic?' · '+tarih(p.baslangic):''}${p.bitis?' → '+tarih(p.bitis):''}</div>
@@ -1752,7 +1765,6 @@ async function vProje(m){
      <div style="flex:1;min-width:140px"><label>Durum</label><select onchange="pSet(${id},{durum:this.value})">${['acik','devam','bitti'].map(k=>`<option value="${k}" ${p.durum===k?'selected':''}>${DURUM[k]}</option>`).join('')}${p.durum==='iade'?'<option value="iade" selected>İade edildi</option>':''}</select></div>
      <div style="flex:1;min-width:140px"><label>Takip eden</label><select onchange="pSet(${id},{takipci_id:this.value||null})">${opts(ekipOf(p.departman_id),p.takipci_id,p.departman_id)}</select></div></div>
      <label>Müşteri</label><input value="${esc(p.musteri||'')}" placeholder="Müşteri adını yaz (Müşteri sekmesinde toplanır)" onchange="pSet(${id},{musteri:this.value.trim()||null})">`:''}
-   ${yon&&p.fatura_durum!=='kesildi'?`<button class="btn s l" style="margin-top:12px;color:var(--red)" onclick="projeSilSor(${id})">🗑️ Projeyi sil</button>`:''}
   </div>
   <div class="tabs">${sek.map(([k,t])=>`<button class="${S.ptab===k?'on':''}" onclick="S.ptab='${k}';render()">${t}</button>`).join('')}</div><div id="pt"></div>`;
   m.innerHTML=ust;
