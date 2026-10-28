@@ -1536,7 +1536,7 @@ function kolMu(k,v){if(!Array.isArray(v)||k==='fyPaket')return false;if(!v.lengt
 function kaydet(){if(!YUKLENDI)return;clearTimeout(FARK_T);FARK_T=setTimeout(ckFark,250)}
 function ckDurum(){const m=new Map();for(const k of Object.keys(S)){const v=S[k];if(v===undefined)continue;if(kolMu(k,v)){for(const x of v)m.set(k+'|'+x.id,[k,String(x.id),x])}else m.set('_|'+k,['_',k,v])}return m}
 function ckFark(){if(!YUKLENDI)return;const m=ckDurum();
- for(const [key,[kol,id,v]] of m){const j=JSON.stringify(v);if(SNAP.get(key)!==j){SNAP.set(key,j);BEKLE.set(key,{kol,id,j})}}
+ for(const [key,[kol,id,v]] of m){const j=JSON.stringify(v);if(SNAP.get(key)!==j){SNAP.set(key,j);BEKLE.set(key,{kol,id,j});if(kol!=='_'||!/^drive/.test(id))SON_DEG=new Date().toISOString()}}
  for(const key of [...SNAP.keys()])if(!m.has(key)){SNAP.delete(key);const i=key.indexOf('|');BEKLE.set(key,{kol:key.slice(0,i),id:key.slice(i+1),sil:true})}
  bekleSakla();ckGonder()}
 function bekleSakla(){try{localStorage.setItem(BEKLE_KEY,JSON.stringify([...BEKLE.entries()]))}catch(e){}}
@@ -1578,7 +1578,7 @@ function uzakUygula(kol,id,veri){const key=kol+'|'+id;if(BEKLE.has(key))return;c
 function uzakSil(kol,id){const key=kol+'|'+id;if(BEKLE.has(key)||!SNAP.has(key))return;SNAP.delete(key);if(kol==='_')delete S[id];else S[kol]=(S[kol]||[]).filter(x=>String(x.id)!==id);yenileSonra()}
 function yenileSonra(){clearTimeout(YEN_T);YEN_T=setTimeout(()=>{const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&(a.closest('#app')||a.closest('.ov'))){yenileSonra();return}
  render();STACK.forEach(m=>{if(m.yenile){const y=m.yenile();m.el.querySelector('.mb').innerHTML=y.html;const mf=m.el.querySelector('.mf');if(mf&&y.foot!==undefined){mf.innerHTML=y.foot;mf.hidden=!y.foot}}});dlGoster()},400)}
-function canli(){sb.channel('ck_kayit').on('postgres_changes',{event:'*',schema:'public',table:'ck_kayit'},p=>{
+function canli(){setTimeout(driveBasla,1500);sb.channel('ck_kayit').on('postgres_changes',{event:'*',schema:'public',table:'ck_kayit'},p=>{
   if(p.eventType==='DELETE'){const o=p.old||{};if(o.kol!=null)uzakSil(o.kol,String(o.id))}else{const r=p.new;uzakUygula(r.kol,String(r.id),r.veri);if(!SON_GUNC||r.guncelleme>SON_GUNC)SON_GUNC=r.guncelleme}})
  .subscribe(st=>{if(st==='SUBSCRIBED')ckTazele(false)});
  setInterval(()=>ckTazele(false),60000);setInterval(()=>ckTazele(true),10*60000);
@@ -1623,8 +1623,19 @@ function sifirOnay(){if(CK_ROL!=='patron'){toast('Bunu sadece patron yapabilir')
 function ornekYukle(){toast('Gerçek programda örnek veri yüklenmez')}
 async function dosyaVer(ad,data){try{const b=data instanceof Blob?data:new Blob([data],{type:/\.json$/.test(ad)?'application/json':/\.csv$/.test(ad)?'text/csv;charset=utf-8':'text/html;charset=utf-8'});const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=ad;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Dosya indirildi')}catch(e){toast('Dosya verilemedi')}}
 DL={save:async()=>{}};MCP={_u:'',callTool:async(sv,t,a)=>{if(t==='navigate'){MCP._u=a.url;return{}}const r=await fetch(MCP._u,{cache:'no-store'});return{payload:await r.text()}}};function dlGoster(){document.querySelectorAll('.dl').forEach(b=>b.hidden=false)}
+/* --- Google Drive yedeği (Apps Script'e gönderilir) --- */
+let SON_DEG='';const yedekci=()=>CK_ROL==='patron'||CK_ROL==='ofis';
+function driveBasla(){const m=location.hash.match(/^#drive=([^|]+)\|(.+)$/);
+ if(m){if(yedekci()){S.driveYedek={url:decodeURIComponent(m[1]),anahtar:decodeURIComponent(m[2])};S.driveSon=null;kaydet();toast('Google Drive yedeği bağlandı')}history.replaceState(null,'',location.pathname)}
+ driveKontrol();setInterval(driveKontrol,15*60000)}
+function driveKontrol(){if(!yedekci()||!S.driveYedek||BEKLE.size)return;const son=S.driveSon||'';const yas=son?Date.now()-Date.parse(son):1e15;
+ if(!son||(yas>6*3600e3&&((SON_GUNC||'')>son||SON_DEG>son)))driveYedekle()}
+async function driveYedekle(elle){if(!S.driveYedek){toast('Google Drive bağlı değil');return}
+ try{const v=JSON.parse(JSON.stringify(S));delete v.driveYedek;await fetch(S.driveYedek.url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({anahtar:S.driveYedek.anahtar,veri:JSON.stringify(v)})});
+  S.driveSon=new Date().toISOString();kaydet();if(elle)toast("Google Drive'a gönderildi")}catch(e){if(elle)toast("Google Drive'a gönderilemedi")}}
 async function sunucuYedekleri(){const {data,error}=await sb.rpc('ck_yedek_liste');if(error){toast('Yedekler okunamadı');return}
- modal('Sunucudaki günlük yedekler',`<p class="muted">Her gece otomatik alınır, son 14 gün saklanır.</p>${data&&data.length?`<div class="tw"><table><tr><th>Gün</th><th class="n">Kayıt</th><th></th></tr>${data.map(y=>`<tr><td>${trTarih(y.gun)}</td><td class="n">${y.kayit_sayisi}</td><td><button class="btn l s" onclick="sunucuYedekIndir('${y.gun}')">İndir</button></td></tr>`).join('')}</table></div>`:'<div class="empty">Henüz yedek yok; ilk yedek bu gece alınır.</div>'}`,`<button class="btn s" onclick="sunucuYedekSimdi()">Şimdi yedek al</button><button class="btn l" onclick="kapat()">Kapat</button>`)}
+ modal('Sunucudaki günlük yedekler',`<p class="muted">Her gece otomatik alınır, son 14 gün saklanır.</p>${data&&data.length?`<div class="tw"><table><tr><th>Gün</th><th class="n">Kayıt</th><th></th></tr>${data.map(y=>`<tr><td>${trTarih(y.gun)}</td><td class="n">${y.kayit_sayisi}</td><td><button class="btn l s" onclick="sunucuYedekIndir('${y.gun}')">İndir</button></td></tr>`).join('')}</table></div>`:'<div class="empty">Henüz yedek yok; ilk yedek bu gece alınır.</div>'}
+ <div class="card" style="margin-top:10px"><h3>Google Drive</h3>${S.driveYedek?`<p class="muted">Bağlı · "Dotek Cari ve Kasa Yedekleri" klasörü. Gün içinde değişiklik oldukça günde bir dosya güncellenir.${S.driveSon?' Son gönderim: '+new Date(S.driveSon).toLocaleString('tr-TR'):''}</p><button class="btn s" onclick="driveYedekle(true)">Drive'a şimdi yedekle</button>`:'<p class="muted">Bağlı değil.</p>'}</div>`,`<button class="btn s" onclick="sunucuYedekSimdi()">Şimdi yedek al</button><button class="btn l" onclick="kapat()">Kapat</button>`)}
 async function sunucuYedekSimdi(){const {error}=await sb.rpc('ck_yedek_al');if(error){toast('Yedek alınamadı');return}toast('Yedek alındı');kapat();sunucuYedekleri()}
 async function sunucuYedekIndir(g){const {data,error}=await sb.rpc('ck_yedek_getir',{g});if(error||!data){toast('Yedek okunamadı');return}const T=satirdanS(data.map(r=>({...r,guncelleme:''})));dosyaVer('Dotek Cari ve Kasa Yedek '+trTarih(g)+'.json',JSON.stringify(T))}
 function yedekAl(){dosyaVer('Dotek Cari ve Kasa Yedek '+trTarih(bugun())+'.json',JSON.stringify(S,null,1))}
