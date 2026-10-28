@@ -808,15 +808,15 @@ async function tkBirlestirSec(){const {data,error}=await sb.from('teklifler').se
    <button class="btn l w" style="margin-top:10px" onclick="$('#tkBir').remove()">Vazgeç</button></div>`;
   document.body.appendChild(k)}
 async function tkBirlestir(id){const t=(window._tkL||[]).find(x=>x.id===id);if(!t)return;const d=BELGE.d,o=tkD(t),E=tkEk(t),uy=[];
-  if(!secMi(d)){d.secenekler=[d.konu||'',''];d.kalemler.forEach(k=>k.s=0);d.toplamEl=null;d.secenekler.pop()}
+  if(!secMi(d)){d.secToplam=[elT(d)?Number(d.toplamEl):null];d.secenekler=[d.konu||''];d.kalemler.forEach(k=>k.s=0);d.toplamEl=null}d.secToplam=d.secToplam||[];while(d.secToplam.length<d.secenekler.length)d.secToplam.push(null);
   const ilk=d.secenekler.length,os=secMi(o)?o.secenekler:[t.konu||t.no||''];
   let K=tkK(t).map(k=>({...k}));
-  if(!secMi(o)&&tkT(t)!=null&&!K.some(k=>Number(k.fiyat)>0))K=[{ad:(t.konu||'Teklif '+t.no),miktar:1,birim:'iş',fiyat:Number(tkT(t))}];
-  if((t.para_birimi||'TRY')!==d.pb){await kurAl();K.forEach(k=>{const c=paraCevir(Number(k.fiyat)||0,t.para_birimi||'TRY',d.pb);if(c!=null)k.fiyat=Math.round(c*100)/100});uy.push('para birimi '+(t.para_birimi||'TRY')+' → '+d.pb+' çevrildi')}
+  let ST=secMi(o)?os.map((x,i)=>secT(o,i)):[tkT(t)!=null&&Number(tkT(t))>0?Number(tkT(t)):null];
+  if((t.para_birimi||'TRY')!==d.pb){await kurAl();const cv=v=>{const c=paraCevir(Number(v)||0,t.para_birimi||'TRY',d.pb);return c!=null?Math.round(c*100)/100:v};K.forEach(k=>{k.fiyat=cv(k.fiyat)});ST=ST.map(v=>v==null?null:cv(v));uy.push('para birimi '+(t.para_birimi||'TRY')+' → '+d.pb+' çevrildi')}
   if(!!o.kdvDahil!==!!d.kdvDahil)uy.push('o teklif KDV '+(o.kdvDahil?'dahil':'hariç')+' idi, fiyatları kontrol et');
-  os.forEach((ad,i)=>{d.secenekler.push(ad||'');K.filter(k=>(Number(k.s)||0)===i||(!secMi(o)&&true)).forEach(k=>{if(secMi(o)&&(Number(k.s)||0)!==i)return;d.kalemler.push({...k,s:ilk+i})})});
+  os.forEach((ad,i)=>{d.secenekler.push(ad||'');d.secToplam.push(ST[i]??null);K.filter(k=>(Number(k.s)||0)===i||(!secMi(o)&&true)).forEach(k=>{if(secMi(o)&&(Number(k.s)||0)!==i)return;d.kalemler.push({...k,s:ilk+i})})});
   $('#tkBir')&&$('#tkBir').remove();render();toast(t.no+' bu kâğıda '+(ilk+1)+'. teklif olarak eklendi'+(uy.length?' · '+uy.join(' · '):'')+'. Kaydetmeyi unutma.')}
-function secEkle(){const d=BELGE.d;if(!secMi(d)){d.secenekler=['',''];d.kalemler.forEach(k=>k.s=0);d.toplamEl=null}else d.secenekler.push('');d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0,s:d.secenekler.length-1});render()}
+function secEkle(){const d=BELGE.d;if(!secMi(d)){d.secToplam=[elT(d)?Number(d.toplamEl):null,null];d.secenekler=['',''];d.kalemler.forEach(k=>k.s=0);d.toplamEl=null}else{d.secenekler.push('');(d.secToplam=d.secToplam||[])[d.secenekler.length-1]=null}d.kalemler.push({ad:'',miktar:1,birim:'adet',fiyat:0,s:d.secenekler.length-1});render()}
 function secSil(si){const d=BELGE.d;if(!confirm||true){}d.kalemler=d.kalemler.filter(k=>(Number(k.s)||0)!==si).map(k=>({...k,s:(Number(k.s)||0)>si?k.s-1:(Number(k.s)||0)}));d.secenekler.splice(si,1);if(d.secToplam)d.secToplam.splice(si,1);if(d.secenekler.length<2){d.secenekler=null;d.secToplam=null;d.secTopla=false;d.kalemler.forEach(k=>delete k.s)}render()}
 function kdvDahilSec(v){BELGE.d.kdvDahil=v;BELGE.d.notlar=kdvSartDuzelt(BELGE.d.notlar,BELGE.d);render()}
 function kdvSorUyar(){toast('Önce seç: fiyatlar KDV dahil mi, hariç mi?');const k=$('#kdvSor');if(k){k.scrollIntoView({behavior:'smooth',block:'center'});k.style.boxShadow='0 0 0 4px #f5a52466';setTimeout(()=>k.style.boxShadow='',1800)}}
