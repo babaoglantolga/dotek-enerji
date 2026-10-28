@@ -989,7 +989,7 @@ function ayarlar(){modal('Kurlar ve ayarlar',`<div class="row" style="margin-bot
  <p class="muted mini" id="kaya_d">${esc(S.kurKaynak||'')}</p>
  <div class="tw"><table><tr><th>Döviz</th><th class="n">Alış</th><th class="n">Satış</th></tr>${['USD','EUR','GBP'].map(p=>`<tr><td>${SYM[p]} ${PBAD[p]}</td><td class="n"><input id="ka_${p}" inputmode="decimal" value="${fmtN((S.kurDetay[p]||{}).alis||S.kur[p],4)}" style="width:110px;text-align:right"></td><td class="n"><input id="ks_${p}" inputmode="decimal" value="${fmtN((S.kurDetay[p]||{}).satis||S.kur[p],4)}" style="width:110px;text-align:right"></td></tr>`).join('')}</table></div>
  <div class="f2"><div><label for="ay_kt">Hesaplarda kullanılacak</label><select id="ay_kt"><option value="satis" ${S.kurTur==='satis'?'selected':''}>Satış kuru</option><option value="alis" ${S.kurTur==='alis'?'selected':''}>Alış kuru</option></select></div><div><label for="ay_t">Kur tarihi</label><input type="date" id="ay_t" value="${S.kur.tarih}"></div></div>
- <p class="muted mini">Kurlar kaya.exchange sitesinden çekilir. "Güncelle" düğmesi Claude masaüstü uygulamasında çalışır; başka yerde kurları elle yazabilirsin. Her işlem ekranında kur kutusu ayrıca değiştirilebilir.</p></div>
+ <p class="muted mini">Kurlar her gün ilk açılışta Kaya Döviz'den kendiliğinden çekilir. "Güncelle" ile istediğin an yeniden çekebilirsin. Her işlem ekranında kur kutusu ayrıca değiştirilebilir.</p></div>
  <div class="card"><h3>Firma</h3><label for="ay_f">Mesajlarda görünen ad</label><input id="ay_f" value="${esc(S.ayar.firma)}"><label for="ay_v">Varsayılan vade (gün)</label><input id="ay_v" value="${S.ayar.vade}" inputmode="numeric"></div>
  <div class="card"><h3>Veri</h3><div class="row"><button class="btn l s dl" onclick="yedekAl()">Yedek al</button><label class="btn l s" style="margin:0;color:var(--text)">Yedek yükle<input type="file" accept=".json" hidden onchange="yedekYukle(this)"></label><button class="btn l s" onclick="sunucuYedekleri()">Sunucudaki günlük yedekler</button><button class="btn r s" onclick="sifirOnay()">Her şeyi sil</button></div><div id="ay_sil"></div></div>`,`<button class="btn l" onclick="kapat()">Vazgeç</button><button class="btn g" onclick="ayKaydet()">Kaydet</button>`);dlGoster()}
 let MCP=null;
@@ -1578,7 +1578,7 @@ function uzakUygula(kol,id,veri){const key=kol+'|'+id;if(BEKLE.has(key))return;c
 function uzakSil(kol,id){const key=kol+'|'+id;if(BEKLE.has(key)||!SNAP.has(key))return;SNAP.delete(key);if(kol==='_')delete S[id];else S[kol]=(S[kol]||[]).filter(x=>String(x.id)!==id);yenileSonra()}
 function yenileSonra(){clearTimeout(YEN_T);YEN_T=setTimeout(()=>{const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)&&(a.closest('#app')||a.closest('.ov'))){yenileSonra();return}
  render();STACK.forEach(m=>{if(m.yenile){const y=m.yenile();m.el.querySelector('.mb').innerHTML=y.html;const mf=m.el.querySelector('.mf');if(mf&&y.foot!==undefined){mf.innerHTML=y.foot;mf.hidden=!y.foot}}});dlGoster()},400)}
-function canli(){setTimeout(driveBasla,1500);sb.channel('ck_kayit').on('postgres_changes',{event:'*',schema:'public',table:'ck_kayit'},p=>{
+function canli(){setTimeout(driveBasla,1500);setTimeout(kurOto,800);setInterval(kurOto,3*3600e3);sb.channel('ck_kayit').on('postgres_changes',{event:'*',schema:'public',table:'ck_kayit'},p=>{
   if(p.eventType==='DELETE'){const o=p.old||{};if(o.kol!=null)uzakSil(o.kol,String(o.id))}else{const r=p.new;uzakUygula(r.kol,String(r.id),r.veri);if(!SON_GUNC||r.guncelleme>SON_GUNC)SON_GUNC=r.guncelleme}})
  .subscribe(st=>{if(st==='SUBSCRIBED')ckTazele(false)});
  setInterval(()=>ckTazele(false),60000);setInterval(()=>ckTazele(true),10*60000);
@@ -1622,7 +1622,12 @@ function yedekYukle(inp){const f=inp.files[0];if(!f)return;if(CK_ROL!=='patron')
 function sifirOnay(){if(CK_ROL!=='patron'){toast('Bunu sadece patron yapabilir');return}sifirOnay0()}
 function ornekYukle(){toast('Gerçek programda örnek veri yüklenmez')}
 async function dosyaVer(ad,data){try{const b=data instanceof Blob?data:new Blob([data],{type:/\.json$/.test(ad)?'application/json':/\.csv$/.test(ad)?'text/csv;charset=utf-8':'text/html;charset=utf-8'});const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=ad;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Dosya indirildi')}catch(e){toast('Dosya verilemedi')}}
-DL={save:async()=>{}};MCP={_u:'',callTool:async(sv,t,a)=>{if(t==='navigate'){MCP._u=a.url;return{}}const r=await fetch(MCP._u,{cache:'no-store'});return{payload:await r.text()}}};function dlGoster(){document.querySelectorAll('.dl').forEach(b=>b.hidden=false)}
+DL={save:async()=>{}};MCP={callTool:async(sv,t)=>{if(t==='navigate')return{};const r=await fetch('/api/kur',{cache:'no-store'});if(!r.ok)throw{code:'kaya'};return{payload:await r.text()}}};
+/* her gün ilk açılışta Kaya Döviz kurlarını kendiliğinden çek */
+async function kurOto(){if(!(CK_ROL==='patron'||CK_ROL==='ofis'))return;if(S.kur&&S.kur.tarih===bugun()&&S.kurOtoGun===bugun())return;
+ try{const r=await fetch('/api/kur',{cache:'no-store'});if(!r.ok)throw 0;const arr=await r.json(),map={'dolar.jpg':'USD','euro.jpg':'EUR','sterlin.jpg':'GBP'};let tarih='',n=0;
+  arr.forEach(x=>{const p=map[x.image];if(!p)return;const al=num(x.alis),st=num(x.satis);if(al>0&&st>0){S.kurDetay[p]={alis:al,satis:st};S.kur[p]=S.kurTur==='alis'?al:st;n++}if(x.tarih)tarih=x.tarih.replace('Son Yenileme :','').trim()});
+  if(!n)throw 0;S.kur.tarih=bugun();S.kurOtoGun=bugun();S.kurKaynak='Kaya Döviz · '+(tarih||new Date().toLocaleString('tr-TR'));kaydet();render();toast('Kaya Döviz kurları güncellendi')}catch(e){}}function dlGoster(){document.querySelectorAll('.dl').forEach(b=>b.hidden=false)}
 /* --- Google Drive yedeği (Apps Script'e gönderilir) --- */
 let SON_DEG='';const yedekci=()=>CK_ROL==='patron'||CK_ROL==='ofis';
 function driveBasla(){const m=location.hash.match(/^#drive=([^|]+)\|(.+)$/);
