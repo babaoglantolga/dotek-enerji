@@ -1929,7 +1929,7 @@ async function kPersonel(b,P){const e=S.pe;const x=e==='yeni'?{aktif:true}:P.fin
     ${fld('Ayakkabı',`<input name="ay" value="${esc(x.ayakkabi||'')}" placeholder="42, 43…">`)}${fld('Mont / yelek',`<input name="mt" value="${esc(x.mont||'')}">`)}</div>
     ${fld('Not',`<input name="nt" value="${esc(x.notu||'')}">`)}
     <label class="kp-sw"><input type="checkbox" name="ak" ${x.aktif?'checked':''}> Çalışıyor (listede görünsün)</label>
-    <div class="kp-eact"><button class="kp-btn">Kaydet</button><button type="button" class="kp-btn ghost" onclick="S.pe=null;render()">Vazgeç</button></div></div></form><datalist id="dpl">${['Elektrik','Jeneratör','Elektronik','Bobinaj','Otomasyon','Ofis'].map(d=>`<option value="${d}">`).join('')}</datalist>`:'';
+    <div class="kp-eact"><button class="kp-btn">Kaydet</button><button type="button" class="kp-btn ghost" onclick="S.pe=null;render()">Vazgeç</button>${e!=='yeni'?`<button type="button" class="kp-btn danger" onclick="kPrSil(${e})">Personeli sil</button>`:''}</div></div></form><datalist id="dpl">${['Elektrik','Jeneratör','Elektronik','Bobinaj','Otomasyon','Ofis'].map(d=>`<option value="${d}">`).join('')}</datalist>`:'';
   const A=P.filter(p=>p.aktif),Pasif=P.filter(p=>!p.aktif),q=(S.pq||'').toLocaleLowerCase('tr-TR');
   const eksik=A.filter(p=>!p.dogum_gunu||!p.tisort||!p.pantolon||!p.ayakkabi).length;
   const L=A.filter(p=>!q||(p.ad+' '+(p.departman||'')).toLocaleLowerCase('tr-TR').includes(q));
@@ -1943,6 +1943,8 @@ async function kPersonel(b,P){const e=S.pe;const x=e==='yeni'?{aktif:true}:P.fin
   const pq=$('#pq');if(pq)pq.oninput=()=>{S.pq=pq.value;const v=pq.value.toLocaleLowerCase('tr-TR');b.querySelectorAll('.kp-cards .kp-pc').forEach(c=>c.hidden=!!v&&!c.dataset.q.includes(v))};
   const f=$('#pf2');if(f)f.onsubmit=async ev=>{ev.preventDefault();const o={ad:f.ad.value.trim(),departman:f.dep.value.trim()||null,telefon:f.tel.value.trim()||null,dogum_gunu:f.dg.value||null,tisort:f.ts.value.trim()||null,pantolon:f.pn.value.trim()||null,ayakkabi:f.ay.value.trim()||null,mont:f.mt.value.trim()||null,notu:f.nt.value.trim()||null,aktif:f.ak.checked};
     const r=e==='yeni'?await sb.from('personel').insert(o):await sb.from('personel').update(o).eq('id',e);if(hata(r.error))return;S.pe=null;toast('Kaydedildi');render()}}
+async function kPrSil(id){const p=(await sb.from('personel').select('ad').eq('id',id).maybeSingle()).data;if(!confirm((p?p.ad+' ':'')+'silinsin mi? Bu kişinin geldi/gitti kayıtları da silinir. (Ayrıldıysa silmek yerine "Çalışıyor" işaretini kaldır.)'))return;
+  const {error}=await sb.from('personel').delete().eq('id',id);if(hata(error))return;S.pe=null;toast('Silindi');render()}
 // --- Kıyafet ---
 async function kKiyafet(b){const {data,error}=await sb.from('kiyafet').select('*').order('ad').order('beden');if(hata(error))return;const e=S.ye;const x=e==='yeni'?{adet:0}:(data.find(k=>k.id===e)||null);
   const top=data.reduce((s,k)=>s+(k.adet||0),0),biten=data.filter(k=>!k.adet).length,tur=new Set(data.map(k=>k.ad)).size;
