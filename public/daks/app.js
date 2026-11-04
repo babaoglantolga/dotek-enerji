@@ -241,14 +241,14 @@ if($('importBackup'))$('importBackup').addEventListener('change',async e=>{
   try{const data=JSON.parse(await file.text());if(!Array.isArray(data.cars)||!data.weekly||!Array.isArray(data.records)||!data.cars.every(car=>typeof car.plate==='string'&&typeof car.model==='string'&&Number.isInteger(car.year)&&data.weekly[car.plate]&&Number.isFinite(data.weekly[car.plate].km)))throw new Error('Invalid backup');let added=0;for(const car of data.cars){if(cars.some(c=>c.plate.replace(/\s+/g,'').toUpperCase()===car.plate.replace(/\s+/g,'').toUpperCase()))continue;cars.push(car);weekly[car.plate]=data.weekly[car.plate];added++;}for(const record of data.records){if(cars.some(c=>c.plate===record.plate)&&!records.some(r=>JSON.stringify(r)===JSON.stringify(record)))records.push(record);}if(!await persistData())return;render();$('backupStatus').textContent=added+' eksik araç geri yüklendi. Mevcut araçların üzerine yazılmadı.';}catch(error){$('backupStatus').textContent='Dosya geçerli bir DAKS yedeği değil; geri yüklenemedi.';}e.target.value='';
 });
 if($('fuelForm'))$('fuelForm').addEventListener('submit',async e=>{
- e.preventDefault();if($('role').value!=='driver')return;
+ e.preventDefault();if(!['admin','office','vehicle','driver'].includes($('role').value))return;
  const plate=$('fuelPlate').value;if(!visibleCars().some(car=>car.plate===plate))return;
  const litres=Number($('fuelLitres').value),amount=Number($('fuelAmount').value),km=Number($('fuelKm').value),fuelDate=$('fuelDate').value;
  const today=new Date();today.setHours(0,0,0,0);
  if(!(litres>0&&litres<=2000&&amount>0&&amount<=1000000&&Number.isInteger(km)&&km>=0&&km<=99999999)||!fuelDate||new Date(fuelDate+'T00:00:00')>today){$('fuelMessage').textContent='Miktar, tutar, kilometre ve alım tarihini kontrol edin.';return;}
- const entry={kind:'fuel',plate,litres,amount,km,fuelDate,receiptNo:$('fuelReceipt').value.trim(),unitPrice:$('fuelUnitPrice').value?Number($('fuelUnitPrice').value):null,fullTank:$('fuelFullTank').checked,fuelType:$('fuelType').value,station:$('fuelStation').value.trim(),driver:weekly[plate].driver,author:'driver',date:new Date().toLocaleString('tr-TR')};records.unshift(entry);
+ const entry={kind:'fuel',plate,litres,amount,km,fuelDate,receiptNo:$('fuelReceipt').value.trim(),unitPrice:$('fuelUnitPrice').value?Number($('fuelUnitPrice').value):null,fullTank:$('fuelFullTank').checked,fuelType:$('fuelType').value,station:$('fuelStation').value.trim(),driver:weekly[plate].driver,author:$('role').value,date:new Date().toLocaleString('tr-TR')};records.unshift(entry);
  if(!await persistData()){records.splice(records.indexOf(entry),1);$('fuelMessage').textContent='Yakıt alımı kaydedilemedi; formdaki bilgiler korunuyor.';return;}
- $('fuelForm').reset();renderFuel();renderFuelAudit();$('fuelMessage').textContent='Yakıt alımı veritabanına kaydedildi.';
+ $('fuelForm').reset();render();$('fuelMessage').textContent='Yakıt alımı veritabanına kaydedildi.';
 });
 loadDatabase();
 updateBackupTime();

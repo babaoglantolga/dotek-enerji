@@ -4,6 +4,8 @@
   if (!nav) return;
   const role = document.getElementById('role');
   const sections = [...document.querySelectorAll('[data-workspace]')];
+  const fuelEntry = document.getElementById('fuelForm').closest('section');
+  document.getElementById('monthlyRows').closest('section').before(fuelEntry);
   const labels = {
     vehicles: ['Araç bilgileri', 'Araç listesi, belgeler ve güncel kilometre bilgileri.'],
     fuel: ['Yakıt kayıtları', 'Aylık yakıt özeti, alım kayıtları ve fiş / kart eşleştirmesi.'],
@@ -51,6 +53,47 @@
   new MutationObserver(updateCount).observe(document.getElementById('carCount'), { childList: true, characterData: true, subtree: true });
   document.getElementById('workspaceTitle').tabIndex = -1;
   role.addEventListener('change', refresh);
+  // Only the six historical entries identified by the owner are eligible.
+  const oldFuelKeys = new Set([
+    'RK024|2026-10-02|50|5000|128000',
+    'RK024|2026-10-02|25|1500|125500',
+    'PF853|2026-10-01|20|1200|125000',
+    'PF853|2026-09-30|50|800|145700',
+    'PF853|2026-09-29|20|500|145560',
+    'PF853|2026-09-27|450|1849.99|125500'
+  ]);
+  const isOldFuel = r => r.kind === 'fuel' && oldFuelKeys.has([r.plate.replace(/\s/g, '').toUpperCase(),r.fuelDate,Number(r.litres),Number(r.amount),Number(r.km)].join('|'));
+  const clearButton = document.getElementById('clearOldFuel');
+  function updateClearButton() {
+    const count = records.filter(isOldFuel).length;
+    clearButton.hidden = !isPrivileged() || !count;
+    clearButton.textContent = 'Eski yakıt kayıtlarını temizle (' + count + ' kayıt · Eylül / Ekim 2026)';
+  }
+  clearButton.addEventListener('click', async () => {
+    if (!isPrivileged() || savePending) return;
+    const previous = records.slice();
+    const count = previous.filter(isOldFuel).length;
+    if (!count) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify({cars,weekly,records,revision:databaseRevision},null,2)],{type:'application/json'}));
+    const download = document.createElement('a');
+    download.href = url; download.download = 'dotek-yakit-temizlik-oncesi-' + Date.now() + '.json';
+    download.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    clearButton.disabled = true;
+    records.splice(0, records.length, ...previous.filter(r => !isOldFuel(r)));
+    if (await persistData()) {
+      render();
+      document.getElementById('clearFuelStatus').textContent = count + ' eski yakıt kaydı silindi. Silme öncesi yedek indirildi; araç bilgileri korundu.';
+    } else {
+      records.splice(0, records.length, ...previous);
+      render();
+      document.getElementById('clearFuelStatus').textContent = 'Kayıtlar silinemedi; mevcut bilgiler korundu.';
+    }
+    clearButton.disabled = false;
+    updateClearButton();
+  });
+  new MutationObserver(updateClearButton).observe(document.getElementById('fuelRecords'), { childList:true });
+  role.addEventListener('change', updateClearButton);
+  updateClearButton();
   // Keep the monthly overview compact; calculations remain available on demand.
   function compactMonthlyCards() {
     for (const card of document.querySelectorAll('#monthlyRows .monthly-car-card')) {
