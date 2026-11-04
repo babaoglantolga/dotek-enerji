@@ -7,6 +7,9 @@
 .daks-panel .brand-name{font-size:12px;margin-top:5px}
 .daks-panel header>div:not(.brand){position:relative;z-index:1}
 .daks-panel header #dkul{flex-basis:100%;justify-content:flex-end;margin:0}
+.daks-panel header #dkul{width:auto;max-width:100%;flex-shrink:0;gap:12px;flex-wrap:wrap}
+.daks-panel header #dkul>span{flex:0 1 auto;white-space:normal}
+.daks-panel header #dkul>button{width:auto;min-width:64px;flex:0 0 auto;align-self:center;padding:7px 12px;white-space:nowrap;box-shadow:none}
 .daks-panel main{padding-top:18px}
 .daks-panel .breadcrumb{margin:18px 0;font-size:13px}
 .workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:25px 0 20px}
