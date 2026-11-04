@@ -14,14 +14,22 @@ window.servisCiz=function(){if(!$('svcRows'))return;
  const per={};L.forEach(({r})=>{per[r.plate]=(per[r.plate]||0)+Number(r.amount||0)});const top=L.reduce((s,{r})=>s+Number(r.amount||0),0),ftop=fuel.reduce((s,r)=>s+Number(r.amount||0),0);
  $('svcTotals').textContent=L.length||fuel.length?'Bu ay servis/gider: '+tl(top)+' · yakıt: '+tl(ftop)+' · toplam araç gideri: '+tl(top+ftop)+(Object.keys(per).length?' · '+Object.entries(per).map(([p,v])=>p+' '+tl(v)).join(', '):''):'';
  $('svcCards').replaceChildren();
- for(const c of cs){const k=el('div','card');k.style.padding='14px';k.append(el('strong',null,c.plate+' · '+c.model));
-  const ins=c.insurance?new Date(c.insurance+'T00:00:00'):null,kalan=ins?Math.ceil((ins-new Date())/864e5):null;
-  k.append(el('div','cell-sub','Lastik ölçüsü: '+(c.tire||'girilmedi')));
-  const s=el('div','cell-sub','Sigorta: '+(ins?ins.toLocaleDateString('tr-TR')+(kalan<0?' · SÜRESİ GEÇTİ':kalan<=30?' · '+kalan+' gün kaldı':''):'girilmedi'));if(kalan!=null&&kalan<=30)s.style.color='#DC2626';k.append(s);
+ const ayAd=new Date(ay+'-01T00:00:00').toLocaleDateString('tr-TR',{month:'long',year:'numeric'}),tarihY=t=>t?new Date(t+'T00:00:00').toLocaleDateString('tr-TR'):'Girilmedi',kalanG=t=>t?Math.ceil((new Date(t+'T00:00:00')-new Date())/864e5):null;
+ const durumY=t=>{const k=kalanG(t);if(k==null)return['Girilmedi',''];return[tarihY(t)+(k<0?' · geçti':k<=30?' · '+k+' gün':''),k<0?'#F87171':k<=30?'#FBBF24':'']};
+ for(const c of cs){const k=el('article','monthly-car-card');k.append(el('h3',null,c.plate),el('p',null,c.model+' · '+ayAd));
+  const sv=L.filter(x=>x.r.plate===c.plate).reduce((s,x)=>s+Number(x.r.amount||0),0),fv=fuel.filter(r=>r.plate===c.plate).reduce((s,r)=>s+Number(r.amount||0),0);
+  const satir=(lab,val,renk)=>{const m=el('div','monthly-metric');const v=el('strong',null,val);if(renk)v.style.color=renk;v.style.textAlign='right';m.append(el('span',null,lab),v);k.append(m)};
+  satir('Lastik ölçüsü',c.tire||'Girilmedi');
+  {const [v,r]=durumY(c.insurance);satir('Sigorta',v,r)}
+  {const [v,r]=durumY(c.road);satir('Seyrüsefer',v,r)}
+  {const [v,r]=durumY(c.inspection);satir('Muayene',v,r)}
+  satir('Servis / gider',tl(sv));satir('Yakıt',tl(fv));satir('Toplam araç gideri',tl(sv+fv));
+  satir('Son kilometre',weekly[c.plate]&&weekly[c.plate].km!=null?Number(weekly[c.plate].km).toLocaleString('tr-TR')+' KM':'Girilmedi');
   const inv=(c.inventory||'').split('\n').map(x=>x.trim()).filter(Boolean);
-  k.append(el('div','cell-sub','Araçtaki malzemeler'+(inv.length?' ('+inv.length+')':': girilmedi')));
-  if(inv.length){const ul=el('ul');ul.style.margin='4px 0 0';ul.style.paddingLeft='18px';inv.forEach(x=>ul.append(el('li',null,x)));k.append(ul)}
-  if(isPrivileged()){const b=el('button','secondary','Düzenle');b.type='button';b.style.width='auto';b.style.marginTop='8px';b.onclick=()=>openVehicleEditor(c);k.append(b)}
+  satir('Araçtaki malzeme',inv.length?inv.length+' kalem':'Girilmedi');
+  if(inv.length){const ul=el('ul');ul.style.cssText='margin:6px 0 0;padding-left:18px;font-size:13px;color:#cfe0ee;line-height:1.6';inv.forEach(x=>ul.append(el('li',null,x)));k.append(ul)}
+  k.append(el('small',null,'Gider ve yakıt '+ayAd+' içindir. Tarihi 30 gün kalan sarı, geçen kırmızı görünür.'));
+  if(isPrivileged()){const b=el('button','secondary','Bilgileri düzenle');b.type='button';b.style.cssText='width:100%;margin-top:14px';b.onclick=()=>openVehicleEditor(c);k.append(b)}
   $('svcCards').append(k)}
 };
 if($('svcMonth'))$('svcMonth').addEventListener('change',servisCiz);
