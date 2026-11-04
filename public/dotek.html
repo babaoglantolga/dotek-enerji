@@ -404,7 +404,7 @@ function bTurAd(t){const P=me.rol==='patron',ana=P?'Ana Sayfa':me.rol==='ds'?'Bu
   return({mesaj:'💬 Mesaj · Mesajlar sekmesi',ajanda_not:'📝 İş hakkında geri bildirim · '+ana,onay:'✅ Onay bekleyen iş · Ana Sayfa',fatura:'🧾 Fatura · Fatura sekmesi',teklif:'📄 Teklif isteği · Teklif sekmesi',
     teklif_hazir:'📄 Ofis teklifi hazırlıyor · Ana Sayfa',teklif_acildi:'👀 Ofis teklif isteğini açtı · Ana Sayfa',teklif_gonderildi:'📤 Teklif müşteriye gönderildi · Ana Sayfa',teklif_kabul:'📄 Teklif kabul edildi · Projeler',teklif_red:'📄 Teklif reddedildi · Ana Sayfa',gorev:'🛠️ Yeni görev · '+(me.rol==='ds'?'Görevlerim':ana),ajanda:'📌 Verilen iş · '+ana,
     ajanda_bitti:'📌 Verilen iş bitti · '+ana,ajanda_plan:'📋 İş planlandı · '+ana,bitti:'✔️ Görev bitti · Projeler',takip:'📁 Proje · Projeler',iade:'↩ İşveren iade etti · Projeler',onaylandi:'✅ İşveren onayladı · Projeler',
-    kesildi:'🧾 Fatura kesildi · Ana Sayfa',tahsilat:'📞 Ödeme takibi notu · '+(P?'Ana Sayfa':'Görevlerim'),is_bitti:'✔️ İş bitti · Biten İş',proforma:'📄 Proforma · '+(ofisMi()?'Fatura sekmesi':'Projeler'),odeme:'💰 Ödeme · '+(P?'Ana Sayfa':'Projeler'),rapor:'📊 Aylık rapor · Departman',kayit:'👤 Yeni personel · Ekip',yoklama:'🕘 Personel geldi / gitti · Koordinatör'})[t]||'🔔 Bildirim'}
+    kesildi:'🧾 Fatura kesildi · Ana Sayfa',tahsilat:'📞 Ödeme takibi notu · '+(P?'Ana Sayfa':'Görevlerim'),is_bitti:'✔️ İş bitti · Biten İş',proforma:'📄 Proforma · '+(ofisMi()?'Fatura sekmesi':'Projeler'),odeme:'💰 Ödeme · '+(P?'Ana Sayfa':'Projeler'),rapor:'📊 Aylık rapor · Departman',kayit:'👤 Yeni personel · Ekip',yoklama:'🕘 Personel geldi / gitti · Koordinatör',ekip_is:'👷 Ekip işi (Esat / İbo) · Projeler',ekip:'👷 Ekip hareketi (Esat / İbo) · Günlük'})[t]||'🔔 Bildirim'}
 async function vBildirim(m){
   const {data,error}=await sb.from('bildirimler').select('*').order('tarih',{ascending:false});if(hata(error))return;
   const acik=data.filter(x=>!x.islem_yapildi),kapali=data.filter(x=>x.islem_yapildi);
@@ -418,6 +418,7 @@ async function vBildirim(m){
 function bildirimAc(pid,kanal,tur,aj){
   if(aj)return ajAc(aj);
   if(kanal!==null)return mesajAc(kanal);
+  if(tur==='ekip')return go('gunluk');
   if(tur==='yoklama'){S.kt='yoklama';return go(koordMi()?'koord':'yoklama')}
   if(tur==='fatura')return go('fatura');
   if(tur==='tahsilat'){go(me.rol==='patron'||!ofisMi()?(me.rol==='patron'?'onay':'gorevlerim'):'fatura');let n=0;const t=setInterval(()=>{const h=document.getElementById('odemeTakip');if(h||++n>20){clearInterval(t);const k=document.getElementById('otk'+pid);if(k&&k.hidden){k.hidden=false;k.scrollIntoView({behavior:'smooth'})}else if(h)h.scrollIntoView({behavior:'smooth'})}},150);return}
