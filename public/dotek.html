@@ -127,6 +127,7 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .kp-edit{padding:4px 16px 14px 52px;background:#F8FAFF;border-top:1px dashed #DCE3EE}.kp-erow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}@media(max-width:640px){.kp-erow{grid-template-columns:1fr}.kp-edit{padding-left:16px}}
 .kp-eact{display:flex;gap:8px;margin-top:10px}
 .kp-yokbtn{width:100%;margin-top:10px;display:flex;align-items:center;gap:12px;text-align:left;font:inherit;color:#fff;border:0;border-radius:16px;padding:14px 16px;cursor:pointer;background:linear-gradient(120deg,#38BDD8,#3B82F6);box-shadow:0 8px 22px rgba(59,130,246,.22)}.kp-yokbtn span{flex:1}.kp-yokbtn b{display:block;font-size:16px}.kp-yokbtn small{opacity:.9;font-size:13px}.kp-yokbtn i{font-style:normal;font-size:24px;font-weight:700}
+.kp-saat{font-weight:800;font-size:13px;color:#1F2937;min-width:42px;padding-top:7px;font-variant-numeric:tabular-nums}
 .kp-empty{background:#fff;border:1px dashed #CBD5E1;border-radius:16px;padding:34px;text-align:center;color:#10B981;display:flex;flex-direction:column;align-items:center;gap:6px}.kp-empty b{color:#1F2937;font-size:16px}.kp-empty span{color:#6B7280;font-size:14px}
 .kp-avl{border-radius:50%;background:linear-gradient(135deg,#38BDD8,#3B82F6);color:#fff;font-weight:800;display:grid;place-items:center;flex:none;letter-spacing:.02em}
 .kp-prow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid #F1F3F7}.kp-grp>header+.kp-prow{border-top:0}.kp-prow:hover{background:#F8FAFF}
@@ -1810,13 +1811,14 @@ const KIK={
  tamam:'<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
  gomlek:'<path d="M8 3l4 2 4-2 5 4-3 3-2-1v12H8V9L6 10 3 7z"/>',
  takvim:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
+ kalem:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
  tekrar:'<path d="M4 12a8 8 0 0 1 14-5l2 2M20 12a8 8 0 0 1-14 5l-2-2"/><path d="M20 4v5h-5M4 20v-5h5"/>'};
 const kSvg=(k,s=18)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${KIK[k]||''}</svg>`;
 const KRENK={'Araç':['arac','#3B82F6','#EEF4FF'],'Depo':['kutu','#B45309','#FEF3C7'],'Malzeme':['paket','#0E9BB8','#E0F7FB'],'Üretim':['uretim','#047857','#D1FAE5'],'Personel':['kisi','#3B82F6','#EEF4FF'],'Görüşme':['konus','#B45309','#FEF3C7'],'Satın alma':['sepet','#047857','#D1FAE5'],'Diğer':['nokta','#6B7280','#F3F4F6']};
 const kRenk=k=>KRENK[k]||KRENK['Diğer'];
 async function vKoord(m){
   const st=S.kt||'isler',now=new Date();
-  const sekme=[['isler','liste','İşler'],['yoklama','saat','Kim geldi / gitti'],['personel','kisi','Personel'],['kiyafet','gomlek','Kıyafet']];
+  const sekme=[['isler','liste','İşler'],['defter','kalem','Dükkân defteri'],['yoklama','saat','Kim geldi / gitti'],['personel','kisi','Personel'],['kiyafet','gomlek','Kıyafet']];
   const ust=`<div class="kp"><div class="kp-hero"><div><div class="kp-ey">DOTEK ENERJİ · KOORDİNASYON</div><h1>Koordinatör Paneli</h1><p>${esc(pname(KOORD[0]))} · ${now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></div>
    <div class="kp-links"><button onclick="go('gunluk')">${kSvg('takvim',16)} Günlük panel</button><a href="/daks/daks.html" target="_blank" rel="noopener">${kSvg('arac',16)} Araçlar ↗</a><a href="/cari" target="_blank" rel="noopener">${kSvg('paket',16)} Cari ve Kasa ↗</a></div></div>
    <div class="kp-seg" role="tablist">${sekme.map(([k,ik,a])=>`<button role="tab" aria-selected="${st===k}" class="${st===k?'on':''}" onclick="S.kt='${k}';render()">${kSvg(ik,16)} ${a}</button>`).join('')}</div></div>`;
@@ -1825,7 +1827,7 @@ async function vKoord(m){
   if(hata(ps.error))return;const P=ps.data||[];
   m.innerHTML=ust+dgSatir(dgYakin(P,14))+'<div id="kb" class="kp"><p class="muted">Yükleniyor…</p></div>';
   const b=$('#kb');
-  if(st==='isler')return kIsler(b,P);if(st==='yoklama')return kYoklama(b,P);if(st==='personel')return kPersonel(b,P);return kKiyafet(b)
+  if(st==='isler')return kIsler(b,P);if(st==='defter')return kDefter(b,P);if(st==='yoklama')return kYoklama(b,P);if(st==='personel')return kPersonel(b,P);return kKiyafet(b)
 }
 async function vYoklamaS(m){
   const ps=await sb.from('personel').select('*').order('ad');if(hata(ps.error))return;
@@ -1952,6 +1954,47 @@ async function kPersonel(b,P){const e=S.pe;const x=e==='yeni'?{aktif:true}:P.fin
     const r=e==='yeni'?await sb.from('personel').insert(o):await sb.from('personel').update(o).eq('id',e);if(hata(r.error))return;S.pe=null;toast('Kaydedildi');render()}}
 async function kPrSil(id){const p=(await sb.from('personel').select('ad').eq('id',id).maybeSingle()).data;if(!confirm((p?p.ad+' ':'')+'silinsin mi? Bu kişinin geldi/gitti kayıtları da silinir. (Ayrıldıysa silmek yerine "Çalışıyor" işaretini kaldır.)'))return;
   const {error}=await sb.from('personel').delete().eq('id',id);if(hata(error))return;S.pe=null;toast('Silindi');render()}
+// --- Dükkân defteri: kim geldi ne getirdi, kim ne yapıyor ---
+const KDT={gelen:['Geldi / getirdi','kutu','#0E9BB8','#E0F7FB','Örn. Ahmet Bey dalgıç pompa getirdi'],is:['Yapılan iş','uretim','#047857','#D1FAE5','Örn. Motor temizliyor, pano yapıyor'],giden:['Gitti / teslim','tamam','#3B82F6','#EEF4FF','Örn. Pompa müşteriye teslim edildi'],not:['Not','konus','#B45309','#FEF3C7','Örn. Depoya kablo geldi']};
+const KBOL=['Elektrik','Jeneratör','Elektronik','Bobinaj','Otomasyon','Ofis'];
+const simdiS=()=>{const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')};
+async function kDefter(b,P){
+  const g=S.dg||bugunS(),d=new Date(g+'T12:00:00'),bugun=g===bugunS(),pzt=gunEk(g,-((d.getDay()+6)%7)),paz=gunEk(pzt,6),tur=S.dt||'gelen';
+  const [r,h]=await Promise.all([sb.from('koord_kayit').select('*').eq('gun',g).order('saat',{ascending:false}).order('id',{ascending:false}),sb.from('koord_kayit').select('*').gte('gun',pzt).lte('gun',paz)]);
+  if(r.error&&/koord_kayit|schema cache|does not exist/i.test(r.error.message)){b.innerHTML='<div class="kp-empty"><b>Dükkân defteri kuruluyor</b><span>Sunucu tarafı kurulunca burası açılır.</span></div>';return}
+  if(hata(r.error)||hata(h.error))return;const L=r.data||[],H=h.data||[];
+  const A=P.filter(p=>p.aktif),say=t=>L.filter(x=>x.tur===t).length,pano=x=>/pano/i.test(x.metin)?(Number(x.adet)||1):0;
+  const kpi=(ik,c,bg,v,t)=>`<div class="kp-kpi"><div class="ic" style="background:${bg};color:${c}">${kSvg(ik,20)}</div><div><b>${v}</b><span>${t}</span></div></div>`;
+  const kisiler=[...new Set(H.filter(x=>x.tur==='is'&&x.kisi).map(x=>x.kisi))];
+  const hafta=kisiler.map(k=>{const l=H.filter(x=>x.tur==='is'&&x.kisi===k);return{k,n:l.length,pano:l.reduce((s,x)=>s+pano(x),0),son:l.sort((a,b)=>(b.gun+b.saat).localeCompare(a.gun+a.saat))[0]}}).sort((a,b)=>b.n-a.n);
+  const satir=x=>{const [ad,ik,c,bg]=KDT[x.tur]||KDT.not;return`<div class="kp-task">
+    <div class="kp-saat">${saatF(x.saat)||'—'}</div><span class="ic" style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:${bg};color:${c};flex:none">${kSvg(ik,16)}</span>
+    <div class="kp-tb" style="cursor:default"><div class="kp-title">${x.kisi?`<b>${esc(x.kisi)}</b> · `:''}${esc(x.metin)}</div>
+    <div class="kp-meta"><span class="kp-pill" style="background:${bg};color:${c}">${ad}</span>${x.bolum?kDepPill(x.bolum):''}${x.adet?`<span class="kp-pill blue">${esc(String(x.adet))} adet</span>`:''}</div></div>
+    <button class="kp-x" aria-label="Sil" title="Sil" onclick="kDfSil(${x.id})">×</button></div>`};
+  b.innerHTML=`<div class="kp-date"><button class="kp-nav" aria-label="Önceki gün" onclick="S.dg=gunEk('${g}',-1);render()">‹</button>
+     <div class="kp-dt">${kSvg('takvim',18)} <b>${d.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'})}</b>${bugun?'<span class="kp-pill blue">Bugün</span>':`<button class="kp-btn ghost sm" onclick="S.dg=null;render()">Bugüne dön</button>`}</div>
+     <button class="kp-nav" aria-label="Sonraki gün" onclick="S.dg=gunEk('${g}',1);render()">›</button></div>
+   <form id="dfk" class="kp-grp kp-form" style="margin-bottom:14px"><header><span class="ic" style="background:#EEF4FF;color:#3B82F6">${kSvg('liste',17)}</span><b>Deftere yaz</b><span class="kp-cnt">${bugun?'saat şimdi':'geçmiş güne yazılıyor'}</span></header>
+    <div class="kp-fb"><div class="kp-seg sm" style="margin-bottom:12px;flex-wrap:wrap">${Object.entries(KDT).map(([k,[a,ik]])=>`<button type="button" class="${tur===k?'on':''}" onclick="S.dt='${k}';kDtSec('${k}')">${kSvg(ik,15)} ${a}</button>`).join('')}</div>
+    <div class="kp-fg four"><div class="kp-f"><label>Kim</label><input name="k" list="dfp" placeholder="${tur==='gelen'?'Gelen kişi':'Personel'}" autocomplete="off"></div>
+     <div class="kp-f"><label>Bölüm</label><select name="bl"><option value="">—</option>${KBOL.map(x=>`<option>${x}</option>`).join('')}</select></div>
+     <div class="kp-f"><label>Saat</label><input name="s" type="time" value="${bugun?simdiS():''}"></div>
+     <div class="kp-f"><label>Adet</label><input name="a" type="number" min="0" step="1" placeholder="—"></div></div>
+    <div class="kp-addrow" style="border:1px solid var(--line);border-radius:12px;padding:4px 4px 4px 12px"><input name="m" required autocomplete="off" placeholder="${KDT[tur][4]}"><button class="kp-btn">Yaz</button></div></div>
+    <datalist id="dfp">${A.map(p=>`<option value="${esc(p.ad)}">`).join('')}</datalist></form>
+   <div class="kp-kpis">${kpi('kutu','#0E9BB8','#E0F7FB',say('gelen'),'Gelen / getirilen')}${kpi('uretim','#047857','#D1FAE5',say('is'),'Yapılan iş kaydı')}${kpi('tamam','#3B82F6','#EEF4FF',say('giden'),'Giden / teslim')}${kpi('paket','#B45309','#FEF3C7',L.reduce((s,x)=>s+pano(x),0),'Pano (bugün)')}${kpi('takvim','#6B7280','#F3F4F6',H.reduce((s,x)=>s+pano(x),0),'Pano (bu hafta)')}</div>
+   <section class="kp-grp"><header><span class="ic" style="background:#EEF4FF;color:#3B82F6">${kSvg('saat',17)}</span><b>${bugun?'Bugün':'O gün'} dükkânda</b><span class="kp-cnt">${L.length} kayıt</span></header>
+    ${L.length?L.map(satir).join(''):'<div class="kp-empty" style="border:0;border-radius:0"><b>Henüz kayıt yok</b><span>Gördüğünü yukarıdan yaz: kim geldi, ne getirdi, kim ne yapıyor.</span></div>'}</section>
+   ${hafta.length?`<section class="kp-grp"><header><span class="ic" style="background:#D1FAE5;color:#047857">${kSvg('kisi',17)}</span><b>Bu hafta kim ne yaptı</b><span class="kp-cnt">${tarih(pzt)} – ${tarih(paz)}</span></header>
+    <div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Personel</th><th class="n">İş kaydı</th><th class="n">Pano</th><th>Son yazılan</th></tr></thead><tbody>
+    ${hafta.map(x=>`<tr><td><div class="kp-tn">${kAv(x.k,26)}<b>${esc(x.k)}</b></div></td><td class="n"><b>${x.n}</b></td><td class="n">${x.pano||'—'}</td><td class="muted">${esc(x.son.metin)}</td></tr>`).join('')}</tbody></table></div></section>`:''}`;
+  const f=$('#dfk');f.onsubmit=async ev=>{ev.preventDefault();const o={gun:g,saat:f.s.value||(bugun?simdiS():null),tur:S.dt||'gelen',kisi:f.k.value.trim()||null,bolum:f.bl.value||null,metin:f.m.value.trim(),adet:f.a.value===''?null:Number(f.a.value)};
+    if(!o.metin)return;const pr=A.find(p=>p.ad===o.kisi);if(pr){o.personel_id=pr.id;if(!o.bolum)o.bolum=pr.departman||null}
+    const {error}=await sb.from('koord_kayit').insert(o);if(hata(error))return;toast('Deftere yazıldı');render()};
+}
+function kDtSec(k){const f=$('#dfk');if(!f)return;f.querySelectorAll('.kp-seg button').forEach((x,i)=>x.classList.toggle('on',Object.keys(KDT)[i]===k));f.m.placeholder=KDT[k][4];f.k.placeholder=k==='gelen'?'Gelen kişi':'Personel';f.m.focus()}
+async function kDfSil(id){if(!confirm('Bu kayıt silinsin mi?'))return;const {error}=await sb.from('koord_kayit').delete().eq('id',id);if(hata(error))return;toast('Silindi');render()}
 // --- Kıyafet ---
 async function kKiyafet(b){const {data,error}=await sb.from('kiyafet').select('*').order('ad').order('beden');if(hata(error))return;const e=S.ye;const x=e==='yeni'?{adet:0}:(data.find(k=>k.id===e)||null);
   const top=data.reduce((s,k)=>s+(k.adet||0),0),biten=data.filter(k=>!k.adet).length,tur=new Set(data.map(k=>k.ad)).size;
