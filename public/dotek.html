@@ -4,7 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Dotek Saha Yönetim Sistemi</title>
-<meta name="theme-color" content="#0D1526">
+<meta name="theme-color" content="#3B82F6">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">
 <link rel="manifest" href="/dotek.webmanifest?v=3">
 <link rel="icon" type="image/png" sizes="48x48" href="/ikon/favicon-48.png?v=3">
 <link rel="apple-touch-icon" href="/ikon/apple-touch-icon.png?v=3">
@@ -77,6 +79,44 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .chat{display:flex;flex-direction:column;gap:8px}
 .msg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:8px 10px;max-width:85%;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere}
 .msg.ben{align-self:flex-end;background:#e8f0fe;border-color:#c9dafb}
+
+/* ===== Tema: turkuaz-mavi ===== */
+:root{--navy:#1F2937;--blue:#3B82F6;--turk:#38BDD8;--grad:linear-gradient(90deg,#38BDD8,#3B82F6);--bg:#F2F3F5;--kart:#F8FAFF;--yuzey:#FFFFFF;--soft:#EEF4FF;--text:#1F2937;--muted:#6B7280;--line:#E5E7EB;
+ --green:#047857;--yesil:#10B981;--amber:#B45309;--amber-bg:#FEF3C7;--red:#DC2626;--kirmizi:#EF4444}
+body{font-family:"Nunito Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+header.top{background:var(--yuzey);color:var(--text);border-bottom:1px solid var(--line);box-shadow:0 1px 4px rgba(31,41,55,.06)}
+header.top>div:first-child>b{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800;font-size:16px}
+header.top>div:first-child>div{color:var(--muted);opacity:1!important}
+header.top select{background:var(--soft);border-color:var(--line);color:var(--text)}
+.brand{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.card,.stat,.kare,.msg,.cal button,.ay button,.tabs button{background:var(--kart);border-color:var(--line)}
+.card{border-radius:14px;box-shadow:0 1px 2px rgba(31,41,55,.04)}
+.stat b{color:var(--text)}
+input,select,textarea{border-color:var(--line);background:var(--yuzey)}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--blue);outline-offset:0;border-color:var(--blue)}
+.btn{background:var(--blue);color:#FFFFFF}
+.btn.g{background:var(--yesil)}.btn.r{background:var(--kirmizi)}.btn.l{background:var(--soft);color:var(--text)}
+.zil{background:var(--soft)!important;color:var(--blue)!important}
+.rozet{background:var(--kirmizi);border-color:var(--yuzey)}
+.tabs button.on{background:var(--grad);color:#FFFFFF;border-color:transparent}
+.cal button.bug,.ay button.bug{border-color:var(--blue)}
+.cal button.sec,.ay button.sec{background:var(--grad);border-color:transparent}
+.cal .nk i,.ay .nk i,.gunis .ic{background:var(--blue)}.cal .nk i.t,.ay .nk i.t,.gunis .ic.t{background:var(--yesil)}.gunis .ic.g{background:var(--kirmizi)}
+nav.bottom{background:var(--yuzey);border-top-color:var(--line)}
+nav.bottom button.on{background:var(--soft);color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
+.nb{background:var(--kirmizi)}.nb.g{background:var(--grad);color:#FFFFFF}
+.ilerle span{background:var(--yesil)}
+.big{color:var(--green)}
+.c-acik,.c-bakiyor{background:var(--soft);color:#1D4ED8}.c-devam,.c-basladi{background:var(--amber-bg);color:var(--amber)}
+.c-bitti{background:#D1FAE5;color:var(--green)}.c-onaylandi{background:var(--yesil);color:#FFFFFF}
+.c-iade{background:#FEE2E2;color:var(--red)}.c-bekliyor{background:#F3F4F6;color:var(--muted)}
+.c-planlandi,.c-patronda{background:var(--soft);color:var(--blue)}
+#bbanner{background:#FEE2E2;color:var(--red);border-color:#FECACA}
+@keyframes nabiz{50%{background:#FECACA}}
+.bld.yeni b{color:var(--red)}.bld.yeni .nok{background:var(--kirmizi)}
+.msg.ben{background:var(--soft);border-color:#C7DBFE}
+#toast{background:var(--text)}
+a{color:var(--blue)}
 </style>
 </head>
 <body>
@@ -1634,7 +1674,7 @@ async function vGunluk(m){
     ${yazan.length>yazdi.length?`<div class="muted" style="margin-top:8px">${bugun?'Henüz yazmayan':'Yazmayan'}: ${yazan.filter(p=>!yazdi.includes(p)).map(p=>esc(p.ad.split(' ')[0])).join(', ')}</div>`:''}</div>`;
   m.innerHTML=`<div class="row sp" style="flex-wrap:nowrap;gap:6px"><button class="btn s l" onclick="pgGun(-1)" aria-label="Önceki gün">‹</button><div style="text-align:center;min-width:0"><h2 style="margin:0">📋 Dükkân günlük kontrol</h2><div class="muted">${gunAd}${bugun?' · bugün':''}</div></div><button class="btn s l" onclick="pgGun(1)" aria-label="Sonraki gün">›</button></div>
    ${bugun?'':`<button class="btn s l w" style="margin-top:6px" onclick="S.pg=null;render()">Bugüne dön</button>`}
-   <div class="row" style="margin-top:10px"><div class="stat"><span class="muted">Açık iş</span><b>${acikG.length}</b></div><div class="stat"><span class="muted">Şu an çalışılan</span><b style="color:#a35f00">${calisan.length}</b></div><div class="stat"><span class="muted">${bugun?'Bugün biten':'Biten'}</span><b style="color:var(--green)">${bitenG.length}</b></div><div class="stat"><span class="muted">Geciken</span><b style="color:${gec.length?'var(--red)':'inherit'}">${gec.length}</b></div></div>
+   <div class="row" style="margin-top:10px"><div class="stat"><span class="muted">Açık iş</span><b>${acikG.length}</b></div><div class="stat"><span class="muted">Şu an çalışılan</span><b style="color:var(--amber)">${calisan.length}</b></div><div class="stat"><span class="muted">${bugun?'Bugün biten':'Biten'}</span><b style="color:var(--green)">${bitenG.length}</b></div><div class="stat"><span class="muted">Geciken</span><b style="color:${gec.length?'var(--red)':'inherit'}">${gec.length}</b></div></div>
    <div class="row"><div class="stat click" onclick="$('#gk').scrollIntoView({behavior:'smooth'})"><span class="muted">Kontrol listesi</span><b style="color:${tamamM===M.length?'var(--green)':'var(--red)'}">${tamamM}/${M.length}</b></div><div class="stat click" onclick="$('#gr').scrollIntoView({behavior:'smooth'})"><span class="muted">Gün sonu raporu</span><b style="color:${yazdi.length===yazan.length?'var(--green)':'inherit'}">${yazdi.length}/${yazan.length}</b></div><div class="stat"><span class="muted">Planlanmamış iş</span><b style="color:${PY.length?'var(--red)':'inherit'}">${PY.length}</b></div></div>
    <h2 style="margin-top:16px">🛠️ Bugünkü işler</h2>
    ${sahaD.map(depKart).join('')}
