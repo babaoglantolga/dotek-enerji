@@ -219,9 +219,9 @@ async function cikis(){try{if(me)await sb.rpc('oturum_kaydet',{tur:'cikis',cihaz
 
 // ---------------- Kabuk ----------------
 function tabsFor(){
-  if(me.rol==='patron')return[['onay','Ana Sayfa'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
-  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
-  if(me.rol==='ds')return[['planlama','Bugün'],['projeler','Projeler'],['biten','Biten İş'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
+  if(me.rol==='patron')return[['onay','Ana Sayfa'],['gunluk','Günlük'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
+  if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['gunluk','Günlük'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['gunluk','Günlük'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
+  if(me.rol==='ds')return[['planlama','Bugün'],['gunluk','Günlük'],['projeler','Projeler'],['biten','Biten İş'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
@@ -229,10 +229,10 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({kontrol:vKontrol,donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({gunluk:vGunluk,kontrol:vKontrol,donem:vDonemRapor,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).finally(bildirimKontrol);
 }
-function go(k){if(k!=='departmanlar')S.rap=0;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
+function go(k){if(k!=='departmanlar')S.rap=0;if(k==='gunluk')S.pg=null;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
 function mesajAc(id){S.tab='mesajlar';S.kanal=id;S.pid=null;render()}
 function openP(id,pt){S.aj=null;S.pid=id;S.ptab=pt||'gorev';render();scrollTo(0,0)}
 
@@ -263,7 +263,7 @@ async function navSayilar(L){
     fatura:[P.filter(p=>p.durum==='onaylandi'&&p.fatura_durum!=='kesildi').length,'r'],
     teklif:[say('teklif'),'r'],
     ekip:[people.filter(p=>p.rol==='bekliyor'&&(me.rol==='patron'||p.departman_id===me.departman_id)).length,'r'],
-    departmanlar:[0,'g']};
+    departmanlar:[0,'g'],gunluk:[await gunlukSayi(),'r']};
   document.querySelectorAll('[data-nb]').forEach(e=>{const [v,c]=N[e.dataset.nb]||[0];e.hidden=!v;e.textContent=v>99?'99+':v;e.className='nb'+(c==='g'?' g':'')});
 }
 async function bildirimKontrol(){if(me&&Date.now()-(window._sonAktif||0)>2*60e3&&document.visibilityState==='visible'){window._sonAktif=Date.now();oturumKaydet('aktif')}
@@ -1558,6 +1558,108 @@ function kimNerede(kisiler,G){
   const grup=(bas,a)=>a.length?`<div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.08em;margin:10px 0 6px">${bas} (${a.length})</div><div class="kareler">${a.map(kare).join('')}</div>`:'';
   return grup('SORUMLULAR',ds)+grup('ÇALIŞANLAR',cal);
 }
+
+// ---------------- Dükkân günlük kontrol paneli (İşveren, sorumlular, Ofis) ----------------
+const panelMi=()=>!!me&&(me.rol==='patron'||me.rol==='ds'||ofisMi());
+const ZAMAN={acilis:'🌅 Açılış',gun:'☀️ Gün içi',kapanis:'🌙 Kapanış'};
+const SORUMLU={ofis:'Ofis',sorumlular:'Her departman sorumlusu',patron:'İşveren',kisi:'Kişi'};
+// Ekiplerde olması gereken kişiler: [ekranda görünen ad, sistemdeki ad]
+const EKIP_BEKLENEN={'Elektrik':[['Michael','Michael'],['Tahir','Tahir'],['Muhammed','Arda Savaş'],['Mert','Mert']]};
+const pnorm=s=>String(s||'').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ş/g,'s').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ö/g,'o').replace(/ç/g,'c').trim();
+const ofisDep=id=>!!(deps.find(d=>d.id===id)||{}).ofis;
+const saatYaz=t=>t?new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
+const dsListe=()=>aktifler().filter(p=>p.rol==='ds'&&!ofisDep(p.departman_id));
+const raporcular=()=>aktifler().filter(p=>p.rol==='ds'||(p.rol==='calisan'&&ofisDep(p.departman_id)));
+function maddeYapabilir(x){if(x.sorumlu==='ofis')return ofisMi()||me.rol==='patron';if(x.sorumlu==='sorumlular')return me.rol==='ds'&&!ofisMi();if(x.sorumlu==='patron')return me.rol==='patron';return x.kisi_id===me.id}
+function maddeDurum(x,I){const l=I.filter(i=>i.madde_id===x.id);
+  if(x.sorumlu==='sorumlular'){const D=dsListe();return{tamam:D.length>0&&D.every(p=>l.some(i=>i.kisi_id===p.id)),D,l}}
+  return{tamam:l.length>0,l}}
+function pgGun(n){const d=new Date((S.pg||gunStr(new Date()))+'T12:00:00');d.setDate(d.getDate()+n);S.pg=gunStr(d);render()}
+async function vGunluk(m){
+  const g=S.pg||gunStr(new Date()),bugun=g===gunStr(new Date());
+  const [pn,md,is,gs]=await Promise.all([sb.rpc('gunluk_panel',{g}),sb.from('kontrol_maddeler').select('*').eq('aktif',true).order('sira').order('id'),sb.from('kontrol_isaret').select('*').eq('gun',g),sb.from('gun_sonu').select('*').eq('gun',g)]);
+  if(pn.error&&/gunluk_panel|schema cache/i.test(pn.error.message)){m.innerHTML='<div class="card"><h3>Günlük panel kuruluyor</h3><p class="muted">Sunucu tarafı henüz kurulmadı. Kurulum yapılınca burası açılır.</p></div>';return}
+  if(hata(pn.error)||hata(md.error)||hata(is.error)||hata(gs.error))return;
+  const P=pn.data||{},G=P.gorevler||[],A=P.ajanda||[],PY=P.planlanmamis||[],M=md.data||[],I=is.data||[],R=gs.data||[];
+  const acikG=G.filter(t=>t.durum!=='bitti'),bitenG=G.filter(t=>t.durum==='bitti'),gec=acikG.filter(t=>t.plan_tarih&&t.plan_tarih<g),calisan=acikG.filter(t=>calisiyorMu(t.durum));
+  const tamamM=M.filter(x=>maddeDurum(x,I).tamam).length,yazan=raporcular(),yazdi=yazan.filter(p=>R.some(r=>r.kisi_id===p.id&&(r.yapilan||r.kalan||r.sorun)));
+  const gunAd=new Date(g+'T12:00:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+  const ac=p=>me.rol==='patron'||ofisMi()||p===me.departman_id;
+  const isSatir=t=>{const gecti=t.durum!=='bitti'&&t.plan_tarih&&t.plan_tarih<g;
+    return`<div class="row sp${ac(t.departman_id)?' click':''}" ${ac(t.departman_id)?`onclick="openP(${t.proje_id},'gorev')"`:''} style="padding:8px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:8px;align-items:flex-start">
+     <div style="min-width:0"><b style="font-weight:700">${esc(kisiAd(t))}</b><span class="muted"> · ${ic(t.baslik)}</span>
+      <div class="muted" style="font-size:13px">${esc(t.proje||'')}${t.musteri?' · '+esc(t.musteri):''}${t.adres?' · 📍 '+esc(t.adres):''}</div>
+      ${gecti?`<div style="color:var(--red);font-size:13px;font-weight:700">⚠️ Gecikti · planı ${tarih(t.plan_tarih)}</div>`:!t.plan_tarih&&t.durum!=='bitti'?'<div class="muted" style="font-size:13px">Tarihsiz</div>':''}</div>
+     <span style="flex-shrink:0">${chip(t.durum,GDURUM)}${t.durum==='bitti'&&t.bitis?`<div class="muted" style="font-size:12px;text-align:right">${saatYaz(t.bitis)}</div>`:''}</span></div>`};
+  const ekipSatir=d=>{const uyeler=aktifler().filter(p=>p.departman_id===d.id&&['ds','calisan'].includes(p.rol)).sort((a,b)=>(a.rol==='ds'?0:1)-(b.rol==='ds'?0:1));
+    const ks=p=>{const t=acikG.filter(x=>gKisi(x).includes(p.id));const c=t.some(x=>calisiyorMu(x.durum));const d2=c?['Çalışıyor','c-basladi']:t.length?['Sırada','c-acik']:['Boşta','c-bekliyor'];
+      return`<span class="chip ${d2[1]}" style="margin:2px 4px 2px 0">${esc(p.ad.split(' ')[0])}${p.rol==='ds'?' (sorumlu)':''} · ${d2[0]}</span>`};
+    const eksik=(EKIP_BEKLENEN[d.ad]||[]).map(([gor,ad])=>{const p=people.find(x=>pnorm(x.ad).includes(pnorm(ad)))||people.find(x=>pnorm(x.ad).split(' ')[0]===pnorm(gor));
+      if(p&&['ds','calisan'].includes(p.rol)&&p.departman_id===d.id)return'';
+      return`<span class="chip c-iade" style="margin:2px 4px 2px 0">${esc(gor)} · ${!p?'hesabı yok':p.rol==='bekliyor'?'onay bekliyor':p.departman_id!==d.id?'başka departmanda':'girişi kapalı'}</span>`}).join('');
+    return uyeler.length||eksik?`<div style="margin-top:6px">${uyeler.map(ks).join('')}${eksik}</div>`:''};
+  const depKart=d=>{const T=G.filter(t=>t.departman_id===d.id),Y=PY.filter(p=>p.departman_id===d.id),ds=people.filter(p=>p.rol==='ds'&&p.departman_id===d.id).map(p=>p.ad.split(' ')[0]);
+    const ac2=T.filter(t=>t.durum!=='bitti').length,bt=T.filter(t=>t.durum==='bitti').length;
+    return`<div class="card"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0">${esc(d.ad)}${ds.length?' <span class="muted" style="font-weight:500">· '+esc(ds.join(', '))+' ekibi</span>':''}</h3><span class="muted" style="white-space:nowrap">${ac2} açık · ${bt} bitti</span></div>
+     ${ekipSatir(d)}
+     ${T.length?T.map(isSatir).join(''):'<div class="muted" style="padding:8px 0;border-top:1px solid var(--line);margin-top:6px">Bugün için görev yok.</div>'}
+     ${Y.length?`<div style="margin-top:8px;padding:8px 10px;border-radius:10px;background:#fdecec;color:var(--red);font-size:14px"><b>⚠️ Planlanmamış iş (${Y.length}):</b> ${Y.map(p=>`<span${ac(d.id)?` class="click" onclick="openP(${p.id},'gorev')" style="text-decoration:underline"`:''}>${esc(p.ad)}</span>`).join(', ')}</div>`:''}</div>`};
+  const SIRA=['elektrik','jenerator','elektronik','bobinaj','otomasyon'],sr=d=>{const i=SIRA.indexOf(pnorm(d.ad).replace('ö','o'));return i<0?99:i};const sahaD=deps.filter(d=>!d.ofis).sort((a,b)=>sr(a)-sr(b));
+  const ajSatir=a=>`<div class="row sp click" onclick="ajAc(${a.id})" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:8px"><div style="min-width:0"><b style="font-weight:600">${ic(a.baslik)}</b><div class="muted" style="font-size:13px">${esc(pname(a.sahip_id))}${a.atanan_id&&a.atanan_id!==a.sahip_id?' → '+esc(pname(a.atanan_id)):''}${a.musteri?' · '+esc(a.musteri):''}${a.tarih&&a.tarih<g?' · <b style="color:var(--red)">'+tarih(a.tarih)+'\'den kaldı</b>':a.saat?' · '+esc(a.saat.slice(0,5)):''}</div></div>${chip(a.durum,AJD)}</div>`;
+  // Kontrol listesi
+  const maddeSatir=x=>{const d=maddeDurum(x,I),ben=d.l.find(i=>i.kisi_id===me.id),yap=maddeYapabilir(x);
+    const kim=x.sorumlu==='kisi'?esc(pname(x.kisi_id)):SORUMLU[x.sorumlu];
+    const sag=x.sorumlu==='sorumlular'?d.D.map(p=>{const i=d.l.find(z=>z.kisi_id===p.id);return`<span class="chip ${i?'c-bitti':'c-bekliyor'}" style="margin:2px 0 2px 4px" title="${i&&i.notu?esc(i.notu):''}">${i?'✓':'○'} ${esc(p.ad.split(' ')[0])}${i?' '+saatYaz(i.saat):''}</span>`}).join('')
+      :d.l.length?d.l.map(i=>`<span class="chip c-bitti" style="margin:2px 0 2px 4px">✓ ${esc(pname(i.kisi_id).split(' ')[0])} ${saatYaz(i.saat)}</span>`).join(''):`<span class="chip ${bugun?'c-bekliyor':'c-iade'}" style="margin-left:4px">${bugun?'Yapılmadı':'Yapılmamış'}</span>`;
+    const notlar=d.l.filter(i=>i.notu).map(i=>`<div class="muted" style="font-size:13px">📝 ${esc(pname(i.kisi_id).split(' ')[0])}: ${ic(i.notu)}</div>`).join('');
+    return`<div style="padding:9px 0;border-top:1px solid var(--line)"><div class="row sp" style="flex-wrap:nowrap;gap:8px;align-items:flex-start">
+      <div style="min-width:0"><b style="font-weight:600">${d.tamam?'✅':'⬜'} ${esc(x.baslik)}</b><div class="muted" style="font-size:13px">${kim}</div></div>
+      <div style="text-align:right;flex-shrink:0;max-width:60%">${sag}</div></div>${notlar}
+      ${bugun&&yap&&!ben&&!(x.sorumlu!=='sorumlular'&&d.tamam)?`<div class="row" style="margin-top:6px;gap:6px;flex-wrap:nowrap"><input id="kn_${x.id}" placeholder="Not (isteğe bağlı, örn. kasada 1.250 TL)" style="flex:1;min-width:0;padding:8px"><button class="btn s g" onclick="maddeIsaretle(${x.id})">✓ Yaptım</button></div>`:''}
+      ${bugun&&ben?`<button class="btn s l" style="margin-top:6px" onclick="maddeGeriAl(${ben.id})">↩ Geri al</button>`:''}</div>`};
+  const kontrolKart=`<div class="card"><div class="row sp"><h2 style="margin:0">✅ Günlük kontrol listesi</h2><span class="muted">${tamamM}/${M.length} tamam</span></div>
+    ${['acilis','gun','kapanis'].map(z=>{const l=M.filter(x=>x.zaman===z);return l.length?`<div class="muted" style="font-size:12px;font-weight:700;letter-spacing:.06em;margin:12px 0 2px">${ZAMAN[z].toLocaleUpperCase('tr')}</div>${l.map(maddeSatir).join('')}`:''}).join('')||'<div class="muted">Liste boş.</div>'}
+    ${me.rol==='patron'||ofisMi()?`<button class="btn s l w" style="margin-top:10px" onclick="maddeDuzenle()">⚙️ Listeyi düzenle (madde ekle / çıkar)</button>`:''}</div>`;
+  // Gün sonu raporu
+  const benYazarim=yazan.some(p=>p.id===me.id),benimR=R.find(r=>r.kisi_id===me.id)||{};
+  const yapti=bitenG.filter(t=>me.rol==='patron'||ofisMi()?false:t.departman_id===me.departman_id).map(t=>'• '+kisiAd(t)+': '+t.baslik+(t.musteri?' ('+t.musteri+')':'')).join('\n');
+  const raporKart=`<div class="card"><div class="row sp"><h2 style="margin:0">🌙 Gün sonu raporu</h2><span class="muted">${yazdi.length}/${yazan.length} yazdı</span></div>
+    ${bugun&&benYazarim?`<form id="gsf" style="margin-top:8px"><label for="gs1">Bugün ne yapıldı?</label><textarea id="gs1" name="y" rows="3" placeholder="${esc(yapti||'Örn: Otel pano bağlantısı bitti, Ramazan Bey\'in jeneratör bakımı yapıldı')}">${esc(benimR.yapilan||'')}</textarea>
+      ${yapti&&!benimR.yapilan?`<button type="button" class="btn s l" style="margin-top:4px" onclick="$('#gs1').value=${esc(JSON.stringify(yapti))}">Biten görevleri yaz</button>`:''}
+      <label for="gs2">Ne kaldı / yarına ne var?</label><textarea id="gs2" name="k" rows="2">${esc(benimR.kalan||'')}</textarea>
+      <label for="gs3">Sorun / eksik malzeme / Doğuş Bey'in bilmesi gereken</label><textarea id="gs3" name="s" rows="2">${esc(benimR.sorun||'')}</textarea>
+      <button class="btn w" style="margin-top:10px">${benimR.id?'Raporu güncelle':'Raporu gönder'}</button></form>`:''}
+    ${R.filter(r=>r.yapilan||r.kalan||r.sorun).map(r=>`<div style="padding:10px 0;border-top:1px solid var(--line);margin-top:8px"><div class="row sp"><b>${esc(pname(r.kisi_id))}</b><span class="muted" style="font-size:13px">${esc(dname((people.find(p=>p.id===r.kisi_id)||{}).departman_id))} · ${saatYaz(r.guncelleme)}</span></div>
+      ${r.yapilan?`<div style="margin-top:4px;white-space:pre-wrap"><span class="muted">Yapılan:</span> ${ic(r.yapilan)}</div>`:''}${r.kalan?`<div style="white-space:pre-wrap"><span class="muted">Kalan:</span> ${ic(r.kalan)}</div>`:''}${r.sorun?`<div style="white-space:pre-wrap;color:var(--red)"><b>Sorun:</b> ${ic(r.sorun)}</div>`:''}</div>`).join('')}
+    ${yazan.length>yazdi.length?`<div class="muted" style="margin-top:8px">${bugun?'Henüz yazmayan':'Yazmayan'}: ${yazan.filter(p=>!yazdi.includes(p)).map(p=>esc(p.ad.split(' ')[0])).join(', ')}</div>`:''}</div>`;
+  m.innerHTML=`<div class="row sp" style="flex-wrap:nowrap;gap:6px"><button class="btn s l" onclick="pgGun(-1)" aria-label="Önceki gün">‹</button><div style="text-align:center;min-width:0"><h2 style="margin:0">📋 Dükkân günlük kontrol</h2><div class="muted">${gunAd}${bugun?' · bugün':''}</div></div><button class="btn s l" onclick="pgGun(1)" aria-label="Sonraki gün">›</button></div>
+   ${bugun?'':`<button class="btn s l w" style="margin-top:6px" onclick="S.pg=null;render()">Bugüne dön</button>`}
+   <div class="row" style="margin-top:10px"><div class="stat"><span class="muted">Açık iş</span><b>${acikG.length}</b></div><div class="stat"><span class="muted">Şu an çalışılan</span><b style="color:#a35f00">${calisan.length}</b></div><div class="stat"><span class="muted">${bugun?'Bugün biten':'Biten'}</span><b style="color:var(--green)">${bitenG.length}</b></div><div class="stat"><span class="muted">Geciken</span><b style="color:${gec.length?'var(--red)':'inherit'}">${gec.length}</b></div></div>
+   <div class="row"><div class="stat click" onclick="$('#gk').scrollIntoView({behavior:'smooth'})"><span class="muted">Kontrol listesi</span><b style="color:${tamamM===M.length?'var(--green)':'var(--red)'}">${tamamM}/${M.length}</b></div><div class="stat click" onclick="$('#gr').scrollIntoView({behavior:'smooth'})"><span class="muted">Gün sonu raporu</span><b style="color:${yazdi.length===yazan.length?'var(--green)':'inherit'}">${yazdi.length}/${yazan.length}</b></div><div class="stat"><span class="muted">Planlanmamış iş</span><b style="color:${PY.length?'var(--red)':'inherit'}">${PY.length}</b></div></div>
+   <h2 style="margin-top:16px">🛠️ Bugünkü işler</h2>
+   ${sahaD.map(depKart).join('')}
+   ${A.length?`<div class="card"><h3 style="margin:0">📌 Verilen işler (ajanda)</h3>${A.map(ajSatir).join('')}</div>`:''}
+   <div id="gk" style="margin-top:16px">${kontrolKart}</div><div id="gr">${raporKart}</div>`;
+  const f=$('#gsf');if(f)f.onsubmit=async e=>{e.preventDefault();const b=f.querySelector('button:last-child');b.disabled=true;
+    const {error}=await sb.from('gun_sonu').upsert({gun:g,kisi_id:me.id,yapilan:f.y.value.trim()||null,kalan:f.k.value.trim()||null,sorun:f.s.value.trim()||null,guncelleme:new Date().toISOString()},{onConflict:'gun,kisi_id'});
+    if(hata(error)){b.disabled=false;return}toast('Gün sonu raporu gönderildi');render()};
+}
+async function maddeIsaretle(id){const n=($('#kn_'+id)||{}).value||'';const {error}=await sb.from('kontrol_isaret').insert({gun:gunStr(new Date()),madde_id:id,kisi_id:me.id,notu:n.trim()||null});if(hata(error))return;toast('İşaretlendi');render()}
+async function maddeGeriAl(id){const {error}=await sb.from('kontrol_isaret').delete().eq('id',id);if(hata(error))return;toast('Geri alındı');render()}
+async function maddeDuzenle(){const m=$('#m');const {data,error}=await sb.from('kontrol_maddeler').select('*').eq('aktif',true).order('sira').order('id');if(hata(error))return;
+  const kisiler=aktifler().filter(p=>['patron','ds','calisan'].includes(p.rol));
+  m.innerHTML=`<button class="btn s l" onclick="render()">← Geri</button><h2 style="margin-top:10px">Kontrol listesini düzenle</h2>
+   <div class="card">${['acilis','gun','kapanis'].map(z=>{const l=data.filter(x=>x.zaman===z);return`<div class="muted" style="font-size:12px;font-weight:700;margin:10px 0 2px">${ZAMAN[z].toLocaleUpperCase('tr')}</div>${l.map(x=>`<div class="row sp" style="padding:7px 0;border-top:1px solid var(--line);flex-wrap:nowrap;gap:8px"><div style="min-width:0"><b style="font-weight:600">${esc(x.baslik)}</b><div class="muted" style="font-size:13px">${x.sorumlu==='kisi'?esc(pname(x.kisi_id)):SORUMLU[x.sorumlu]}</div></div><button class="btn s l" onclick="maddeSil(${x.id})">Çıkar</button></div>`).join('')||'<div class="muted">—</div>'}`}).join('')}</div>
+   <form id="mf" class="card"><h3>Yeni madde</h3><label for="mb">Ne kontrol edilecek *</label><input id="mb" name="b" required placeholder="Örn: Jeneratör yakıtı kontrol edildi">
+    <div class="row"><div style="flex:1;min-width:0"><label for="mz">Ne zaman</label><select id="mz" name="z">${Object.entries(ZAMAN).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div>
+    <div style="flex:1;min-width:0"><label for="ms">Kim yapacak</label><select id="ms" name="s" onchange="$('#mkw').hidden=this.value!=='kisi'">${Object.entries(SORUMLU).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}</select></div></div>
+    <div id="mkw" hidden><label for="mk">Kişi</label><select id="mk" name="k">${kisiler.map(p=>`<option value="${p.id}">${esc(p.ad)} · ${esc(dname(p.departman_id))}</option>`).join('')}</select></div>
+    <button class="btn w" style="margin-top:12px">Ekle</button></form>`;
+  $('#mf').onsubmit=async e=>{e.preventDefault();const f=e.target;const sira=Math.max(0,...data.map(x=>x.sira||0))+1;
+    const {error}=await sb.from('kontrol_maddeler').insert({baslik:f.b.value.trim(),zaman:f.z.value,sorumlu:f.s.value,kisi_id:f.s.value==='kisi'?f.k.value:null,sira});if(hata(error))return;toast('Madde eklendi');maddeDuzenle()}}
+async function maddeSil(id){if(!confirm('Bu madde listeden çıkarılsın mı? Geçmiş işaretler silinmez.'))return;const {error}=await sb.from('kontrol_maddeler').update({aktif:false}).eq('id',id);if(hata(error))return;toast('Çıkarıldı');maddeDuzenle()}
+async function gunlukSayi(){if(!panelMi())return 0;try{const g=gunStr(new Date());const [md,is]=await Promise.all([sb.from('kontrol_maddeler').select('id,sorumlu,kisi_id').eq('aktif',true),sb.from('kontrol_isaret').select('madde_id,kisi_id').eq('gun',g)]);const I=is.data||[];
+  return (md.data||[]).filter(x=>maddeYapabilir(x)&&!I.some(i=>i.madde_id===x.id&&(x.sorumlu!=='sorumlular'||i.kisi_id===me.id))).length}catch(e){return 0}}
 
 // ---------------- İşveren için biten işin aşamaları (belge yok, sadece nerede olduğu) ----------------
 function asamaTakip(p){
