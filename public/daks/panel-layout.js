@@ -5,6 +5,42 @@
   const role = document.getElementById('role');
   const sections = [...document.querySelectorAll('[data-workspace]')];
   const fuelEntry = document.getElementById('fuelForm').closest('section');
+  // Browser date controls follow the device locale; use an explicit Turkish format.
+  const storedDate = document.getElementById('fuelDate');
+  const dateLabel = document.querySelector('label[for="fuelDate"]');
+  const dateInput = document.createElement('input');
+  dateInput.id = 'fuelDateDisplay';
+  dateInput.type = 'text';
+  dateInput.inputMode = 'numeric';
+  dateInput.placeholder = 'GG.AA.YYYY';
+  dateInput.maxLength = 10;
+  dateInput.required = true;
+  dateInput.pattern = '[0-9]{2}[.][0-9]{2}[.][0-9]{4}';
+  dateInput.setAttribute('aria-label', 'Alım tarihi, gün ay yıl');
+  dateLabel.htmlFor = dateInput.id;
+  dateLabel.textContent = 'Alım tarihi (gün / ay / yıl) *';
+  storedDate.type = 'hidden';
+  storedDate.required = false;
+  storedDate.after(dateInput);
+  function syncFuelDate() {
+    const parts = /^(\d{2})\.(\d{2})\.(\d{4})$/.exec(dateInput.value);
+    storedDate.value = '';
+    if (parts) {
+      const [, day, month, year] = parts;
+      const iso = `${year}-${month}-${day}`;
+      const parsed = new Date(iso + 'T00:00:00');
+      if (parsed.getFullYear() === Number(year) && parsed.getMonth() + 1 === Number(month) && parsed.getDate() === Number(day)) storedDate.value = iso;
+    }
+    dateInput.setCustomValidity(dateInput.value && !storedDate.value ? 'Geçerli bir tarihi gün.ay.yıl şeklinde girin. Örnek: 04.11.2026' : '');
+  }
+  dateInput.addEventListener('input', () => {
+    const digits = dateInput.value.replace(/\D/g, '').slice(0, 8);
+    dateInput.value = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)].filter(Boolean).join('.');
+    syncFuelDate();
+  });
+  if (storedDate.value) dateInput.value = storedDate.value.split('-').reverse().join('.');
+  syncFuelDate();
+  document.getElementById('fuelForm').addEventListener('reset', () => { dateInput.setCustomValidity(''); });
   document.getElementById('monthlyRows').closest('section').before(fuelEntry);
   const labels = {
     vehicles: ['Araç bilgileri', 'Araç listesi, belgeler ve güncel kilometre bilgileri.'],

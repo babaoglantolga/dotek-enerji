@@ -242,11 +242,12 @@ if($('importBackup'))$('importBackup').addEventListener('change',async e=>{
 });
 if($('fuelForm'))$('fuelForm').addEventListener('submit',async e=>{
  e.preventDefault();if(!['admin','office','vehicle','driver'].includes($('role').value))return;
+ if(!$('fuelBuyer').value.trim()){$('fuelMessage').textContent='Yakıtı alan kişinin adını yazın.';return;}
  const plate=$('fuelPlate').value;if(!visibleCars().some(car=>car.plate===plate))return;
  const litres=Number($('fuelLitres').value),amount=Number($('fuelAmount').value),km=Number($('fuelKm').value),fuelDate=$('fuelDate').value;
  const today=new Date();today.setHours(0,0,0,0);
  if(!(litres>0&&litres<=2000&&amount>0&&amount<=1000000&&Number.isInteger(km)&&km>=0&&km<=99999999)||!fuelDate||new Date(fuelDate+'T00:00:00')>today){$('fuelMessage').textContent='Miktar, tutar, kilometre ve alım tarihini kontrol edin.';return;}
- const entry={kind:'fuel',plate,litres,amount,km,fuelDate,receiptNo:$('fuelReceipt').value.trim(),unitPrice:$('fuelUnitPrice').value?Number($('fuelUnitPrice').value):null,fullTank:$('fuelFullTank').checked,fuelType:$('fuelType').value,station:$('fuelStation').value.trim(),driver:weekly[plate].driver,author:$('role').value,date:new Date().toLocaleString('tr-TR')};records.unshift(entry);
+ const entry={kind:'fuel',plate,litres,amount,km,fuelDate,receiptNo:$('fuelReceipt').value.trim(),unitPrice:$('fuelUnitPrice').value?Number($('fuelUnitPrice').value):null,fullTank:$('fuelFullTank').checked,fuelType:$('fuelType').value,station:$('fuelStation').value.trim(),driver:$('fuelBuyer').value.trim(),author:$('role').value,date:new Date().toLocaleString('tr-TR')};records.unshift(entry);
  if(!await persistData()){records.splice(records.indexOf(entry),1);$('fuelMessage').textContent='Yakıt alımı kaydedilemedi; formdaki bilgiler korunuyor.';return;}
  $('fuelForm').reset();render();$('fuelMessage').textContent='Yakıt alımı veritabanına kaydedildi.';
 });
