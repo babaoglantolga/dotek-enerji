@@ -303,6 +303,7 @@ async function init(){
   if(!S.tab) S.tab=me.rol==='patron'?'onay':ofisMi()?'ofisana':me.rol==='ds'?'planlama':'gorevlerim';
   render();
   clearInterval(window._bt);window._bt=setInterval(bildirimKontrol,20000);
+  pushKaydet(true);setTimeout(pushTeklif,2500);
 }
 async function loadBase(){
   const [a,b]=await Promise.all([sb.from('departmanlar').select('*').order('ad'),sb.from('profiller').select('*').order('ad')]);
@@ -343,7 +344,7 @@ function viewWait(){
   <button class="btn w l" onclick="init()">${g('yenile')}</button>
   <button class="btn w r" style="margin-top:8px" onclick="cikis()">${g('cikis')}</button></div></div>`;
 }
-async function cikis(){try{if(me)await sb.rpc('oturum_kaydet',{tur:'cikis',cihaz:cihazAd()})}catch(e){}await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewLogin()}
+async function cikis(){try{if(me)await sb.rpc('oturum_kaydet',{tur:'cikis',cihaz:cihazAd()})}catch(e){}try{const r=await navigator.serviceWorker.ready,su=await r.pushManager.getSubscription();if(su)await sb.rpc('push_sil',{e:su.endpoint})}catch(e){}await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewLogin()}
 
 // ---------------- Kabuk ----------------
 function tabsFor(){const T=tabsFor0();if(me.rol==='patron'||!koordMi())return T;const L=T.filter(t=>!['gunluk','koord'].includes(t[0]));return[L[0],['koord','Koordinatör'],['gunluk','Günlük'],...L.slice(1)]}
@@ -372,6 +373,33 @@ const pCard=p=>`<div class="card click" onclick="openP(${p.id},'${p.durum==='pat
  ${['acik','devam','bitti','iade'].includes(p.durum)&&(me.rol==='patron'||(me.rol==='ds'&&p.departman_id===me.departman_id))?`<button class="btn s l w" style="margin-top:8px" onclick="event.stopPropagation();vGorevEkle(${p.id})">+ Görev planla</button>`:''}
  ${me.rol!=='calisan'&&p.fiyat!=null&&['patronda','onaylandi'].includes(p.durum)?`<div class="row sp" style="margin-top:6px"><span style="font-weight:800;color:var(--green)">${tl(p.fiyat,p.para_birimi)}</span>${p.durum==='onaylandi'?(p.odeme_durum==='alindi'?'<span class="chip c-bitti">Ödendi</span>':p.fatura_durum==='kesildi'?'<span class="chip c-patronda">Ödeme bekleniyor</span>':'<span class="chip c-iade">Fatura bekliyor</span>'):''}</div>`:''}</div>`;
 
+// ---------------- Telefona bildirim (Web Push) ----------------
+const pushDestek=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window&&location.protocol==='https:';
+const iosTarayici=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)&&!(window.navigator.standalone||matchMedia('(display-mode: standalone)').matches);
+const u8=b=>{const p='='.repeat((4-b.length%4)%4),r=atob((b+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
+async function pushKaydet(sessiz){
+  try{if(!pushDestek())return false;const reg=await navigator.serviceWorker.ready;
+    if(Notification.permission!=='granted'){if(sessiz)return false;const p=await Notification.requestPermission();if(p!=='granted'){toast('Bildirim izni verilmedi. Telefon ayarlarından açabilirsin.');return false}}
+    const k=await sb.rpc('push_anahtar');if(k.error||!k.data){if(!sessiz)toast('Telefon bildirimi henüz kurulmadı');return false}
+    let s=await reg.pushManager.getSubscription();
+    if(s&&s.options&&s.options.applicationServerKey){const a=new Uint8Array(s.options.applicationServerKey),b=u8(k.data);if(a.length!==b.length||a.some((x,i)=>x!==b[i])){await s.unsubscribe();s=null}}
+    if(!s)s=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:u8(k.data)});
+    const j=s.toJSON();const r=await sb.rpc('push_kaydet',{e:j.endpoint,p:j.keys.p256dh,a:j.keys.auth,c:cihazAd()});
+    if(r.error){if(!sessiz)hata(r.error);return false}
+    if(!sessiz){toast('Telefona bildirim açıldı ✓');render()}return true}catch(e){if(!sessiz)toast('Açılamadı: '+e.message);return false}}
+async function pushKapat(){try{const reg=await navigator.serviceWorker.ready,s=await reg.pushManager.getSubscription();if(s){await sb.rpc('push_sil',{e:s.endpoint});await s.unsubscribe()}toast('Telefon bildirimi kapatıldı');render()}catch(e){toast(e.message)}}
+async function pushAcikMi(){try{if(!pushDestek()||Notification.permission!=='granted')return false;const s=await (await navigator.serviceWorker.ready).pushManager.getSubscription();return !!s}catch(e){return false}}
+async function pushKart(){
+  if(iosTarayici())return`<div class="card" style="border-color:#BFDBFE;background:#EEF4FF"><b>📲 Telefona bildirim (iPhone)</b><div class="muted" style="margin-top:4px">iPhone'da bildirim için önce Safari'de alttaki <b>Paylaş ⬆</b> → <b>Ana Ekrana Ekle</b>'ye bas. Sonra programı ana ekrandaki <b>DOTEK DSYS</b> simgesinden aç ve buradan bildirimi aç.</div></div>`;
+  if(!pushDestek())return'';
+  const ac=await pushAcikMi();
+  if(ac)return`<div class="card row sp" style="border-color:#A7F3D0;background:#ECFDF5"><div><b style="color:#047857">📲 Telefona bildirim açık ✓</b><div class="muted">Program kapalıyken de bildirim bu cihaza gelir.</div></div><button class="btn s l" onclick="pushKapat()">Kapat</button></div>`;
+  if(Notification.permission==='denied')return`<div class="card" style="border-color:#FECACA;background:#FEF2F2"><b style="color:#DC2626">📲 Bildirim izni kapalı</b><div class="muted">Tarayıcı / telefon ayarlarından bu site için bildirime izin ver, sonra sayfayı yenile.</div></div>`;
+  return`<div class="card row sp" style="border-color:#BFDBFE;background:#EEF4FF"><div><b>📲 Telefona bildirim gelsin</b><div class="muted">Program kapalıyken de iş, mesaj ve bilgiler telefona düşsün.</div></div><button class="btn s" onclick="pushKaydet()">Aç</button></div>`}
+async function pushTeklif(){try{if(!pushDestek()||iosTarayici()||Notification.permission!=='default')return;if(localStorage.getItem('push_sorma'))return}catch(e){return}
+  const m=$('#m');if(!m||$('#pushtk'))return;const d=document.createElement('div');d.id='pushtk';d.className='card row sp';d.style.cssText='border-color:#BFDBFE;background:#EEF4FF;margin-bottom:10px';
+  d.innerHTML='<div><b>📲 Telefona bildirim gelsin mi?</b><div class="muted">Program kapalıyken de iş ve mesajlar telefona düşer.</div></div><div class="row" style="gap:6px"><button class="btn s" onclick="pushKaydet()">Aç</button><button class="btn s l" onclick="try{localStorage.setItem(\'push_sorma\',1)}catch(e){};this.closest(\'#pushtk\').remove()">Sonra</button></div>';m.prepend(d)}
+if('serviceWorker' in navigator)navigator.serviceWorker.addEventListener('message',ev=>{if(ev.data&&ev.data.tip==='bildirim'&&me)bildirimKontrol()});
 // ---------------- Bildirimler ----------------
 // Bildirim ilgili işlem yapılınca kapanır.
 // Proforma, işverene sadece kendi takip ettiği işte gösterilir; diğerlerini sorumlu hazırlar
@@ -421,7 +449,7 @@ async function vBildirim(m){
   const satir=x=>`<div class="bld ${x.islem_yapildi?'':'yeni'}" onclick="bildirimAc(${x.proje_id??'null'},${x.tur==='mesaj'?x.departman_id??0:'null'},'${x.tur||''}',${x.ajanda_id??'null'})"><span class="nok"></span>
     <div style="min-width:0;flex:1"><div class="muted" style="font-size:12px;font-weight:700;margin-bottom:2px">${bTurAd(x.tur)}</div><b style="font-weight:${x.islem_yapildi?500:800};white-space:pre-line">${ic(x.metin)}</b><div class="muted">${saat(x.tarih)}</div></div>
     ${x.islem_yapildi?'<span class="chip c-bitti">İşlem yapıldı ✓</span>':BEKLER[x.tur]?`<span class="chip c-iade">${BEKLER[x.tur]}</span>`:`<button class="btn s g" onclick="event.stopPropagation();islemYapildi(${x.id})">İşlem yapıldı</button>`}</div>`;
-  m.innerHTML=`${geriBtn()}<h2>Bildirimler</h2><div class="muted" style="margin-bottom:8px">Bildirim, gereken işlem yapılana kadar burada kırmızı kalır.</div>
+  const pk=await pushKart();m.innerHTML=`${geriBtn()}${pk}<h2>Bildirimler</h2><div class="muted" style="margin-bottom:8px">Bildirim, gereken işlem yapılana kadar burada kırmızı kalır.</div>
    <div class="card" style="padding-block:2px">${acik.map(satir).join('')||'<div class="muted" style="padding:12px 0">İşlem bekleyen bildirim yok.</div>'}</div>
    ${kapali.length?`<details><summary>İşlem yapılanlar (${kapali.length})</summary><div class="card" style="padding-block:2px">${kapali.map(satir).join('')}</div></details>`:''}`;
 }
