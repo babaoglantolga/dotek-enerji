@@ -1,0 +1,43 @@
+/* Scoped to DAKS; the Dotek portal and other modules keep their own layout. */
+.daks-panel header{min-height:142px;padding:18px 32px;gap:20px;flex-wrap:wrap;align-content:center}
+.daks-panel .brand{top:15px;pointer-events:none}
+.daks-panel .brand-logo{width:44px;height:44px;font-size:30px;border-radius:13px;margin-bottom:7px}
+.daks-panel .brand-logo span{width:5px;height:5px;bottom:8px;right:7px}
+.daks-panel .brand h1{font-size:19px}
+.daks-panel .brand-name{font-size:12px;margin-top:5px}
+.daks-panel header>div:not(.brand){position:relative;z-index:1}
+.daks-panel header #dkul{flex-basis:100%;justify-content:flex-end;margin:0}
+.daks-panel main{padding-top:18px}
+.daks-panel .breadcrumb{margin:18px 0;font-size:13px}
+.workspace-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:25px 0 20px}
+.daks-panel .workspace-heading h2{font-size:30px;letter-spacing:-.8px;margin:8px 0}
+.workspace-heading p{margin:0;font-size:14px}
+.workspace-count{padding:10px 16px;border:1px solid #40dfbf35;border-radius:10px;color:#70e9ce;font-size:14px;white-space:nowrap;background:#40dfbf08}
+.workspace-nav{display:flex;gap:6px;overflow-x:auto;padding:6px;background:#0c1b2b;border:1px solid #ffffff12;border-radius:14px;margin-bottom:22px}
+.workspace-nav button{width:auto;flex-shrink:0;box-shadow:none;background:transparent;color:#9eb1c8;padding:12px 18px;font-size:14px}
+.workspace-nav button:hover{background:#ffffff09;color:white}
+.workspace-nav button[aria-current=page]{background:#40dfbf;color:#082a2c}
+.workspace-inactive{display:none!important}
+.daks-panel main>.card{margin-top:18px!important}
+.daks-panel .card{border-radius:15px;padding:24px;box-shadow:none;background:#122237}
+.daks-panel .table-card{padding:0}
+.daks-panel h2{font-size:21px}
+.daks-panel .section-heading{gap:18px;align-items:center}
+.daks-panel .section-heading label{margin-top:0}
+.daks-panel #monthlyTotals:not(:empty){padding:12px 16px;background:#091826;border-radius:9px;font-size:14px}
+.daks-panel .monthly-cards{grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:14px}
+.daks-panel .monthly-car-card{min-height:0;border-radius:12px;padding:20px;background:#0c1c2d}
+.daks-panel .monthly-car-card h3{font-size:23px}
+.daks-panel .monthly-metric{padding:12px 0;overflow-wrap:anywhere}
+.consumption-details{margin-top:12px;border-top:1px solid #ffffff12;padding-top:14px}
+.consumption-details summary{cursor:pointer;font-size:12px;color:#70e9ce;line-height:1.5}
+.consumption-details[open] summary{margin-bottom:14px}
+.daks-panel #svcCards .monthly-metric strong{font-size:14px;white-space:normal}
+.daks-panel .row:last-child{border-bottom:0}
+.daks-panel #saveStatus:empty{display:none}
+.daks-panel #saveStatus:not(:empty){padding:12px 16px;border:1px solid #40dfbf33;border-radius:10px}
+.daks-panel .notice{font-size:12px}
+.daks-panel .section-title{margin-top:20px}
+.daks-panel .table-scroll{scrollbar-color:#34506a #0b1726}
+@media(max-width:950px){.daks-panel header{min-height:215px;align-items:flex-end;justify-content:center;padding-top:142px}.daks-panel header #dkul{flex-basis:auto}.daks-panel header>div:not(.brand){width:auto}.daks-panel header>div:not(.brand):not(#dkul){display:flex;align-items:center;gap:12px}.daks-panel header label{margin:0!important}.daks-panel header select{width:180px}}
+@media(max-width:650px){.daks-panel header{padding:135px 12px 16px;min-height:215px}.daks-panel .workspace-nav button{padding:11px 14px;font-size:13px}.daks-panel .card{padding:18px}.daks-panel .table-card{padding:0}.daks-panel .section-heading{align-items:flex-start;flex-direction:column}.daks-panel .monthly-cards{grid-template-columns:1fr}.workspace-heading{margin-top:20px;align-items:flex-start}.daks-panel .workspace-heading h2{font-size:25px}.workspace-count{padding:8px 10px}.workspace-heading p{font-size:13px}}
