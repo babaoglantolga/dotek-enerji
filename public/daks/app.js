@@ -14,7 +14,7 @@ function openVehicleEditor(car){
   $('addVehiclePanel').hidden=false;$('addVehicleButton').setAttribute('aria-expanded','true');
   $('addVehiclePanel').querySelector('h2').textContent=car?'Araç bilgilerini düzenleyin':'Araç bilgilerini girin';
   $('vehicleForm').querySelector('button[type="submit"]').textContent=car?'Değişiklikleri kaydet':'Aracı listeye ekle';
-  if(car){const r=weekly[car.plate];const fields={newPlate:car.plate,newModel:car.model,newYear:car.year,newKm:r.km,newOwner:car.owner,newIdentity:car.identity,newTitleDate:car.titleDate||'',newDriver:r.driver,newResponsible:car.responsible||'',newAssignment:car.assigned,newRoad:car.road||'',newInspection:car.inspection||'',newService:car.service||'',newTankCapacity:car.tankCapacity||'',newConsumptionLimit:car.consumptionLimit||'',newClass:car.vehicleClass||'unknown',newFirstRoad:car.firstRoad||'',newFirstInspection:car.firstInspection||''};for(const [id,value] of Object.entries(fields))$(id).value=value;}
+  if(car){const r=weekly[car.plate];const fields={newPlate:car.plate,newModel:car.model,newYear:car.year,newKm:r.km,newOwner:car.owner,newIdentity:car.identity,newTitleDate:car.titleDate||'',newDriver:r.driver,newResponsible:car.responsible||'',newAssignment:car.assigned,newRoad:car.road||'',newInspection:car.inspection||'',newService:car.service||'',newTankCapacity:car.tankCapacity||'',newConsumptionLimit:car.consumptionLimit||'',newClass:car.vehicleClass||'unknown',newFirstRoad:car.firstRoad||'',newFirstInspection:car.firstInspection||'',newInsurance:car.insurance||'',newTire:car.tire||'',newInventory:car.inventory||''};for(const [id,value] of Object.entries(fields))$(id).value=value;}
   $('vehicleMessage').textContent='';$('addVehiclePanel').scrollIntoView({behavior:'smooth',block:'start'});$('newPlate').focus();
 }
 const weekly = {
@@ -58,8 +58,8 @@ function renderSchedule(){
     const road=document.createElement('span');road.className='cell-sub';road.textContent='Seyrüsefer: '+plan.road;
     const inspection=document.createElement('span');inspection.className='cell-sub';inspection.textContent='Muayene: '+plan.inspection;
     const first=document.createElement('span');first.className='cell-sub';first.textContent='İlk muayene: '+(car.firstInspection?new Date(car.firstInspection+'T00:00:00').toLocaleDateString('tr-TR'):'Girilmedi');
-    body.append(title,road,inspection,first);const status=document.createElement('span');status.className='badge';
-    const due=[plan.roadDue,plan.inspectionDue].filter(Boolean).some(d=>(d-today)/86400000<=30);
+    const ins=document.createElement('span');ins.className='cell-sub';ins.textContent='Sigorta: '+(car.insurance?new Date(car.insurance+'T00:00:00').toLocaleDateString('tr-TR'):'Girilmedi')+(car.tire?' · Lastik: '+car.tire:'');body.append(title,road,inspection,first,ins);const status=document.createElement('span');status.className='badge';
+    const due=[plan.roadDue,plan.inspectionDue,car.insurance?new Date(car.insurance+'T00:00:00'):null].filter(Boolean).some(d=>(d-today)/86400000<=30);
     status.textContent=due?'Kontrol et':(!plan.inspectionDue||!plan.roadDue)?'Bilgi / takvim tamamla':'Planlandı';
     if(due)status.classList.add('warn');row.append(body,status);$('scheduleList').append(row);
   }
@@ -191,9 +191,10 @@ function render(){
   for(const car of visible){const option=document.createElement('option');option.value=car.plate;option.textContent=car.plate+' · '+car.model;$('plate').append(option);}
   if(visible.some(car=>car.plate===selected))$('plate').value=selected;
   renderTable();renderWeekly();renderSchedule();renderFuel();renderFuelAudit();$('records').replaceChildren();
-  const filtered=records.filter(r=>r.kind!=='fuel'&&(!driver||visible.some(car=>car.plate===r.plate)));$('empty').hidden=filtered.length>0;
+  const filtered=records.filter(r=>!['fuel','service'].includes(r.kind)&&(!driver||visible.some(car=>car.plate===r.plate)));$('empty').hidden=filtered.length>0;
   for(const r of filtered){const row=document.createElement('div');row.className='row';const content=document.createElement('span');content.textContent=r.plate+' · '+r.km+' km · '+r.date+' · '+r.checks.join(', ')+(r.note?' · '+r.note:'');const status=document.createElement('span');status.className='status';status.textContent=r.result;row.append(content,status);$('records').append(row);}
   $('message').textContent='';
+  if(window.servisCiz)servisCiz();
 }
 $('role').addEventListener('change',render);
 if($('driverProfile'))$('driverProfile').addEventListener('change',render);
@@ -215,7 +216,7 @@ if($('vehicleForm')){
     if(!Number.isInteger(year)||year<1900||year>2100||!Number.isInteger(km)||km<0||km>99999999){$('vehicleMessage').textContent='Model yılı ve kilometre değerlerini kontrol edin.';return;}
     const now=new Date();const titleDate=new Date(value('newTitleDate')+'T00:00:00');now.setHours(0,0,0,0);
     if(titleDate>now){$('vehicleMessage').textContent='Koçan tarihi gelecekte olamaz.';return;}
-    const updated={plate,model:value('newModel'),year,owner:value('newOwner'),identity:value('newIdentity'),titleDate:value('newTitleDate'),responsible:value('newResponsible'),assigned:value('newAssignment'),road:value('newRoad'),inspection:value('newInspection'),service:value('newService'),tankCapacity:value('newTankCapacity')?Number(value('newTankCapacity')):null,consumptionLimit:value('newConsumptionLimit')?Number(value('newConsumptionLimit')):null,vehicleClass:value('newClass'),firstRoad:value('newFirstRoad'),firstInspection:value('newFirstInspection')};
+    const updated={plate,model:value('newModel'),year,owner:value('newOwner'),identity:value('newIdentity'),titleDate:value('newTitleDate'),responsible:value('newResponsible'),assigned:value('newAssignment'),road:value('newRoad'),inspection:value('newInspection'),service:value('newService'),tankCapacity:value('newTankCapacity')?Number(value('newTankCapacity')):null,consumptionLimit:value('newConsumptionLimit')?Number(value('newConsumptionLimit')):null,vehicleClass:value('newClass'),firstRoad:value('newFirstRoad'),firstInspection:value('newFirstInspection'),insurance:value('newInsurance'),tire:value('newTire'),inventory:($('newInventory').value||'').trim()};
     const editing=editingPlate!==null;
     const previous=editing?weekly[editingPlate]:null;
     if(editing){cars[cars.findIndex(car=>car.plate===editingPlate)]=updated;for(const record of records)if(record.plate===editingPlate)record.plate=plate;if(editingPlate!==plate)delete weekly[editingPlate];}else cars.push(updated);
