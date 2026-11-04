@@ -5,8 +5,8 @@
   const role = document.getElementById('role');
   const sections = [...document.querySelectorAll('[data-workspace]')];
   const labels = {
-    vehicles: ['Araçlar ve aylık özet', 'Araç bilgileri ve aylık yakıt durumu tek ekranda.'],
-    fuel: ['Yakıt kayıtları', 'Yakıt alımları, kilometre ve fiş / kart eşleştirmesi.'],
+    vehicles: ['Araç bilgileri', 'Araç listesi, belgeler ve güncel kilometre bilgileri.'],
+    fuel: ['Yakıt kayıtları', 'Aylık yakıt özeti, alım kayıtları ve fiş / kart eşleştirmesi.'],
     service: ['Servis ve giderler', 'Bakım, tamir, sigorta ve araç envanteri.'],
     checks: ['Kontroller', 'Haftalık takip, seyrüsefer ve muayene işlemleri.'],
     weekly: ['Haftalık bildirimler', 'Kilometre ve bakım bildirimlerini inceleyin.'],
