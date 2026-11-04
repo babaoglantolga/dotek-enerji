@@ -1881,7 +1881,8 @@ async function kIsler(b,P){
   $('#kf').onsubmit=async e=>{e.preventDefault();const f2=e.target;const {error}=await sb.from('koord_isler').insert({baslik:f2.b.value.trim(),kategori:f2.k.value,kisi_ad:f2.p.value.trim()||null,son_tarih:f2.t.value||null,tekrar:f2.r.value||null});if(hata(error))return;toast('Eklendi');render()};
 }
 async function kIsBitti(id){const {data:x,error}=await sb.from('koord_isler').select('*').eq('id',id).single();if(hata(error))return;
-  if(x.durum==='bitti'){const r=await sb.from('koord_isler').update({durum:'acik',bitis:null}).eq('id',id);if(hata(r.error))return;return render()}
+  if(x.durum==='bitti'){const r=await sb.from('koord_isler').update({durum:'acik',bitis:null}).eq('id',id);if(hata(r.error))return;toast('Tekrar açıldı');return render()}
+  if(!confirm('"'+x.baslik+'" bitti olarak işaretlensin mi?'))return;
   const r=await sb.from('koord_isler').update({durum:'bitti',bitis:new Date().toISOString()}).eq('id',id);if(hata(r.error))return;
   if(x.tekrar){const n={hafta:7,'15gun':15,ay:30}[x.tekrar];const r2=await sb.from('koord_isler').insert({baslik:x.baslik,kategori:x.kategori,kisi_ad:x.kisi_ad,aciklama:x.aciklama,tekrar:x.tekrar,son_tarih:gunEk(x.son_tarih&&x.son_tarih>bugunS()?x.son_tarih:bugunS(),n)});if(hata(r2.error))return;toast('Bitti · bir sonraki '+tarih(gunEk(x.son_tarih&&x.son_tarih>bugunS()?x.son_tarih:bugunS(),n)))}else toast('Bitti');render()}
 async function kIsKaydet(id){const {data:x}=await sb.from('koord_isler').select('notlar').eq('id',id).single();const n=$('#ke_n').value.trim();
