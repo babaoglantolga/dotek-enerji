@@ -515,6 +515,7 @@ async function vFatura(m){
    <div class="row"><div class="stat"><span class="muted">Fatura bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Ödeme bekleyen</span><b style="color:var(--red)">${obk.length?sumPB(obk,kalan):'0'}</b></div></div>
    ${onp.length?`<h2 style="margin-top:14px">İşveren onayında · proforma hazır (${onp.length})</h2><div class="muted" style="margin:-4px 0 8px">Sahadan geldi. Doğuş onaylayınca aşağıya "fatura bekleyen" olarak düşer.</div>
      ${onp.map(p=>`<div class="card click" onclick="proformaGor(${p.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3><span class="chip c-patronda">Onayda</span></div>${ust(p)}<div class="row sp" style="margin-top:6px"><span class="muted">📄 ${esc(p.proforma_no)}${p.gonderim?' · '+saat(p.gonderim):''}</span><b style="color:var(--green)">${tl(p.fiyat,p.para_birimi)}</b></div></div>`).join('')}`:''}
+   ${SALT?'':`<button class="btn w" style="margin-top:12px;font-size:16px;padding:14px" onclick="ofisProformaYeni()">📄 + Yeni proforma fatura</button><div class="muted" style="font-size:12px;margin-top:4px">Sahadan gelmeyen işler için (malzeme satışı, atölye işi, kapıda iş…). PDF · Word · Fotoğraf olarak indirilir.</div>`}
    <h2 style="margin-top:14px">Fatura bekleyen işler (${bek.length})</h2>${bek.map(kart).join('')||'<div class="card muted">Bekleyen fatura yok.</div>'}
    <h2 style="margin-top:16px">Ödeme bekleyenler (${obk.length})</h2><div class="muted" style="margin:-4px 0 8px">Müşteriye proforma ya da fatura iletilen işler. Ödeme gelince gir, iş arşive kalkar.</div>
    ${obk.map(okart).join('')||'<div class="card muted">Ödemesi beklenen iş yok 👍</div>'}
@@ -1043,6 +1044,27 @@ ${_akt}
 const bugunStr=()=>gunStr(new Date());
 const gunEkle=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return gunStr(x)};
 
+// --- Proforma: Ofis'in kendisi sıfırdan hazırlar (sahadan gelmeyen işler) ---
+const opEkstra=()=>`<div style="margin-top:12px;padding:12px;border:2px solid #9fd3b2;background:#eefaf2;border-radius:12px"><label for="opdep" style="margin-top:0">Hangi departmanın işi? *</label><select id="opdep" onchange="window._opDep=Number(this.value);BELGE.ekstra=opEkstra()">${deps.map(x=>`<option value="${x.id}"${Number(x.id)===Number(window._opDep)?' selected':''}>${esc(x.ad)}</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:6px">Kaydedince PRF numarası verilir, iş "Fatura bekleyen işler"e düşer, Doğuş'a bildirim gider. Müşteriye verince orada "📄 Proforma verildi"ye bas, ödeme bekleyenlere geçer.</div></div>`;
+function ofisProformaYeni(){
+  if(!(ofisMi()||me.rol==='patron'))return toast('Proformayı Ofis hazırlar');
+  window._opDep=(deps.find(x=>x.ofis)||deps[0]||{}).id;
+  const d={tur:'PROFORMA FATURA',no:null,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:'',ilgili:'',adres:''},proje:'',konu:'',pb:'TRY',kdv:16,isler:[],kalemler:[{ad:'',miktar:1,birim:'adet',fiyat:0}],
+    notlar:['Bu belge proforma faturadır; resmi fatura ödeme sonrasında düzenlenir.','Ödeme, vade tarihine kadar aşağıdaki banka hesabına yapılabilir.','Açıklamaya belge numarasını yazmanız rica olunur.'],imza:[['Hazırlayan','Dotek Ofis'],['Onaylayan',(people.find(x=>x.rol==='patron')||{}).ad||'']]};
+  vBelgeAc(d,ofisProformaKaydet,()=>render(),opEkstra());
+}
+async function ofisProformaKaydet(){
+  const d=BELGE.d;if(!(d.musteri.ad||'').trim())return toast('Müşteri adını yaz');
+  if(d.kdvDahil==null){kdvSorUyar();return}
+  const dep=Number(window._opDep);if(!dep)return toast('Departman seç');
+  d.isler=(d.isler||[]).map(x=>x.trim()).filter(Boolean);d.kalemler=d.kalemler.filter(k=>(k.ad||'').trim()||Number(k.fiyat));
+  if(!d.kalemler.length&&!elT(d))return toast('En az bir kalem yaz');
+  const h=bHesap(d);if(!(h.gen>0))return toast('Toplam 0 olamaz; kalem fiyatı ya da toplam yaz');
+  const isc=d.kalemler.filter(k=>(k.ad||'').toLocaleLowerCase('tr').includes('işçilik')).reduce((t,k)=>t+kTut(k),0);
+  if(BELGE._kayitli)return;BELGE._kayitli=true;
+  const {data:pid,error}=await sb.rpc('ofis_proforma_olustur',{dep,veri:d,toplam:h.gen,isc});if(error){BELGE._kayitli=false;hata(error);return}
+  S.belge=false;toast('Proforma kaydedildi · Fatura bekleyen işlere eklendi');await proformaAc(pid);
+}
 // --- Proforma: onaylanan işten ---
 async function proformaAc(pid){
   const [pr,ml]=await Promise.all([sb.from('projeler').select('*').eq('id',pid).single(),sb.from('malzemeler').select('*').eq('proje_id',pid)]);
