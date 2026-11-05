@@ -24,7 +24,7 @@ window.servisCiz=function(){if(!$('svcRows'))return;
   {const [v,r]=durumY(c.road);satir('Seyrüsefer',v,r)}
   {const [v,r]=durumY(c.inspection);satir('Muayene',v,r)}
   satir('Servis / gider',tl(sv));satir('Yakıt',tl(fv));satir('Toplam araç gideri',tl(sv+fv));
-  satir('Son kilometre',weekly[c.plate]&&weekly[c.plate].km!=null?Number(weekly[c.plate].km).toLocaleString('tr-TR')+' KM':'Girilmedi');
+  satir('Son kilometre',weekly[c.plate]&&weekly[c.plate].kmKnown!==false&&weekly[c.plate].km!=null?Number(weekly[c.plate].km).toLocaleString('tr-TR')+' KM':'Girilmedi');
   const inv=(c.inventory||'').split('\n').map(x=>x.trim()).filter(Boolean);
   satir('Araçtaki malzeme',inv.length?inv.length+' kalem':'Girilmedi');
   if(inv.length){const ul=el('ul');ul.style.cssText='margin:6px 0 0;padding-left:18px;font-size:13px;color:#cfe0ee;line-height:1.6';inv.forEach(x=>ul.append(el('li',null,x)));k.append(ul)}
