@@ -44,3 +44,12 @@
 .daks-panel .table-scroll{scrollbar-color:#34506a #0b1726}
 @media(max-width:950px){.daks-panel header{min-height:215px;align-items:flex-end;justify-content:center;padding-top:142px}.daks-panel header #dkul{flex-basis:auto}.daks-panel header>div:not(.brand){width:auto}.daks-panel header>div:not(.brand):not(#dkul){display:flex;align-items:center;gap:12px}.daks-panel header label{margin:0!important}.daks-panel header select{width:180px}}
 @media(max-width:650px){.daks-panel header{padding:135px 12px 16px;min-height:215px}.daks-panel .workspace-nav button{padding:11px 14px;font-size:13px}.daks-panel .card{padding:18px}.daks-panel .table-card{padding:0}.daks-panel .section-heading{align-items:flex-start;flex-direction:column}.daks-panel .monthly-cards{grid-template-columns:1fr}.workspace-heading{margin-top:20px;align-items:flex-start}.daks-panel .workspace-heading h2{font-size:25px}.workspace-count{padding:8px 10px}.workspace-heading p{font-size:13px}}
+
+/* Vehicle document cards show deadlines first; ledger stays available below. */
+.daks-panel #svcCards{grid-template-columns:repeat(auto-fill,minmax(290px,1fr));align-items:start;margin-bottom:30px}
+.document-state{display:flex;flex-direction:column;gap:5px;margin:20px 0 8px;padding:12px;border-radius:9px;font-size:12px;line-height:1.5;border-left:3px solid}
+.document-state strong{font-size:14px}.document-state.due{background:#ff596014;border-color:#ff6673;color:#ffb5bd}.document-state.missing{background:#ffc86610;border-color:#e5b858;color:#f0d498}.document-state.ok{background:#40dfbf10;border-color:#40dfbf;color:#7be7d1}
+.daks-panel #svcCards .monthly-metric{align-items:flex-start;gap:16px}.daks-panel #svcCards .monthly-metric strong{max-width:65%;font-size:13px;line-height:1.6}
+.document-extra,.document-ledger{margin-top:20px;border-top:1px solid #ffffff18;padding-top:16px}.document-extra summary,.document-ledger summary{cursor:pointer;color:#7be7d1;font-size:13px;line-height:1.5}.document-ledger[open] summary{margin-bottom:18px}
+.document-ledger table{white-space:normal}.document-ledger td{overflow-wrap:anywhere;line-height:1.6;min-width:80px}.document-ledger td:nth-child(4){min-width:210px;max-width:500px}.document-ledger td:nth-child(6){white-space:nowrap}
+@media(max-width:600px){.daks-panel #svcCards{grid-template-columns:1fr}}
