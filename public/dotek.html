@@ -2059,8 +2059,8 @@ const kSvg=(k,s=18)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="
 const KRENK={'Araç':['arac','#3B82F6','#EEF4FF'],'Depo':['kutu','#B45309','#FEF3C7'],'Malzeme':['paket','#0E9BB8','#E0F7FB'],'Üretim':['uretim','#047857','#D1FAE5'],'Personel':['kisi','#3B82F6','#EEF4FF'],'Görüşme':['konus','#B45309','#FEF3C7'],'Satın alma':['sepet','#047857','#D1FAE5'],'Diğer':['nokta','#6B7280','#F3F4F6']};
 const kRenk=k=>KRENK[k]||KRENK['Diğer'];
 async function vKoord(m){
-  const st=S.kt||'isler',now=new Date();
-  const sekme=[['isler','liste','İşler'],['defter','kalem','Dükkân defteri'],['siparis','sepet','Sipariş'],['kargo','kutu','Kargo'],['personel','kisi','Personel'],['kiyafet','paket','Envanter'],['rapor','konus','Bilgi & Rapor']];
+  const st=S.kt||'pano',now=new Date();
+  const sekme=[['pano','tamam','İş Panosu'],['isler','liste','Yapılacaklar'],['defter','kalem','Dükkân defteri'],['siparis','sepet','Sipariş'],['kargo','kutu','Kargo'],['personel','kisi','Personel'],['kiyafet','paket','Envanter'],['rapor','konus','Bilgi & Rapor']];
   const ust=`<div class="kp"><div class="kp-hero"><div><div class="kp-ey">DOTEK ENERJİ · KOORDİNASYON</div><h1>Koordinatör Paneli</h1><p>${esc(pname(KOORD[0]))} · ${now.toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p></div>
    <div class="kp-links"><button onclick="go('gunluk')">${kSvg('takvim',16)} Günlük panel</button><a href="/daks/daks.html" target="_blank" rel="noopener">${kSvg('arac',16)} Araçlar ↗</a><a href="/cari" target="_blank" rel="noopener">${kSvg('paket',16)} Cari ve Kasa ↗</a></div></div>
    <div class="kp-seg" role="tablist">${sekme.map(([k,ik,a])=>`<button role="tab" aria-selected="${st===k}" class="${st===k?'on':''}" onclick="S.kt='${k}';render()">${kSvg(ik,16)} ${a}</button>`).join('')}</div></div>`;
@@ -2069,8 +2069,102 @@ async function vKoord(m){
   if(hata(ps.error))return;const P=ps.data||[];
   m.innerHTML=ust+dgSatir(dgYakin(P,14))+'<div id="kb" class="kp"><p class="muted">Yükleniyor…</p></div>';
   const b=$('#kb');
-  if(st==='isler')return kIsler(b,P);if(st==='defter')return kDefter(b,P);if(st==='siparis'||st==='kargo')return kSK(b,P,st);if(st==='rapor')return kRapor(b,P);if(st==='yoklama'){S.kt='personel';S.ps='yoklama'}if(S.kt==='personel')return kPersonelAna(b,P);return kKiyafet(b)
+  if(st==='pano')return kPano(b,P);if(st==='isler')return kIsler(b,P);if(st==='defter')return kDefter(b,P);if(st==='siparis'||st==='kargo')return kSK(b,P,st);if(st==='rapor')return kRapor(b,P);if(st==='yoklama'){S.kt='personel';S.ps='yoklama'}if(S.kt==='personel')return kPersonelAna(b,P);return kKiyafet(b)
 }
+// ---------------- İş Panosu (koordinatör): tüm işler tek ekranda + hızlı malzeme çıkışı (iş · stok · araç · defter) ----------------
+const PN_AS=[['acik','Açık','#6B7280','#F3F4F6'],['devam','Devam','#3B82F6','#EEF4FF'],['bitti','Bitti','#B45309','#FEF3C7'],['fatura','Faturalandı','#0E9BB8','#E0F7FB'],['odendi','Ödendi','#047857','#D1FAE5']];
+const pnAsama=p=>p.durum==='acik'?'acik':p.durum==='devam'?'devam':(p.durum==='onaylandi'&&p.fatura_durum==='kesildi')?(p.odeme_durum==='alindi'?'odendi':'fatura'):'bitti';
+const pnAlt=p=>({bitti:'Proforma hazırlanmadı',patronda:'İşveren fiyat onayında',iade:'İade edildi, düzeltilecek',onaylandi:'Ofiste fatura bekliyor'})[p.durum]||'';
+// Cari ve Kasa stoğu (aynı sunucu, ck_kayit tablosu)
+let CKP={rol:undefined,urun:[],arac:[]};
+async function ckPanoYukle(){
+  if(CKP.rol===undefined){try{const r=await sb.rpc('ck_rol');CKP.rol=r.error?null:r.data}catch(e){CKP.rol=null}}
+  if(!CKP.rol)return;
+  const [u,a]=await Promise.all([sb.from('ck_kayit').select('id,veri').eq('kol','urunler'),sb.from('ck_kayit').select('id,veri').eq('kol','araclar')]);
+  if(u.error||a.error){CKP.rol=null;return}
+  CKP.urun=(u.data||[]).map(x=>x.veri).filter(x=>x&&x.ad).sort((x,y)=>x.ad.localeCompare(y.ad,'tr'));CKP.arac=(a.data||[]).map(x=>x.veri).filter(Boolean)}
+const ckR2=n=>Math.round((+n||0)*100)/100;
+let ckSonId=0;const ckYid=()=>{let n=Date.now()*1000+Math.floor(Math.random()*1000);if(n<=ckSonId)n=ckSonId+1;ckSonId=n;return n};
+function ckYer(u,m){if(!u.yerler||!u.yerler.length)return;if(m>0){const y=u.yerler.find(x=>x.bolum==='Depo');if(y)y.miktar=ckR2(+y.miktar+m);return}
+  let k=-m,bos=ckR2(Math.max(0,u.miktar)-u.yerler.reduce((t,y)=>t+(+y.miktar||0),0));const sira=[...u.yerler.filter(x=>x.bolum==='Depo'),null,...u.yerler.filter(x=>x.bolum!=='Depo')];
+  for(const y of sira){if(k<=0)break;if(y===null){const al=Math.min(k,Math.max(0,bos));k=ckR2(k-al);continue}const al=Math.min(k,+y.miktar||0);y.miktar=ckR2(y.miktar-al);k=ckR2(k-al)}}
+const ckAracAd=a=>a?a.ad+(a.plaka?' · '+a.plaka:'')+(a.surucu?' ('+a.surucu+')':''):'Araç';
+async function ckStokYaz(uid,hareketler){// hareketler:[{depo:-2}|{arac:'a1',m:2}], açıklama ile
+  const r=await sb.from('ck_kayit').select('veri').eq('kol','urunler').eq('id',String(uid)).single();if(r.error)throw r.error;const u=r.data.veri,sh=[];
+  for(const h of hareketler){if(h.depo!=null){ckYer(u,h.depo);u.miktar=ckR2(u.miktar+h.depo);sh.push({id:ckYid(),urun_id:u.id,miktar:ckR2(h.depo),aciklama:h.acik,tarih:bugunS()})}
+    else{u.arac=u.arac||{};u.arac[h.arac]=ckR2((u.arac[h.arac]||0)+h.m);sh.push({id:ckYid(),urun_id:u.id,miktar:ckR2(h.m),arac:h.arac,aciklama:'Araç: '+ckAracAd(CKP.arac.find(a=>a.id===h.arac))+' · '+h.acik,tarih:bugunS()})}}
+  const {error}=await sb.from('ck_kayit').upsert([{kol:'urunler',id:String(u.id),veri:u},...sh.map(x=>({kol:'stokh',id:String(x.id),veri:x}))],{onConflict:'kol,id'});if(error)throw error;
+  const i=CKP.urun.findIndex(x=>x.id===u.id);if(i>=0)CKP.urun[i]=u}
+
+async function kPano(b,P){
+  const [pr,gr,ml,yk]=await Promise.all([sb.from('projeler').select('*').order('olusturma',{ascending:false}),sb.from('gorevler').select('id,proje_id,atanan_id,ekip,durum,bitis_tarihi,olusturma'),sb.from('malzemeler').select('id,proje_id'),sb.from('yoklama').select('personel_id,giris,cikis,durum').eq('gun',bugunS())]);
+  if(hata(pr.error||gr.error||ml.error))return;await ckPanoYukle();
+  const L=pr.data||[],G=gr.data||[],M=ml.data||[],YK=yk.error?[]:(yk.data||[]);
+  const gor=p=>G.filter(t=>t.proje_id===p.id),kisiler=p=>[...new Set(gor(p).flatMap(t=>(t.ekip&&t.ekip.length?t.ekip:[t.atanan_id])).filter(Boolean))],malz=p=>M.filter(x=>x.proje_id===p.id).length;
+  const bitT=p=>{const l=gor(p).map(t=>t.bitis_tarihi).filter(Boolean).sort();return l.length?l[l.length-1]:(p.gonderim||p.bitis||p.onay_tarihi||null)};
+  const A={};PN_AS.forEach(([k])=>A[k]=[]);L.forEach(p=>{const a=pnAsama(p);if(a==='odendi'&&gunFark(p.odeme_tarihi||p.fatura_tarihi)>30)return;A[a].push(p)});
+  // Takılanlar: sadece bakılması gerekenler
+  const T=[];
+  A.bitti.forEach(p=>{const g=gunFark(bitT(p));if(g!=null&&g>=3)T.push({p,r:'red',t:`Bitti, ${g} gündür faturalanmadı`,a:pnAlt(p)})});
+  A.fatura.forEach(p=>{const g=gunFark(p.fatura_tarihi);if(g!=null&&g>30)T.push({p,r:'red',t:`Faturalandı, ${g} gündür ödenmedi`,a:p.musteri?'Müşteri: '+p.musteri:''})});
+  A.devam.forEach(p=>{if(!malz(p))T.push({p,r:'amber',t:'Devam ediyor ama malzeme girilmedi',a:'Malzeme çıktıysa aşağıdan gir'})});
+  const calisan=people.filter(x=>x.rol==='calisan'&&!ofisDep(x.departman_id)&&!KOORD.includes(x.id)),isteki=new Set(G.filter(t=>t.durum!=='bitti').flatMap(t=>(t.ekip&&t.ekip.length?t.ekip:[t.atanan_id])));
+  const bos=calisan.filter(x=>!isteki.has(x.id));
+  const sec=S.pa||'devam';
+  const kart=p=>{const k=kisiler(p),mk=malz(p),fa=pnAsama(p);
+    return`<div class="kp-task" style="cursor:pointer" onclick="S.pid=${p.id};render()"><div class="kp-tb"><div class="kp-title">${esc(p.ad)}</div>
+     <div class="kp-meta">${kDepPill(dname(p.departman_id))}${p.musteri?`<span class="kp-pill">${kSvg('kisi',12)} ${esc(p.musteri)}</span>`:''}${k.length?`<span class="kp-pill blue">👷 ${esc(k.map(pname).join(', '))}</span>`:'<span class="kp-pill amber">👷 Kimse atanmadı</span>'}
+     <span class="kp-pill ${mk?'green':''}">📦 ${mk?mk+' malzeme':'Malzeme yok'}</span>${fa==='bitti'&&pnAlt(p)?`<span class="kp-pill amber">${esc(pnAlt(p))}</span>`:''}${fa==='fatura'?`<span class="kp-pill ${gunFark(p.fatura_tarihi)>30?'red':''}">🧾 ${gunFark(p.fatura_tarihi)} gün</span>`:''}${p.fiyat!=null&&['fatura','odendi'].includes(fa)?`<span class="kp-pill">${tl(fa==='fatura'?Math.max(0,Number(p.fiyat||0)-Number(p.odenen||0)):p.fiyat,p.para_birimi)}</span>`:''}</div></div>
+     <span style="color:#9CA3AF;font-size:20px;align-self:center">›</span></div>`};
+  b.innerHTML=`${pnForm(P,L)}
+   <section class="kp-grp" style="${T.length||bos.length?'border-color:#FCA5A5':''}"><header><span class="ic" style="background:${T.length?'#FEE2E2':'#D1FAE5'};color:${T.length?'#DC2626':'#047857'}">${kSvg(T.length?'uyari':'tamam',17)}</span><b>${T.length?'Bakman gerekenler':'Takılan iş yok'}</b><span class="kp-cnt">${T.length}</span></header>
+    ${T.map(x=>`<div class="kp-task" style="cursor:pointer" onclick="S.pid=${x.p.id};render()"><span style="width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:${x.r==='red'?'#EF4444':'#F59E0B'}"></span><div class="kp-tb"><div class="kp-title">${esc(x.p.ad)}</div><div class="kp-meta"><span class="kp-pill ${x.r}">${esc(x.t)}</span>${x.a?`<span class="kp-pill">${esc(x.a)}</span>`:''}</div></div><span style="color:#9CA3AF;font-size:20px;align-self:center">›</span></div>`).join('')||'<div class="kp-empty" style="border:0;border-radius:0"><b>Her şey yolunda 👍</b><span>Faturası geciken, ödemesi geciken ya da malzemesi eksik iş yok.</span></div>'}
+    ${bos.length?`<div class="kp-task"><span style="width:10px;height:10px;border-radius:50%;margin-top:6px;flex:none;background:#F59E0B"></span><div class="kp-tb"><div class="kp-title">Şu an hiçbir işte görünmeyen personel</div><div class="kp-meta">${bos.map(x=>`<span class="kp-pill amber">${esc(x.ad)}</span>`).join('')}</div></div></div>`:''}</section>
+   <div class="kp-seg" role="tablist">${PN_AS.map(([k,a])=>`<button role="tab" aria-selected="${sec===k}" class="${sec===k?'on':''}" onclick="S.pa='${k}';render()">${a} <em>${A[k].length}</em></button>`).join('')}</div>
+   <section class="kp-grp"><header><span class="ic" style="background:${PN_AS.find(x=>x[0]===sec)[3]};color:${PN_AS.find(x=>x[0]===sec)[2]}">${kSvg('liste',17)}</span><b>${PN_AS.find(x=>x[0]===sec)[1]} işler</b><span class="kp-cnt">${A[sec].length}</span></header>
+    ${A[sec].map(kart).join('')||'<div class="kp-empty" style="border:0;border-radius:0"><b>Bu aşamada iş yok</b></div>'}</section>
+   <p class="muted" style="font-size:12px;margin:4px 2px 0">İşe dokununca açılır. Açık / Devam / Bitti'yi sorumlular, Faturalandı / Ödendi'yi Ofis ilerletir; sen sadece kırmızılara bakarsın.</p>`;
+  pnBagla(P,L)}
+
+function pnForm(P,L){
+  const F=S.pf||(S.pf={});if(!F.ac)return`<button class="kp-yokbtn" style="margin:0 0 14px" onclick="S.pf={ac:1,nere:'is',kay:'depo'};render()"><span style="font-size:26px">📦</span><span><b style="font-size:17px">Malzeme çıkışı yaz</b><br><span style="opacity:.9;font-size:13px">Kim aldı · ne aldı · hangi işe / araca. Stoktan düşer, işe ve deftere yazılır.</span></span></button>`;
+  const per=P.filter(p=>p.aktif!==false),is=L.filter(p=>['acik','devam','bitti','patronda'].includes(p.durum)),ck=!!CKP.rol;
+  const chip=(n,v,on,lbl)=>`<button type="button" class="btn s ${on?'':'l'}" style="flex:0 0 auto;white-space:nowrap" onclick="S.pf.${n}=${typeof v==='number'?v:`'${v}'`};pnSakla();render()">${lbl}</button>`;
+  return`<div class="card" style="border:2px solid #BFDBFE;margin:0 0 14px"><div class="row sp"><b style="font-size:16px">📦 Malzeme çıkışı</b><button class="btn s l" onclick="S.pf={};render()">Kapat</button></div>
+   <div style="font-weight:700;font-size:13px;margin-top:8px">1 · Kim aldı?</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${per.map(p=>chip('kisi',p.id,F.kisi===p.id,esc(p.ad))).join('')||'<span class="muted">Personel listesi boş</span>'}</div>
+   <div style="font-weight:700;font-size:13px;margin-top:10px">2 · Nereye gidiyor?</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${chip('nere','is',F.nere==='is','🔧 Bir işe')}${ck?chip('nere','arac',F.nere==='arac','🚐 Araca yükle'):''}</div>
+   ${F.nere==='is'?`<label for="pf_is">Hangi iş?</label><select id="pf_is"><option value="">— İş seç —</option>${is.map(p=>`<option value="${p.id}" ${String(F.is)===String(p.id)?'selected':''}>${esc(p.ad)}${p.musteri?' · '+esc(p.musteri):''} (${esc(dname(p.departman_id))})</option>`).join('')}</select>
+     ${ck?`<div style="font-weight:700;font-size:13px;margin-top:10px">Nereden alındı?</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${chip('kay','depo',F.kay==='depo','🏬 Depo')}${CKP.arac.map(a=>chip('kay',a.id,F.kay===a.id,'🚐 '+esc(ckAracAd(a)))).join('')}${chip('kay','dis',F.kay==='dis','Stokta yok / dışarıdan')}</div>`:''}`
+   :`<label for="pf_ar">Hangi araç?</label><select id="pf_ar">${CKP.arac.map(a=>`<option value="${esc(a.id)}" ${F.ar===a.id?'selected':''}>${esc(ckAracAd(a))}</option>`).join('')}</select>`}
+   <div class="row" style="flex-wrap:nowrap;gap:8px;margin-top:2px"><div style="flex:2.2;min-width:0"><label for="pf_u">3 · Ne aldı?</label><input id="pf_u" list="pf_ul" value="${esc(F.u||'')}" placeholder="${ck?'Yazmaya başla, stoktan seç':'Örn. 3x2,5 TTR kablo'}" autocomplete="off">
+     <datalist id="pf_ul">${CKP.urun.map(u=>`<option value="${esc(u.ad)}">${pnStokYazi(u,F)}</option>`).join('')}</datalist></div>
+    <div style="flex:1;min-width:0"><label for="pf_m">Miktar</label><input id="pf_m" type="number" step="any" min="0" inputmode="decimal" value="${esc(F.m||'1')}"></div></div>
+   <div id="pf_bilgi" class="muted" style="font-size:12.5px;margin-top:4px"></div>
+   ${ck?'':`<div class="muted" style="font-size:12px;margin-top:6px">Cari ve Kasa stoğu bu hesapta açık değil: malzeme işe ve deftere yazılır, stoktan düşme Ofis'te yapılır.</div>`}
+   <button class="btn g" style="width:100%;margin-top:12px" onclick="pnKaydet()">✔ Kaydet</button></div>`}
+const pnStokYazi=(u,F)=>'depo '+ckR2(u.miktar)+' '+(u.birim||'')+(Object.entries(u.arac||{}).filter(([,v])=>v>0).map(([a,v])=>' · '+ckAracAd(CKP.arac.find(x=>x.id===a)).split(' (')[0]+' '+ckR2(v)).join(''));
+function pnSakla(){const F=S.pf||{};const v=(i,k)=>{const e=$(i);if(e)F[k]=e.value};v('#pf_is','is');v('#pf_ar','ar');v('#pf_u','u');v('#pf_m','m')}
+function pnBagla(){const u=$('#pf_u');if(!u)return;const yaz=()=>{const x=CKP.urun.find(z=>z.ad===u.value.trim()),bi=$('#pf_bilgi');if(bi)bi.innerHTML=x?`Stokta: <b>${esc(pnStokYazi(x,S.pf))}</b>`:(u.value.trim()&&CKP.rol?'Stokta bu isimde ürün yok, sadece işe yazılır.':'')};u.oninput=yaz;yaz()}
+async function pnKaydet(){pnSakla();const F=S.pf,P=(await sb.from('personel').select('id,ad,departman')).data||[],k=P.find(p=>p.id===F.kisi);
+  const ad=(F.u||'').trim(),m=Number(String(F.m||'').replace(',','.'));
+  if(!k)return toast('Kim aldı, seç');if(!ad)return toast('Ne aldı, yaz');if(!(m>0))return toast('Miktarı yaz');
+  const u=CKP.rol?CKP.urun.find(z=>z.ad===ad):null,br=u?u.birim||'adet':'adet',ms=m+' '+br+' '+ad;
+  let pid=null,p=null,yer='';
+  if(F.nere==='is'){pid=Number(F.is);if(!pid)return toast('Hangi iş, seç');p=(await sb.from('projeler').select('id,ad,musteri').eq('id',pid).single()).data;if(!p)return toast('İş bulunamadı');yer='İş: '+p.ad+(p.musteri?' ('+p.musteri+')':'')}
+  else{if(!u)return toast('Araca sadece stoktaki ürün yüklenir; listeden seç');yer='Araç: '+ckAracAd(CKP.arac.find(a=>a.id===F.ar))}
+  const kay=F.nere==='is'?F.kay:'depo';
+  if(u&&kay==='depo'&&m>ckR2(u.miktar))return toast('Depoda '+ckR2(u.miktar)+' '+br+' var');
+  if(u&&kay&&!['depo','dis'].includes(kay)&&m>ckR2((u.arac||{})[kay]))return toast('Araçta '+ckR2((u.arac||{})[kay])+' '+br+' var');
+  const sonuc=[];
+  // 1) İşe yaz (DSYS)
+  if(pid){const {error}=await sb.from('malzemeler').insert({proje_id:pid,tur:'kullanilan',ad,miktar:m,birim:br,birim_fiyat:u?Number(u.satis||0):0,para_birimi:u&&u.satis_pb?u.satis_pb:'TRY',tedarikci:null});if(hata(error))return;sonuc.push('işe yazıldı')}
+  // 2) Stoktan / araçtan düş (Cari ve Kasa)
+  if(u&&kay!=='dis'){const acik=(pid?'DSYS iş: '+p.ad+(p.musteri?' · '+p.musteri:''):'Araca yüklendi')+' · alan: '+k.ad;
+    const H=F.nere==='arac'?[{depo:-m,acik:'Araca yüklendi · '+ckAracAd(CKP.arac.find(a=>a.id===F.ar))+' · '+k.ad},{arac:F.ar,m,acik:'depodan yüklendi · '+k.ad}]:kay==='depo'?[{depo:-m,acik}]:[{arac:kay,m:-m,acik}];
+    try{await ckStokYaz(u.id,H);sonuc.push(F.nere==='arac'?'araca yüklendi':kay==='depo'?'stoktan düştü':'araçtan düştü')}catch(e){toast('İşe yazıldı ama stok düşülemedi: '+e.message);console.error(e)}}
+  // 3) Dükkân defterine (giden)
+  const r=await sb.from('koord_kayit').insert({gun:bugunS(),saat:simdiS(),tur:'giden',kisi:k.ad,personel_id:k.id,bolum:k.departman||null,metin:'📦 '+ms+' → '+yer});if(!r.error)sonuc.push('deftere işlendi');
+  S.pf={ac:1,nere:F.nere,kay:F.kay,is:F.is,ar:F.ar,kisi:F.kisi};toast('✔ '+ms+': '+sonuc.join(' · '));render()}
 async function vYoklamaS(m){
   const ps=await sb.from('personel').select('*').order('ad');if(hata(ps.error))return;
   m.innerHTML=`<div class="kp"><div class="kp-hero"><div><div class="kp-ey">DOTEK ENERJİ · DÜKKÂN</div><h1>Personel geldi / gitti</h1><p>Yazdığın her giriş ve çıkış koordinatöre bildirim olarak gider.</p></div><div class="kp-links"><button onclick="go('gunluk')">${kSvg('takvim',16)} Günlük panel</button></div></div></div><div id="kb" class="kp" style="margin-top:14px"></div>`;
