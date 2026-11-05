@@ -359,8 +359,8 @@ function render(){
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({koord:vKoord,yoklama:vYoklamaS,gunluk:vGunluk,kontrol:vKontrol,donem:vDonemRapor,haftalik:vHaftalik,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
-  Promise.resolve(v(m)).then(()=>{if(!S.belge&&!S.aj&&!S.pid&&['onay','planlama','koord','ofisana'].includes(S.tab)&&hfYetki()&&!m.querySelector('.hfbtn'))m.insertAdjacentHTML('afterbegin',hfBtn())}).finally(bildirimKontrol);
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({koord:vKoord,yoklama:vYoklamaS,gunluk:vGunluk,kontrol:vKontrol,donem:vDonemRapor,haftalik:vHaftalik,faturatakip:vFaturaTakip,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  Promise.resolve(v(m)).then(()=>{if(!S.belge&&!S.aj&&!S.pid&&['onay','planlama','koord','ofisana'].includes(S.tab)){let h='';if(hfYetki()&&!m.querySelector('.hfbtn'))h+=hfBtn();if(ftYetki()&&!m.querySelector('.ftbtn'))h+=ftBtn();if(h){const b=m.querySelector('.hfbtn');if(b)b.insertAdjacentHTML('afterend',h);else m.insertAdjacentHTML('afterbegin',h)}}}).finally(bildirimKontrol);
 }
 function geriBtn(){return`<button class="btn s l" style="margin-bottom:10px" onclick="go(S.prev&&S.prev!==S.tab?S.prev:tabsFor()[0][0])">← Panele dön</button>`}
 function go(k){if(k!==S.tab&&!['kontrol','bildirim','akis'].includes(S.tab))S.prev=S.tab;if(k!=='departmanlar')S.rap=0;if(k==='gunluk')S.pg=null;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
@@ -499,7 +499,7 @@ async function vFatura(m){
     <span class="chip ${g>30?'c-iade':'c-patronda'}" style="white-space:nowrap">${p.odeme_durum==='kismi'?'Kısmi ödendi':'Ödeme bekliyor'} · ${g} gün</span></div>${ust(p)}
     <div class="muted">${p.iletim==='proforma'?`📄 Proforma verildi${p.proforma_no?' · <b>'+esc(p.proforma_no)+'</b>':''}`:`🧾 Fatura No: <b>${esc(p.fatura_no||'—')}</b>`} · ${tarih(p.fatura_tarihi)}</div>
     <div class="row sp" style="margin-top:8px"><div><div class="muted">Fatura tutarı</div><b>${tl(p.fiyat,p.para_birimi)}</b></div><div style="text-align:right"><div class="muted">Kalan</div><div class="big" style="color:var(--red)">${tl(kalan(p),p.para_birimi)}</div></div></div>
-    ${isOzet(p)}
+    ${ftAdimlar(p,TN[p.id])}${isOzet(p)}
     ${O.length?`<div style="margin-top:6px;border-top:1px solid var(--line);padding-top:4px"><div class="muted" style="font-weight:700">Gelen ödemeler</div>${O.map(odemeSatir).join('')}</div>`:''}
     ${SALT?'<div class="muted" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">Ödeme gelince Ofis veya Doğuş işaretler; sana bildirim gelir.</div>':`<form class="odf" data-id="${p.id}" data-pb="${esc(p.para_birimi||'TRY')}" style="margin-top:10px;border-top:1px solid var(--line);padding-top:10px">
      <div class="row" style="flex-wrap:nowrap"><div style="flex:1;min-width:0"><label for="ot${p.id}">Gelen tutar (${esc(p.para_birimi||'TRY')})</label><input id="ot${p.id}" name="t" type="number" step="0.01" min="0.01" required value="${kalan(p)}"></div>
@@ -512,7 +512,7 @@ async function vFatura(m){
     ${odm(p).map(odemeSatir).join('')}<div class="durumlar" style="margin-top:8px"><button class="btn s l" onclick="openP(${p.id},'fiyat')">İşi aç ›</button>${p.proforma_no?`<button class="btn s l" onclick="proformaAc(${p.id})">📄 Proforma</button>`:''}</div></div></details>`;
   const P=me.rol==='patron';
   m.innerHTML=`${P||SALT?'<button class="btn s l" onclick="go(\'cari\')">← Müşteri</button><h2 style="margin-top:10px">Fatura ve tahsilat</h2>':''}
-   <div class="row"><div class="stat"><span class="muted">Fatura bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Ödeme bekleyen</span><b style="color:var(--red)">${obk.length?sumPB(obk,kalan):'0'}</b></div></div>
+   ${SALT?'':ftBtn()}<div class="row"><div class="stat"><span class="muted">Fatura bekleyen</span><b>${bek.length}</b></div><div class="stat"><span class="muted">Ödeme bekleyen</span><b style="color:var(--red)">${obk.length?sumPB(obk,kalan):'0'}</b></div></div>
    ${onp.length?`<h2 style="margin-top:14px">İşveren onayında · proforma hazır (${onp.length})</h2><div class="muted" style="margin:-4px 0 8px">Sahadan geldi. Doğuş onaylayınca aşağıya "fatura bekleyen" olarak düşer.</div>
      ${onp.map(p=>`<div class="card click" onclick="proformaGor(${p.id})"><div class="row sp" style="flex-wrap:nowrap"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3><span class="chip c-patronda">Onayda</span></div>${ust(p)}<div class="row sp" style="margin-top:6px"><span class="muted">📄 ${esc(p.proforma_no)}${p.gonderim?' · '+saat(p.gonderim):''}</span><b style="color:var(--green)">${tl(p.fiyat,p.para_birimi)}</b></div></div>`).join('')}`:''}
    ${SALT?'':`<button class="btn w" style="margin-top:12px;font-size:16px;padding:14px" onclick="ofisProformaYeni()">📄 + Yeni proforma fatura</button><div class="muted" style="font-size:12px;margin-top:4px">Sahadan gelmeyen işler için (malzeme satışı, atölye işi, kapıda iş…). PDF · Word · Fotoğraf olarak indirilir.</div>`}
@@ -544,15 +544,78 @@ function isOzet(p){const d=p.proforma||{},pb=pbP(p),G=(TG[p.id]||[]).filter(t=>t
    <div class="durumlar" style="margin-top:8px">${p.proforma_no?`<button type="button" class="btn s l" onclick="proformaGor(${p.id})">📄 Proformayı aç</button>`:''}${mal.length&&d.kalemler?`<button type="button" class="btn s l" onclick="ekGor(PRJ_PRF[${p.id}])">📎 Malzeme listesi</button>`:''}</div></details>`}
 const PRJ_PRF={};
 const pRol=id=>(people.find(x=>x.id===id)||{}).rol;
-function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',hz=P?['📞 Ben konuştum, ödeyecek','🔁 Tekrar arayın','⏳ Biraz bekleyelim']:['📞 Aradım, cevap vermedi','📞 Konuştum, ödeyecek','📞 Aradı, Doğuş Bey ile konuşacağım dedi'];
-  return`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="muted" style="font-weight:700">📞 Ödeme takibi notları${N.length?' ('+N.length+')':''}</div>
-   ${N.map(n=>`<div style="padding:6px 0;border-bottom:1px dashed var(--line)"><div style="white-space:pre-wrap">${ic(n.metin)}</div><div class="muted" style="font-size:12px">${esc(pname(n.yazan_id))} · ${saat(n.tarih)}${!n.bildirildi?'':pRol(n.yazan_id)==='patron'?' · 📣 Ofis\'e ve sorumluya bildirildi':me.rol==='patron'?' · 📣 sana bildirildi':' · 📣 Doğuş\'a ve sorumluya bildirildi'}</div></div>`).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz not yok.</div>'}
-   <div class="durumlar" style="margin-top:8px;flex-wrap:wrap">${hz.map(h=>`<button type="button" class="btn s l" onclick="const i=$('#tn${p.id}');i.value=this.textContent;i.focus()">${h}</button>`).join('')}</div>
-   <textarea id="tn${p.id}" rows="2" placeholder="Açıklama yaz… (Örn: Gökçe aradı, açmadı. Yarın tekrar aranacak.)" style="margin-top:6px"></textarea>
-   ${P?`<div class="row" style="margin-top:6px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="tnEkle(${p.id},false)">💾 Not ekle</button><button type="button" class="btn" style="flex:1.4;background:#e5484d" onclick="tnEkle(${p.id},true)">📣 Ofis'e ve sorumluya bildir</button></div>`:`<button type="button" class="btn w" style="margin-top:6px;background:#e5484d" onclick="tnEkle(${p.id},true)">💾 Kaydet · Doğuş'a ve sorumluya bildirim gider</button>`}</div>`}
-async function tnEkle(pid,bildirim){const i=$('#tn'+pid),t=i?i.value.trim():'';if(!t){toast('Önce açıklama yaz');if(i)i.focus();return}
-  const {error}=await sb.rpc('tahsilat_not',{p:pid,metin:t,bildir:bildirim});if(hata(error))return;
-  toast(bildirim?(me.rol==='patron'?'Not eklendi, Ofis\'e ve sorumluya bildirildi':'Not eklendi, Doğuş\'a ve sorumluya bildirim gitti'):'Not eklendi');render()}
+// ---------------- Fatura takibi: kesildi → gönderildi → görüşüldü → ödeme alındı ----------------
+const GKANAL={tel:'📞 Telefon',wa:'💬 WhatsApp',yuz:'🤝 Yüz yüze',eposta:'✉️ E-posta'};
+const GSONUC={ulasilamadi:['Ulaşılamadı','#6B7280'],soz:['Ödeme sözü verdi','#3B82F6'],tekrar:['Tekrar aranacak','#B45309'],itiraz:['İtiraz var','#EF4444'],konusuldu:['Ödeme konuşuldu','#10B981']};
+const FGKANAL={wa:'💬 WhatsApp',eposta:'✉️ E-posta',elden:'🤝 Elden'};
+const ftYetki=()=>!!me&&(me.rol==='patron'||ofisMi()||koordMi()||(me.rol==='ds'));
+const ftGonderir=()=>!!me&&(me.rol==='patron'||ofisMi()||koordMi());
+const ftBtn=()=>ftYetki()?`<button class="btn w ftbtn" style="margin:0 0 8px;background:linear-gradient(90deg,#38BDD8,#3B82F6);color:#fff" onclick="S.ftDon=S.tab;go('faturatakip')">🧾 Fatura takibi · kesildi → gönderildi → görüşüldü → ödendi ›</button>`:'';
+const gunFark=t=>t?Math.max(0,Math.floor((Date.now()-new Date(t).getTime())/864e5)):null;
+function ftDurum(p,N){N=N||[];const son=N[N.length-1];
+  const sozGecti=son&&son.sonuc==='soz'&&son.soz_tarihi&&son.soz_tarihi<gunStr(new Date())&&p.odeme_durum!=='alindi';
+  const adim=p.odeme_durum==='alindi'?4:N.length?3:p.fatura_gonderim?2:1;
+  const bekleme=p.odeme_durum==='alindi'?0:gunFark(adim===1?p.fatura_tarihi:adim===2?p.fatura_gonderim:son.tarih);
+  return{adim,son,sozGecti,bekleme,takildi:p.odeme_durum!=='alindi'&&bekleme>=7}}
+function ftAdimlar(p,N){N=N||[];const D=ftDurum(p,N),tk=x=>x?tarih(x):'';
+  const A=[[p.iletim==='proforma'?'📄 Proforma kesildi':'🧾 Fatura kesildi',tk(p.fatura_tarihi)],
+    ['📤 Gönderildi',p.fatura_gonderim?(p.fatura_gonderim_kanal==='önceden'?tk(p.fatura_gonderim):tk(p.fatura_gonderim)+' · '+(FGKANAL[p.fatura_gonderim_kanal]||p.fatura_gonderim_kanal||'')):''],
+    ['☎ Görüşüldü',N.length?N.length+' görüşme · son '+tk(N[N.length-1].tarih):''],
+    ['💰 Ödeme alındı',p.odeme_durum==='alindi'?tk(p.odeme_tarihi):p.odeme_durum==='kismi'?'Kısmi ödendi':'']];
+  const ok=i=>i===0||(i===1&&!!p.fatura_gonderim)||(i===2&&N.length>0)||(i===3&&p.odeme_durum==='alindi');
+  return`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px">${A.map(([a,t],i)=>{const o=ok(i),k=i===3&&p.odeme_durum==='kismi';const c=o?'#10B981':k?'#B45309':'#9CA3AF';
+    return`<div style="border-top:4px solid ${c};padding-top:4px;min-width:0"><div style="font-size:11.5px;font-weight:800;color:${o||k?c:'#6B7280'};line-height:1.25">${o?'✓ ':''}${a}</div>${t?`<div class="muted" style="font-size:10.5px;line-height:1.25">${esc(t)}</div>`:''}</div>`}).join('')}</div>
+   ${D.sozGecti?`<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#fdecec;color:var(--red);font-weight:700;font-size:13px">⏰ Ödeme sözü geçti (${tarih(D.son.soz_tarihi)}) · ödeme gelmedi</div>`:D.takildi?`<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:#FEF3C7;color:#B45309;font-weight:700;font-size:13px">⚠️ ${D.bekleme} gündür bu adımda: ${D.adim===1?'müşteriye gönderilmedi':'ödeme için görüşülmedi'}</div>`:''}
+   ${ftGonderir()&&!p.fatura_gonderim&&p.odeme_durum!=='alindi'?`<div class="row" style="margin-top:8px;flex-wrap:wrap;gap:6px;align-items:center"><span class="muted" style="font-size:12.5px;font-weight:700">Müşteriye gönderildi mi?</span>${Object.entries(FGKANAL).map(([k,v])=>`<button type="button" class="btn s l" onclick="ftGonderildi(${p.id},'${k}')">${v}</button>`).join('')}</div>`:''}`}
+async function ftGonderildi(pid,k){const {error}=await sb.rpc('fatura_gonderildi',{p:pid,kanal:k});if(hata(error))return;toast('📤 Gönderildi olarak işaretlendi ('+FGKANAL[k].replace(/^\S+\s/,'')+')');render()}
+function gorusmeSatir(n){const s=GSONUC[n.sonuc];
+  return`<div style="padding:7px 0;border-bottom:1px dashed var(--line)"><div class="row" style="flex-wrap:wrap;gap:6px;align-items:center">${n.kanal?`<span style="font-weight:700;font-size:13px">${GKANAL[n.kanal]||esc(n.kanal)}</span>`:'<span style="font-weight:700;font-size:13px">📝 Not</span>'}${s?`<span class="chip" style="background:${s[1]}1a;color:${s[1]}">${s[0]}${n.sonuc==='soz'&&n.soz_tarihi?' · '+tarih(n.soz_tarihi):''}</span>`:''}${n.kisi?`<span class="muted" style="font-size:12.5px">· ${esc(n.kisi)} ile</span>`:''}</div>
+   ${n.metin&&!(s&&n.metin===s[0])?`<div style="white-space:pre-wrap;margin-top:2px">${esc(n.metin)}</div>`:''}<div class="muted" style="font-size:12px">${esc(n._yazan||pname(n.yazan_id))} · ${saat(n.tarih)}</div></div>`}
+function tnBlok(p){if(p.proforma)PRJ_PRF[p.id]=p.proforma;const N=TN[p.id]||[],P=me.rol==='patron',ac=S.gf===p.id,F=S.gff||{};
+  const kbtn=(k,v)=>`<button type="button" class="btn s ${F.kanal===k?'':'l'}" style="flex:0 0 auto;white-space:nowrap" onclick="S.gff.kanal='${k}';render()">${v}</button>`,sbtn=(k,[a,c])=>`<button type="button" class="btn s ${F.sonuc===k?'':'l'}" style="flex:0 0 auto;white-space:nowrap;${F.sonuc===k?'background:'+c+';color:#fff':''}" onclick="S.gff.sonuc='${k}';render()">${a}</button>`;
+  return`<div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px"><div class="row sp" style="flex-wrap:nowrap;gap:8px"><b style="font-size:14px">☎ Ödeme görüşmeleri${N.length?' ('+N.length+')':''}</b>${ac?'':`<button type="button" class="btn s" onclick="gfAc(${p.id})">+ Görüşme ekle</button>`}</div>
+   ${N.map(gorusmeSatir).join('')||'<div class="muted" style="font-size:13px;padding:4px 0">Henüz görüşme yok.</div>'}
+   ${ac?`<div class="card" style="margin-top:8px;border:2px solid #9fd3b2;background:#f3fbf6;padding:10px 12px">
+     <div style="font-weight:700;font-size:13px">Nasıl görüşüldü?</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${Object.entries(GKANAL).map(([k,v])=>kbtn(k,v)).join('')}</div>
+     <div style="font-weight:700;font-size:13px;margin-top:8px">Ne oldu?</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${Object.entries(GSONUC).map(([k,v])=>sbtn(k,v)).join('')}</div>
+     ${F.sonuc==='soz'?`<label for="gfs">Hangi tarihte ödeyecek? *</label><input id="gfs" type="date" value="${F.soz||''}" onchange="S.gff.soz=this.value">`:''}
+     <label for="gfk">Kiminle görüşüldü</label><input id="gfk" value="${esc(F.kisi||'')}" oninput="S.gff.kisi=this.value" placeholder="Örn: Ahmet Bey (muhasebe)">
+     <label for="gfn">Not</label><textarea id="gfn" rows="2" oninput="S.gff.metin=this.value" placeholder="Örn: Ay sonu havale yapacak, dekont atacak">${esc(F.metin||'')}</textarea>
+     <div class="row" style="margin-top:8px;flex-wrap:nowrap;gap:8px"><button type="button" class="btn l" style="flex:1" onclick="S.gf=null;render()">Vazgeç</button>${P?`<button type="button" class="btn l" style="flex:1" onclick="gfKaydet(${p.id},false)">💾 Kaydet</button><button type="button" class="btn g" style="flex:1.3" onclick="gfKaydet(${p.id},true)">💾 Kaydet + bildir</button>`:`<button type="button" class="btn g" style="flex:2" onclick="gfKaydet(${p.id},true)">💾 Kaydet · Doğuş'a, Ofis'e ve sorumluya bildirilir</button>`}</div></div>`:''}</div>`}
+function gfAc(pid){S.gf=pid;S.gff={kanal:'tel'};render();setTimeout(()=>{const x=$('#gfk');if(x)x.scrollIntoView({block:'center'})},50)}
+async function gfKaydet(pid,bildir){const F=S.gff||{};const n=$('#gfn'),k=$('#gfk'),s=$('#gfs');if(n)F.metin=n.value;if(k)F.kisi=k.value;if(s)F.soz=s.value;
+  if(!F.sonuc&&!(F.metin||'').trim())return toast('Ne olduğunu seç ya da not yaz');if(F.sonuc==='soz'&&!F.soz)return toast('Ödeme sözünün tarihini seç');
+  const {error}=await sb.rpc('tahsilat_gorusme',{p:pid,kanal:F.kanal||null,sonuc:F.sonuc||null,soz:F.sonuc==='soz'?F.soz:null,kisi:(F.kisi||'').trim()||null,metin:(F.metin||'').trim()||null,bildir});if(hata(error))return;
+  S.gf=null;S.gff={};toast('☎ Görüşme kaydedildi');render()}
+async function tnEkle(pid,bildirim){return gfKaydet(pid,bildirim)}
+
+async function vFaturaTakip(m){
+  if(!ftYetki())return go(tabsFor()[0][0]);
+  S.ftf=S.ftf||'acik';
+  const geri=`<button class="btn s l" onclick="go(S.ftDon||tabsFor()[0][0])">← Geri</button>`;
+  const {data,error}=await sb.rpc('fatura_takip',{gun:30});if(error){m.innerHTML=`${geri}<div class="card" style="margin-top:10px;color:var(--red)">Fatura takibi açılamadı: ${esc(error.message)}</div>`;return}
+  const L=data.isler||[];TN={};L.forEach(p=>{TN[p.id]=(p.notlar||[]).map(n=>({...n,_yazan:pname(n.yazan_id)}))});
+  const D=p=>ftDurum(p,TN[p.id]);
+  const F={acik:['Ödeme bekleyen',p=>p.odeme_durum!=='alindi'],gonderilmedi:['📤 Gönderilmedi',p=>p.odeme_durum!=='alindi'&&!p.fatura_gonderim],gorusulmedi:['☎ Görüşülmedi',p=>p.odeme_durum!=='alindi'&&p.fatura_gonderim&&!(TN[p.id]||[]).length],
+    soz:['⏰ Söz geçti',p=>D(p).sozGecti],takilan:['⚠️ 7+ gün bekleyen',p=>D(p).takildi],odendi:['💰 Ödendi (30 gün)',p=>p.odeme_durum==='alindi']};
+  const acik=L.filter(F.acik[1]),liste=L.filter(F[S.ftf][1]).sort((a,b)=>(Number(!!D(b).sozGecti)-Number(!!D(a).sozGecti))||((D(b).bekleme||0)-(D(a).bekleme||0)));
+  const kalanF=p=>Math.max(0,Number(p.fiyat||0)-Number(p.odeme_durum==='alindi'?p.fiyat:p.odenen||0));
+  const kutu=(k,v,c,f)=>`<div class="card click" style="margin:0;padding:12px;${S.ftf===f?'border:2px solid var(--blue)':''}" onclick="S.ftf='${f}';render()"><div class="muted" style="font-size:12px">${k}</div><div style="font-weight:800;font-size:18px;margin-top:2px;${c?'color:'+c:''}">${v}</div></div>`;
+  const kart=p=>{const d=D(p),N=TN[p.id]||[];return`<div class="card" style="${d.sozGecti?'border-color:#f3b4b4':d.takildi?'border-color:#f0d9a0':''}"><div class="row sp" style="flex-wrap:nowrap;gap:8px"><h3 style="margin:0;min-width:0">${esc(p.ad)}</h3><b style="white-space:nowrap;color:${p.odeme_durum==='alindi'?'var(--green)':'var(--red)'}">${p.odeme_durum==='alindi'?tl(p.fiyat,p.para_birimi):tl(kalanF(p),p.para_birimi)}</b></div>
+    <div class="muted" style="font-size:12.5px;margin-top:2px">${esc(dname(p.departman_id))}${p.musteri?' · Müşteri: <b>'+esc(p.musteri)+'</b>':''}${p.takip?' · '+esc(p.takip):''}</div>
+    <div class="muted" style="font-size:12.5px">${p.iletim==='proforma'?'📄 Proforma '+esc(p.proforma_no||''):'🧾 Fatura '+esc(p.fatura_no||'')} · ${tarih(p.fatura_tarihi)} · <b style="color:${gunFark(p.fatura_tarihi)>30&&p.odeme_durum!=='alindi'?'var(--red)':'inherit'}">${gunFark(p.fatura_tarihi)} gün</b> · Tutar ${tl(p.fiyat,p.para_birimi)}${p.odeme_durum==='kismi'?' · Ödenen '+tl(p.odenen,p.para_birimi):''}</div>
+    ${p.tel?`<a class="btn s l" style="margin-top:6px;display:inline-block" href="tel:${esc(String(p.tel).replace(/\s/g,''))}">📞 ${esc(p.tel)} ara</a>`:''}
+    ${ftAdimlar(p,N)}${tnBlok(p)}
+    ${p.odeme_durum!=='alindi'?`<div class="muted" style="font-size:12px;margin-top:6px">💰 Ödeme gelince ${ofisMi()||me.rol==='patron'?'<a href="#" onclick="go(\'fatura\');return false">Fatura sekmesinden</a>':'Ofis Fatura sekmesinden'} girilir; adım kendiliğinden tamamlanır.</div>`:''}</div>`};
+  m.innerHTML=`${geri}<h2 style="margin-top:10px">🧾 Fatura takibi</h2><div class="muted" style="margin:-4px 0 8px">Fatura / proforma kesildi → müşteriye gönderildi → ödeme için görüşüldü → ödeme alındı</div>
+   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:6px">
+    ${kutu('Ödeme bekleyen',acik.length+' iş',null,'acik')}${kutu('Açık alacak',acik.length?sumPB(acik,kalanF):'0','var(--red)','acik')}
+    ${kutu('📤 Gönderilmedi',L.filter(F.gonderilmedi[1]).length,'#B45309','gonderilmedi')}${kutu('☎ Görüşülmedi',L.filter(F.gorusulmedi[1]).length,'#B45309','gorusulmedi')}
+    ${kutu('⏰ Söz geçti',L.filter(F.soz[1]).length,'var(--red)','soz')}${kutu('⚠️ 7+ gün bekleyen',L.filter(F.takilan[1]).length,'var(--red)','takilan')}</div>
+   <div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">${Object.entries(F).map(([k,[a]])=>`<button class="btn s ${S.ftf===k?'':'l'}" style="flex:0 0 auto;white-space:nowrap" onclick="S.ftf='${k}';render()">${a} (${L.filter(F[k][1]).length})</button>`).join('')}</div>
+   ${liste.map(kart).join('')||'<div class="card muted">Bu listede iş yok 👍</div>'}
+   <div class="muted" style="font-size:12px;margin-top:8px">Her sabah: ödeme sözü geçen, 7 gündür gönderilmeyen ya da görüşülmeyen işler için Ofis'e ve koordinatöre bildirim gider.</div>`;
+}
 // Görevlerim / Ana Sayfa: ödemesi beklenen işler (Ofis hepsini, sorumlu kendi bölümünü, Doğuş hepsini görür)
 async function odemeTakipKart(){
   const {data}=await sb.from('projeler').select('*').eq('durum','onaylandi');
@@ -1561,7 +1624,7 @@ const HF_PR={bitti:['Bitti · proforma hazırlanacak','#B45309'],patronda:['İş
 const hfChip=(m,k)=>{const[a,c]=m[k]||[k||'—','#6B7280'];return`<span class="chip" style="background:${c}1a;color:${c};white-space:nowrap">${esc(a)}</span>`};
 function hfAralik(){if(S.hf&&S.hf.oz&&S.hf.b&&S.hf.e){const b=new Date(S.hf.b+'T00:00:00'),e=new Date(S.hf.e+'T00:00:00');e.setDate(e.getDate()+1);return e>b?{b,e}:{b,e:new Date(b.getTime()+864e5)}}const o=(S.hf&&S.hf.o)||0,t=new Date();t.setHours(0,0,0,0);const b=new Date(t);b.setDate(t.getDate()-((t.getDay()+6)%7)+7*o);const e=new Date(b);e.setDate(b.getDate()+7);return{b,e}}
 function hfEtiket(A){const s=new Date(A.e);s.setDate(s.getDate()-1);return A.b.toLocaleDateString('tr-TR',{day:'numeric',month:'long'})+' – '+s.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'})}
-async function hfVeri(){const A=hfAralik();const {data,error}=await sb.rpc('haftalik_rapor',{ilk:gunStr(A.b),son:gunStr(A.e),dep:hfGenis()?(S.hf.dep||null):null});if(error)throw error;return{A,...data}}
+async function hfVeri(){const A=hfAralik();const prm={ilk:gunStr(A.b),son:gunStr(A.e),dep:hfGenis()?(S.hf.dep||null):null};const [r1,r2]=await Promise.all([sb.rpc('haftalik_rapor',prm),sb.rpc('haftalik_fatura',prm)]);if(r1.error)throw r1.error;return{A,...r1.data,F:r2.error?null:r2.data}}
 const hfTkTop=t=>{try{const h=bHesap(teklifBelge(t));return h.gen>0?h.gen:null}catch(e){return null}};
 const hfGun=d=>d?new Date(d).toLocaleDateString('tr-TR',{weekday:'short',day:'numeric',month:'short'}):'';
 function hfKisiSay(R){const s=new Set();R.yapilan.forEach(g=>(g.kisiler||[]).forEach(k=>s.add(k)));return s.size}
@@ -1625,6 +1688,10 @@ async function vHaftalik(m){
    ${hdr('🏁 Biten işler',R.biten.length)}${bitHTML||'<div class="card muted">'+BH+' biten iş yok.</div>'}
    ${hdr('🔍 Keşifler',R.kesif.length,S.hf.yeniK?'':`<button class="btn s" onclick="S.hf.yeniK=true;render()">+ Keşif ekle</button>`)}${ksfForm}${ksfHTML||(S.hf.yeniK?'':'<div class="card muted">'+BH+' keşif kaydı yok. Keşfe gidince "+ Keşif ekle" ile yaz.</div>')}
    ${hdr('📨 Teklifler',R.teklif.length)}${tkHTML||'<div class="card muted">'+BH+' teklif yok.</div>'}
+   ${R.F?(()=>{const F=R.F,top=hfTopla(F.tahsilat,x=>x.tutar,x=>x.pb);return`${hdr('🧾 Fatura ve tahsilat',F.kesilen.length+' kesildi')}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">${kutu('🧾 Kesilen',F.kesilen.length,hfTopla(F.kesilen,x=>x.fiyat,x=>x.pb))}${kutu('📤 Gönderilen',F.gonderilen)}${kutu('☎ Görüşme',F.gorusme.length,[...new Set(F.gorusme.map(g=>g.is))].length+' işte')}${kutu('💰 Tahsil edilen',F.tahsilat.length,top,'var(--green)')}</div>
+    ${F.kesilen.length?`<div class="card" style="margin-top:8px">${F.kesilen.map(x=>`<div class="row sp" style="padding:6px 0;border-bottom:1px solid var(--line);flex-wrap:nowrap;gap:8px"><span style="min-width:0">${x.iletim==='proforma'?'📄':'🧾'} <b>${esc(x.ad)}</b><span class="muted">${x.musteri?' · '+esc(x.musteri):''} · ${esc(x.no||'')} · ${x.odeme==='alindi'?'💰 ödendi':x.gonderim?'📤 gönderildi':'gönderilmedi'}</span></span><b style="white-space:nowrap">${x.fiyat!=null?tl(x.fiyat,x.pb):''}</b></div>`).join('')}</div>`:''}
+    ${F.gorusme.length?`<details class="card" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">☎ Ödeme görüşmeleri (${F.gorusme.length})</summary>${F.gorusme.map(g=>`<div style="border-top:1px dashed var(--line);margin-top:6px;padding-top:6px"><b>${esc(g.is)}</b><span class="muted">${g.musteri?' · '+esc(g.musteri):''}</span>${gorusmeSatir({...g,_yazan:g.yazan,soz_tarihi:g.soz})}</div>`).join('')}</details>`:''}
+    ${ftYetki()?`<button class="btn l w" style="margin-top:8px" onclick="S.ftDon='haftalik';go('faturatakip')">🧾 Fatura takibini aç ›</button>`:''}`})():''}
    ${hdr('🆕 '+BH+' açılan işler',R.yeni.length)}${yeniHTML?`<div class="card">${yeniHTML}</div>`:'<div class="card muted">Yeni iş açılmadı.</div>'}
    ${hdr('⏳ Devam eden işler',R.devam.length)}${devHTML?`<div class="card">${devHTML}</div>`:'<div class="card muted">Devam eden iş yok.</div>'}
    ${hdr('📝 Gün sonu raporları',R.gunsonu.length)}${gsHTML||'<div class="card muted">'+BH+' gün sonu raporu yazılmadı.</div>'}`;
@@ -1644,6 +1711,7 @@ function hfOzet(R){const g=R.teklif.filter(t=>['gonderildi','kabul','red'].inclu
   if(R.biten.length){L.push('','*🏁 Biten işler*');R.biten.forEach(p=>L.push(`• ${p.ad}${p.musteri?' – '+p.musteri:''} (${dname(p.dep)})${p.fiyat!=null?' · '+tl(p.fiyat,p.pb):''}`))}
   if(R.yapilan.length){L.push('','*✅ Yapılan işler*');hfGrupla(R.yapilan).forEach(p=>L.push(`• ${p.ad}: ${p.L.map(g=>g.baslik).join(', ')}`))}
   if(R.kesif.length){L.push('','*🔍 Keşifler*');R.kesif.forEach(k=>L.push(`• ${k.musteri}${k.konu?' – '+k.konu:''}${k._yapan?' ('+k._yapan+')':''} · ${KSF[k.sonuc]?KSF[k.sonuc][0]:k.sonuc}`))}
+  if(R.F){const F=R.F;L.push('','*🧾 Fatura ve tahsilat*',`Kesilen: ${F.kesilen.length} · Gönderilen: ${F.gonderilen} · Görüşme: ${F.gorusme.length} · Tahsil edilen: ${hfTopla(F.tahsilat,x=>x.tutar,x=>x.pb)}`)}
   if(R.teklif.length){L.push('','*📨 Teklifler*');R.teklif.forEach(t=>{const T=hfTkTop(t);L.push(`• ${t.musteri||''}${t.konu?' – '+t.konu:''} · ${(HF_TK[t.durum]||[t.durum])[0]}${T!=null?' · '+bPara(T,t.para_birimi):''}`)})}
   return L.join('\n')}
 async function hfKopya(){const R=window._hf;if(!R)return;const t=hfOzet(R);try{await navigator.clipboard.writeText(t);toast('Özet kopyalandı · WhatsApp\'a yapıştırabilirsin')}catch(e){window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}}
