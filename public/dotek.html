@@ -158,7 +158,7 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .kp-pc[hidden]{display:none}.kp-pc{text-align:left;font:inherit;color:inherit;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;cursor:pointer;display:flex;flex-direction:column;gap:10px;transition:box-shadow .15s,border-color .15s}.kp-pc:hover{border-color:#BFDBFE;box-shadow:0 6px 18px rgba(59,130,246,.10)}
 .kp-pch{display:flex;align-items:center;gap:12px}.kp-pch b{font-size:15px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kp-pcd{display:flex;align-items:center;gap:6px;font-size:13px;color:#4B5563}.kp-pcd svg{color:#3B82F6}
-.kp-szs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.kp-sz{background:#F8FAFF;border:1px solid #E5EBF5;border-radius:10px;padding:5px 6px;text-align:center;font-weight:800;font-size:14px;color:#1F2937}.kp-sz i{display:block;font-style:normal;font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em}.kp-sz.bos{color:#CBD5E1;background:#fff;border-style:dashed}
+.kp-szs{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}.kp-sz{background:#F8FAFF;border:1px solid #E5EBF5;border-radius:10px;padding:5px 6px;text-align:center;font-weight:800;font-size:13px;line-height:1.25;color:#1F2937}.kp-sz i{display:block;font-style:normal;font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em}.kp-sz.bos{color:#CBD5E1;background:#fff;border-style:dashed}
 .kp-adet{margin-left:auto;text-align:center;background:#D1FAE5;color:#047857;border-radius:12px;padding:4px 10px;min-width:54px}.kp-adet b{font-size:20px;display:block;line-height:1.1}.kp-adet span{font-size:10px;font-weight:800;text-transform:uppercase}.kp-adet.yok{background:#FEE2E2;color:#DC2626}
 .kp-kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:640px){.kp-kpis.k3{grid-template-columns:1fr 1fr}}
 .kp-form{box-shadow:0 10px 30px rgba(59,130,246,.12);border-color:#BFDBFE}.kp-form>header b{flex:1}
@@ -1969,30 +1969,30 @@ async function kSimdi(pid){const g=bugunS(),now=new Date(),t=String(now.getHours
   const r=data?await sb.from('yoklama').update(data.giris?{cikis:t,guncelleme:now.toISOString()}:{giris:t,durum:'geldi',guncelleme:now.toISOString()}).eq('id',data.id):await sb.from('yoklama').insert({gun:g,personel_id:pid,giris:t,durum:'geldi'});
   if(hata(r.error))return;toast((data&&data.giris?'Gitti ':'Geldi ')+t);render()}
 // --- Personel ---
+const KOLCU=[['pantolon','Pantolon','M ×2','Pant.'],['kazak','Kazak','40 ×2, 42 ×1'],['polar','Polar','2XL ×1'],['fosforlu','Fosforlu mont','2XL ×1','Fosf. mont'],['yelek','Yelek','L ×1'],['tisort','Tişört','L ×2'],['ayakkabi','Ayakkabı','42'],['mont','Mont','XL']];
 async function kPersonel(b,P){const e=S.pe;const x=e==='yeni'?{aktif:true}:P.find(p=>p.id===e);
   const fld=(l,inp)=>`<div class="kp-f"><label>${l}</label>${inp}</div>`;
   const form=x?`<form id="pf2" class="kp-grp kp-form"><header>${e==='yeni'?`<span class="ic" style="background:#EEF4FF;color:#3B82F6">${kSvg('kisi',17)}</span><b>Yeni personel</b>`:`${kAv(x.ad,32)}<b>${esc(x.ad)}</b>`}<button type="button" class="kp-x" aria-label="Kapat" onclick="S.pe=null;render()">×</button></header>
     <div class="kp-fb"><div class="kp-fs">Kişi bilgileri</div><div class="kp-fg">
     ${fld('Ad soyad *',`<input name="ad" required value="${esc(x.ad||'')}">`)}${fld('Departman',`<input name="dep" list="dpl" value="${esc(x.departman||'')}">`)}
     ${fld('Telefon',`<input name="tel" inputmode="tel" value="${esc(x.telefon||'')}">`)}${fld('Doğum günü',`<input name="dg" type="date" value="${x.dogum_gunu||''}">`)}</div>
-    <div class="kp-fs">Bedenler</div><div class="kp-fg four">
-    ${fld('Tişört',`<input name="ts" value="${esc(x.tisort||'')}" placeholder="M, L, XL…">`)}${fld('Pantolon',`<input name="pn" value="${esc(x.pantolon||'')}" placeholder="32, 34…">`)}
-    ${fld('Ayakkabı',`<input name="ay" value="${esc(x.ayakkabi||'')}" placeholder="42, 43…">`)}${fld('Mont / yelek',`<input name="mt" value="${esc(x.mont||'')}">`)}</div>
+    <div class="kp-fs">Kıyafet ölçüleri ve verilen adet</div><p class="muted" style="margin:-4px 0 8px;font-size:12px">Beden ve adet birlikte yazılır, örn. <b>M ×2</b> ya da <b>40 ×2, 42 ×1</b></p><div class="kp-fg four">
+    ${KOLCU.map(([k,a,ph])=>fld(a,`<input name="o_${k}" value="${esc(x[k]||'')}" placeholder="${ph}">`)).join('')}</div>
     ${fld('Not',`<input name="nt" value="${esc(x.notu||'')}">`)}
     <label class="kp-sw"><input type="checkbox" name="ak" ${x.aktif?'checked':''}> Çalışıyor (listede görünsün)</label>
     <div class="kp-eact"><button class="kp-btn">Kaydet</button><button type="button" class="kp-btn ghost" onclick="S.pe=null;render()">Vazgeç</button>${e!=='yeni'?`<button type="button" class="kp-btn danger" onclick="kPrSil(${e})">Personeli sil</button>`:''}</div></div></form><datalist id="dpl">${['Elektrik','Jeneratör','Elektronik','Bobinaj','Otomasyon','Ofis'].map(d=>`<option value="${d}">`).join('')}</datalist>`:'';
   const A=P.filter(p=>p.aktif),Pasif=P.filter(p=>!p.aktif),q=(S.pq||'').toLocaleLowerCase('tr-TR');
-  const eksik=A.filter(p=>!p.dogum_gunu||!p.tisort||!p.pantolon||!p.ayakkabi).length;
+  const eksik=A.filter(p=>!p.dogum_gunu||!p.pantolon||!p.kazak).length;
   const L=A.filter(p=>!q||(p.ad+' '+(p.departman||'')).toLocaleLowerCase('tr-TR').includes(q));
   const bd=(t,v)=>`<span class="kp-sz${v?'':' bos'}"><i>${t}</i>${esc(v||'—')}</span>`;
   b.innerHTML=form+`<div class="kp-bar"><div class="kp-search">${kSvg('kisi',16)}<input id="pq" placeholder="Personel ara…" value="${esc(S.pq||'')}"></div><span class="kp-cnt" style="padding:4px 10px">${A.length} kişi</span>${eksik?`<span class="kp-pill amber">${eksik} kişinin bilgisi eksik</span>`:''}<button class="kp-btn" style="margin-left:auto" onclick="S.pe='yeni';render();scrollTo(0,0)">+ Personel ekle</button></div>
    <div class="kp-cards">${L.map(p=>`<button class="kp-pc" data-q="${esc((p.ad+' '+(p.departman||'')).toLocaleLowerCase('tr-TR'))}" onclick="S.pe=${p.id};render();scrollTo(0,0)">
      <div class="kp-pch">${kAv(p.ad,40)}<div style="min-width:0"><b>${esc(p.ad)}</b><div class="kp-meta" style="margin-top:3px">${kDepPill(p.departman)}${p.telefon?`<span class="kp-pill">${esc(p.telefon)}</span>`:''}</div></div></div>
      <div class="kp-pcd">${kSvg('takvim',14)} ${p.dogum_gunu?new Date(p.dogum_gunu+'T12:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'long'}):'<span class="muted">Doğum günü yok</span>'}</div>
-     <div class="kp-szs">${bd('Tişört',p.tisort)}${bd('Pant.',p.pantolon)}${bd('Ayak.',p.ayakkabi)}${bd('Mont',p.mont)}</div></button>`).join('')||'<div class="kp-empty"><b>Bulunamadı</b></div>'}</div>
+     <div class="kp-szs">${KOLCU.filter(([k])=>p[k]||['pantolon','kazak','polar','fosforlu','yelek'].includes(k)).map(([k,a,,kisa])=>bd(kisa||a,p[k])).join('')}</div></button>`).join('')||'<div class="kp-empty"><b>Bulunamadı</b></div>'}</div>
    ${Pasif.length?`<details class="kp-grp" style="padding:12px 16px"><summary style="cursor:pointer;font-weight:700">Ayrılanlar (${Pasif.length})</summary><div class="kp-meta" style="margin-top:10px">${Pasif.map(p=>`<button class="kp-pill" style="border:0;cursor:pointer" onclick="S.pe=${p.id};render();scrollTo(0,0)">${esc(p.ad)}</button>`).join('')}</div></details>`:''}`;
   const pq=$('#pq');if(pq)pq.oninput=()=>{S.pq=pq.value;const v=pq.value.toLocaleLowerCase('tr-TR');b.querySelectorAll('.kp-cards .kp-pc').forEach(c=>c.hidden=!!v&&!c.dataset.q.includes(v))};
-  const f=$('#pf2');if(f)f.onsubmit=async ev=>{ev.preventDefault();const o={ad:f.ad.value.trim(),departman:f.dep.value.trim()||null,telefon:f.tel.value.trim()||null,dogum_gunu:f.dg.value||null,tisort:f.ts.value.trim()||null,pantolon:f.pn.value.trim()||null,ayakkabi:f.ay.value.trim()||null,mont:f.mt.value.trim()||null,notu:f.nt.value.trim()||null,aktif:f.ak.checked};
+  const f=$('#pf2');if(f)f.onsubmit=async ev=>{ev.preventDefault();const o={ad:f.ad.value.trim(),departman:f.dep.value.trim()||null,telefon:f.tel.value.trim()||null,dogum_gunu:f.dg.value||null,notu:f.nt.value.trim()||null,aktif:f.ak.checked};KOLCU.forEach(([k])=>{o[k]=f['o_'+k].value.trim()||null});
     const r=e==='yeni'?await sb.from('personel').insert(o):await sb.from('personel').update(o).eq('id',e);if(hata(r.error))return;S.pe=null;toast('Kaydedildi');render()}}
 async function kPrSil(id){const p=(await sb.from('personel').select('ad').eq('id',id).maybeSingle()).data;if(!confirm((p?p.ad+' ':'')+'silinsin mi? Bu kişinin geldi/gitti kayıtları da silinir. (Ayrıldıysa silmek yerine "Çalışıyor" işaretini kaldır.)'))return;
   const {error}=await sb.from('personel').delete().eq('id',id);if(hata(error))return;S.pe=null;toast('Silindi');render()}
