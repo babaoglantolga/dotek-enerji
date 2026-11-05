@@ -2002,13 +2002,17 @@ const KBOL=['Elektrik','Jeneratör','Elektronik','Bobinaj','Otomasyon','Ofis'];
 const simdiS=()=>{const n=new Date();return String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0')};
 async function kDefter(b,P){
   const g=S.dg||bugunS(),d=new Date(g+'T12:00:00'),bugun=g===bugunS(),pzt=gunEk(g,-((d.getDay()+6)%7)),paz=gunEk(pzt,6),tur=S.dt||'gelen';
-  const [r,h]=await Promise.all([sb.from('koord_kayit').select('*').eq('gun',g).order('saat',{ascending:false}).order('id',{ascending:false}),sb.from('koord_kayit').select('*').gte('gun',pzt).lte('gun',paz)]);
+  const [r,h,yk]=await Promise.all([sb.from('koord_kayit').select('*').eq('gun',g).order('saat',{ascending:false}).order('id',{ascending:false}),sb.from('koord_kayit').select('*').gte('gun',pzt).lte('gun',paz),sb.from('yoklama').select('*').gte('gun',pzt).lte('gun',paz)]);
   if(r.error&&/koord_kayit|schema cache|does not exist/i.test(r.error.message)){b.innerHTML='<div class="kp-empty"><b>Dükkân defteri kuruluyor</b><span>Sunucu tarafı kurulunca burası açılır.</span></div>';return}
   if(hata(r.error)||hata(h.error))return;const L=r.data||[],H=h.data||[];
   const A=P.filter(p=>p.aktif),say=t=>L.filter(x=>x.tur===t).length,pano=x=>/pano/i.test(x.metin)?(Number(x.adet)||1):0;
   const kpi=(ik,c,bg,v,t)=>`<div class="kp-kpi"><div class="ic" style="background:${bg};color:${c}">${kSvg(ik,20)}</div><div><b>${v}</b><span>${t}</span></div></div>`;
-  const kisiler=[...new Set(H.filter(x=>x.tur==='is'&&x.kisi).map(x=>x.kisi))];
-  const hafta=kisiler.map(k=>{const l=H.filter(x=>x.tur==='is'&&x.kisi===k);return{k,n:l.length,pano:l.reduce((s,x)=>s+pano(x),0),son:l.sort((a,b)=>(b.gun+b.saat).localeCompare(a.gun+a.saat))[0]}}).sort((a,b)=>b.n-a.n);
+  const kn=t=>String(t||'').trim().toLocaleLowerCase('tr-TR'),YK=(yk&&!yk.error&&yk.data)||[];
+  const kimP=ad=>{const n=kn(ad);return A.find(p=>kn(p.ad)===n)||A.find(p=>kn(p.ad).split(' ')[0]===n.split(' ')[0])};
+  const G={};H.filter(x=>x.kisi).forEach(x=>{const pr=kimP(x.kisi);if(!pr&&x.tur!=='is')return;const key=pr?'p'+pr.id:kn(x.kisi);const o=G[key]=G[key]||{k:pr?pr.ad:x.kisi,pid:pr&&pr.id,l:[]};o.l.push(x)});
+  A.forEach(p=>{if(!G['p'+p.id]&&YK.some(y=>y.personel_id===p.id&&y.giris))G['p'+p.id]={k:p.ad,pid:p.id,l:[]}});
+  const hafta=Object.values(G).map(o=>{const l=o.l.sort((a,b)=>(b.gun+(b.saat||'')).localeCompare(a.gun+(a.saat||'')));const y=YK.filter(x=>x.personel_id===o.pid&&x.durum==='geldi'&&x.giris);
+    return{k:o.k,n:l.length,pano:l.reduce((s,x)=>s+pano(x),0),gun:y.length,saat:y.reduce((s,x)=>s+sureS(x.giris,x.cikis),0),son:l.slice(0,3).map(x=>x.metin)}}).sort((a,b)=>b.n-a.n||b.saat-a.saat);
   const satir=x=>{const [ad,ik,c,bg]=KDT[x.tur]||KDT.not;return`<div class="kp-task">
     <div class="kp-saat">${saatF(x.saat)||'—'}</div><span class="ic" style="width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:${bg};color:${c};flex:none">${kSvg(ik,16)}</span>
     <div class="kp-tb" style="cursor:default"><div class="kp-title">${x.kisi?`<b>${esc(x.kisi)}</b> · `:''}${esc(x.metin)}</div>
@@ -2030,8 +2034,9 @@ async function kDefter(b,P){
    <section class="kp-grp"><header><span class="ic" style="background:#EEF4FF;color:#3B82F6">${kSvg('saat',17)}</span><b>${bugun?'Bugün':'O gün'} dükkânda</b><span class="kp-cnt">${L.length} kayıt</span></header>
     ${L.length?L.map(satir).join(''):'<div class="kp-empty" style="border:0;border-radius:0"><b>Henüz kayıt yok</b><span>Gördüğünü yukarıdan yaz: kim geldi, ne getirdi, kim ne yapıyor.</span></div>'}</section>
    ${hafta.length?`<section class="kp-grp"><header><span class="ic" style="background:#D1FAE5;color:#047857">${kSvg('kisi',17)}</span><b>Bu hafta kim ne yaptı</b><span class="kp-cnt">${tarih(pzt)} – ${tarih(paz)}</span></header>
-    <div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Personel</th><th class="n">İş kaydı</th><th class="n">Pano</th><th>Son yazılan</th></tr></thead><tbody>
-    ${hafta.map(x=>`<tr><td><div class="kp-tn">${kAv(x.k,26)}<b>${esc(x.k)}</b></div></td><td class="n"><b>${x.n}</b></td><td class="n">${x.pano||'—'}</td><td class="muted">${esc(x.son.metin)}</td></tr>`).join('')}</tbody></table></div></section>`:''}`;
+    <div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Personel</th><th class="n">Kayıt</th><th class="n">Pano</th><th class="n">Gün</th><th class="n">Çalışma saati</th><th>Bu hafta yazılanlar</th></tr></thead><tbody>
+    ${hafta.map(x=>`<tr><td><div class="kp-tn">${kAv(x.k,26)}<b>${esc(x.k)}</b></div></td><td class="n"><b>${x.n||'—'}</b></td><td class="n">${x.pano||'—'}</td><td class="n">${x.gun||'—'}</td><td class="n">${x.saat?fmtSaat(x.saat):'—'}</td><td class="muted">${esc(x.son.join(' · ')||'—')}</td></tr>`).join('')}</tbody></table></div>
+    <p class="muted" style="margin:0;padding:8px 16px 12px;font-size:12px">Çalışma saati "Personel → Kim geldi / gitti"den gelir.</p></section>`:''}`;
   const f=$('#dfk');f.onsubmit=async ev=>{ev.preventDefault();const o={gun:g,saat:f.s.value||(bugun?simdiS():null),tur:S.dt||'gelen',kisi:f.k.value.trim()||null,bolum:f.bl.value||null,metin:f.m.value.trim(),adet:f.a.value===''?null:Number(f.a.value)};
     if(!o.metin)return;const pr=A.find(p=>p.ad===o.kisi);if(pr){o.personel_id=pr.id;if(!o.bolum)o.bolum=pr.departman||null}
     const gnd=ev.submitter&&ev.submitter.name==='g';
