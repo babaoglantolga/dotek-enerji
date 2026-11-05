@@ -20,7 +20,10 @@ window.servisCiz=function(){if(!$('svcRows'))return;
   const sv=L.filter(x=>x.r.plate===c.plate).reduce((s,x)=>s+Number(x.r.amount||0),0),fv=fuel.filter(r=>r.plate===c.plate).reduce((s,r)=>s+Number(r.amount||0),0);
   const satir=(lab,val,renk)=>{const m=el('div','monthly-metric');const v=el('strong',null,val);if(renk)v.style.color=renk;v.style.textAlign='right';m.append(el('span',null,lab),v);k.append(m)};
   satir('Lastik ölçüsü',c.tire||'Girilmedi');
-  {const [v,r]=durumY(c.insurance);satir('Sigorta',v,r)}
+  if(c.purchaseMonth&&isPrivileged())satir('Alındığı tarih',new Date(c.purchaseMonth+'-01T00:00:00').toLocaleDateString('tr-TR',{month:'long',year:'numeric'}));
+  if(c.insurance){const [v,r]=durumY(c.insurance);satir('Sigorta',v,r)}
+  else if(c.insuranceMonth){const m=c.insuranceMonth,now=bugun().slice(0,7);satir('Sigorta ayı',new Date(m+'-01T00:00:00').toLocaleDateString('tr-TR',{month:'long',year:'numeric'}),m<=now?'#FBBF24':'');k.append(el('small',null,'Sigortanın kesin günü belirtilmedi; poliçeden kontrol edin.'))}
+  else satir('Sigorta','Girilmedi');
   {const [v,r]=durumY(c.road);satir('Seyrüsefer',v,r)}
   {const [v,r]=durumY(c.inspection);satir('Muayene',v,r)}
   satir('Servis / gider',tl(sv));satir('Yakıt',tl(fv));satir('Toplam araç gideri',tl(sv+fv));
