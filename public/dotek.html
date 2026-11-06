@@ -1154,7 +1154,7 @@ async function ckAlacakYaz(pid){try{
   const v=await sb.from('ck_kayit').select('id').eq('kol','hareketler').eq('veri->ref->>dsys',String(pid)).limit(1);if(v.error)throw v.error;if((v.data||[]).length)return'cariye zaten işli';
   const kal=p.odeme_durum==='alindi'?0:ckR2(Math.max(0,(+p.fiyat||0)-(+p.odenen||0)));if(kal<=0.005)return'';
   const cs=((await sb.from('ck_kayit').select('veri').eq('kol','cariler')).data||[]).map(x=>x.veri).filter(c=>c&&c.ad);
-  const n=ckNorm(p.musteri);let c=n?cs.filter(x=>ckNorm(x.ad)===n&&x.tur!=='tedarikci'):[];c=c.length===1?c[0]:await ckCariSec(p,cs);if(!c)return'cariye işlenmedi (Cari ve Kasa → Fatura dengesi\'nden işlenir)';
+  const n=ckNorm(p.musteri);let c=n?cs.filter(x=>ckNorm(x.ad)===n):[];c=c.length===1?c[0]:await ckCariSec(p,cs);if(!c)return'cariye işlenmedi (Cari ve Kasa → Fatura dengesi\'nden işlenir)';
   const pb=['TRY','EUR','GBP','USD'].includes(p.para_birimi)?p.para_birimi:'TRY',tarih=String(p.fatura_tarihi||bugunS()).slice(0,10),no=p.fatura_no||p.proforma_no||'',hid=ckYid();
   const satir=[];if(c._yeni){delete c._yeni;satir.push({kol:'cariler',id:String(c.id),veri:c})}
   satir.push({kol:'hareketler',id:String(hid),veri:{id:hid,cari_id:c.id,tarih,tur:'satis',pb,tutar:kal,aciklama:'DSYS iş: '+(p.ad||'')+(no?' · '+(p.iletim==='proforma'?'Proforma ':'Fatura ')+no:''),vade:gunEk(tarih,30),ref:{dsys:pid}}});
