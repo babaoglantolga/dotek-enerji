@@ -1125,7 +1125,7 @@ const gunEkle=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return gunStr(x)
 const opEkstra=()=>`<div style="margin-top:12px;padding:12px;border:2px solid #9fd3b2;background:#eefaf2;border-radius:12px"><label for="opdep" style="margin-top:0">Hangi departmanın işi? *</label><select id="opdep" onchange="window._opDep=Number(this.value);BELGE.ekstra=opEkstra()">${deps.map(x=>`<option value="${x.id}"${Number(x.id)===Number(window._opDep)?' selected':''}>${esc(x.ad)}</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:6px">Kaydedince PRF numarası verilir, iş "Fatura bekleyen işler"e düşer, Doğuş'a bildirim gider. Müşteriye verince orada "📄 Proforma verildi"ye bas, ödeme bekleyenlere geçer.</div></div>`;
 function ofisProformaYeni(){
   if(!(ofisYetki()||me.rol==='patron'))return toast('Proformayı Ofis hazırlar');
-  window._opDep=(me.departman_id&&!ofisMi()?me.departman_id:null)||(deps.find(x=>x.ofis)||deps[0]||{}).id;
+  window._opDep=(deps.find(x=>x.ofis)||deps[0]||{}).id;
   const d={tur:'PROFORMA FATURA',no:null,tarih:bugunStr(),son:gunEkle(10),musteri:{ad:'',ilgili:'',adres:''},proje:'',konu:'',pb:'TRY',kdv:16,isler:[],kalemler:[{ad:'',miktar:1,birim:'adet',fiyat:0}],
     notlar:['Bu belge proforma faturadır; resmi fatura ödeme sonrasında düzenlenir.','Ödeme, vade tarihine kadar aşağıdaki banka hesabına yapılabilir.','Açıklamaya belge numarasını yazmanız rica olunur.'],imza:[['Hazırlayan','Dotek Ofis'],['Onaylayan',(people.find(x=>x.rol==='patron')||{}).ad||'']]};
   vBelgeAc(d,ofisProformaKaydet,()=>render(),opEkstra());
