@@ -18,9 +18,9 @@ function vehicleDocumentInfo(car, records, today) {
   let inspectionStatus=status(car.inspection);
   const inspectionPeriod=period(inspection);
   if(!car.inspection&&inspection){
-    const p=inspectionPeriod?.[1];const iso=p&&p.split('.').reverse().join('-');
-    inspectionStatus=iso&&days(iso)<0?{tone:'due',label:'Dönem geçti · muayene sonucunu kontrol et'}:{tone:'missing',label:'Harç ödendi · muayene sonucu eksik'};
+    inspectionStatus={tone:'missing',label:'Harç ödendi · sonuç doğrulanmadı'};
   }
+  if(!car.inspection&&car.officialCheckDate&&car.officialInspectionFee==='none')inspectionStatus={tone:'missing',label:'Harç borcu yok · sonuç doğrulanmadı'};
   const roadStatus=status(roadEnd);
   const statuses=[roadStatus,insurance,inspectionStatus];
   const group=statuses.some(s=>s.tone==='due')?'due':statuses.some(s=>s.tone==='missing')?'missing':'ok';

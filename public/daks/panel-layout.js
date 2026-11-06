@@ -9,7 +9,7 @@
   const labels = {
     vehicles: ['Araç bilgileri', 'Araç listesi, belgeler ve güncel kilometre bilgileri.'],
     fuel: ['Yakıt kayıtları', 'Aylık yakıt özeti, alım kayıtları ve fiş / kart eşleştirmesi.'],
-    service: ['Servis ve giderler', 'Bakım, tamir, sigorta ve araç envanteri.'],
+    service: ['Belge takibi', 'Araçların muayene, seyrüsefer ve sigorta durumu.'],
     checks: ['Kontroller', 'Haftalık takip, seyrüsefer ve muayene işlemleri.'],
     weekly: ['Haftalık bildirimler', 'Kilometre ve bakım bildirimlerini inceleyin.'],
     backup: ['Yedekleme', 'Dosya yedeği alın ve son yedek zamanını görün.']
