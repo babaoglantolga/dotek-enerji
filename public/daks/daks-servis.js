@@ -29,11 +29,15 @@ window.servisCiz=function(){if(!$('svcRows'))return;
   const sv=L.filter(x=>x.r.plate===c.plate).reduce((s,x)=>s+Number(x.r.amount||0),0),fv=fuel.filter(r=>r.plate===c.plate).reduce((s,r)=>s+Number(r.amount||0),0);
   const satir=(lab,val,renk)=>{const m=el('div','monthly-metric');const v=el('strong',null,val);if(renk)v.style.color=renk;v.style.textAlign='right';m.append(el('span',null,lab),v);k.append(m)};
   const state=(label,value)=>{const e=el('div','document-state '+value.tone);e.append(el('strong',null,label),el('span',null,value.label));k.append(e)};
+  if(c.officialCheckDate)satir('Resmî kontrol tarihi',tarihY(c.officialCheckDate));
   state('Seyrüsefer',info.roadStatus);
+  if(c.officialCheckDate&&c.officialRoadStatus&&c.officialRoadStatus!=='unknown')satir('Resmî borç sorgusu',c.officialRoadStatus==='none'?'Ödenecek borç yok':'Ödenecek borç var',c.officialRoadStatus==='none'?'#7be7d1':'#ffb5bd');
   satir('Geçerlilik sonu',tarihY(info.roadEnd));
   if(info.roadPeriod)satir('Dönem',info.roadPeriod.join(' – '));
   if(info.road){satir('Ödenen tutar',tl(info.road.amount));satir('Ödeme tarihi',tarihY(info.road.svcDate));}
   state('Muayene',info.inspectionStatus);
+  if(c.officialCheckDate&&c.officialInspectionFee&&c.officialInspectionFee!=='unknown')satir('Resmî harç sorgusu',c.officialInspectionFee==='none'?'Ödenecek harç yok':'Ödenecek harç var',c.officialInspectionFee==='none'?'#7be7d1':'#ffb5bd');
+  if(c.inspectionCheckNote)k.append(el('small',null,c.inspectionCheckNote));
   if(info.inspectionPeriod)satir('Muayene dönemi',info.inspectionPeriod.join(' – '));
   if(c.inspection)satir('Geçerlilik sonu',tarihY(c.inspection));
   if(info.inspection){satir('Ödenen harç',tl(info.inspection.amount));satir('Ödeme tarihi',tarihY(info.inspection.svcDate));k.append(el('small',null,'Harç ödemesi kaydıdır; muayeneden geçiş belgesi değildir.'));}
