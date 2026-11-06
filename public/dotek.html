@@ -204,6 +204,8 @@ nav.bottom button.on{background:var(--soft);color:var(--blue);box-shadow:inset 0
 .msg.ben{background:var(--soft);border-color:#C7DBFE}
 #toast{background:var(--text)}
 a{color:var(--blue)}
+
+body.gomulu header.top{display:none}
 </style>
 </head>
 <body>
@@ -288,6 +290,13 @@ function ekipOf(dep){const a=aktifler().filter(p=>p.rol!=='patron');if(me.rol!==
 function opts(list,sel,dep){return '<option value="">— seçin —</option>'+list.map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${esc(p.ad)} (${p.rol==='ds'?'DS':'Çalışan'}${dep&&p.departman_id!=dep?' · '+esc(dname(p.departman_id)):''})</option>`).join('')}
 
 // ---------------- Giriş ----------------
+const GOMULU=new URLSearchParams(location.search).has('gomulu');if(GOMULU)document.body.classList.add('gomulu');
+// Cari ve Kasa'dan gelen kısayollar: #git=teklif-yeni | proforma-yeni | <sekme>
+function gitHash(){const m=location.hash.match(/^#git=([\w-]*)/);if(!m||!me)return;history.replaceState(null,'',location.pathname+location.search);const h=m[1];
+  if(h==='teklif-yeni'){S.tab='teklif';S.pid=null;S.aj=null;S.belge=false;teklifAc();return}
+  if(h==='proforma-yeni'){S.tab='fatura';S.pid=null;S.aj=null;S.belge=false;ofisProformaYeni();return}
+  if(h&&tabsFor().some(t=>t[0]===h))go(h)}
+addEventListener('hashchange',gitHash);
 async function init(){
   if(!SUPABASE_URL||!SUPABASE_KEY){app.innerHTML=`<div class="login"><div class="brand">Kurulum gerekli</div><div class="card">index.html dosyasının üstündeki <b>SUPABASE_URL</b> ve <b>SUPABASE_KEY</b> satırlarını doldurun.</div></div>`;return}
   sb=sb||supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -301,7 +310,7 @@ async function init(){
   if(!['patron','ds','calisan'].includes(me.rol)) return viewWait();
   await loadBase();oturumAcildi();planUyari();
   if(!S.tab) S.tab=me.rol==='patron'?'onay':ofisMi()?'ofisana':me.rol==='ds'?'planlama':'gorevlerim';
-  render();
+  render();gitHash();
   clearInterval(window._bt);window._bt=setInterval(bildirimKontrol,20000);
   pushKaydet(true);setTimeout(pushTeklif,2500);
 }
@@ -355,13 +364,15 @@ function tabsFor0(){
   return[['gorevlerim','Görevlerim'],['projeler','Projelerim'],['mesajlar','Mesajlar']];
 }
 function render(){
-  app.innerHTML=`<header class="top"><div><b>Dotek Saha Yönetim Sistemi</b><div style="font-size:12px;opacity:.85">${esc(me.ad)} · ${ROL[me.rol]}${me.departman_id?' · '+esc(dname(me.departman_id)):''}</div></div><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-nocevir aria-label="Dil" onchange="dilDegis(this.value)" style="width:auto;padding:7px 6px;font-size:13px;font-weight:700">${Object.entries(DILLER).map(([k,v])=>`<option value="${k}" ${k===DIL?'selected':''}>${v.k}</option>`).join('')}</select><button class="btn s l zil" aria-label="Bildirimler" onclick="go('bildirim')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span id="rozet" class="rozet" hidden></span></button>${kontrolMu()?`<button class="btn s l" onclick="go('kontrol')" aria-label="Kontrol paneli" title="Kontrol paneli">🛡️</button>`:''}<button class="btn s l" onclick="go('akis')" aria-label="Sistem nasıl çalışır" title="Sistem nasıl çalışır">📖</button><button class="btn s l" onclick="cikis()">Çıkış</button></div></header>
+  app.innerHTML=`<header class="top"><div><b>Dotek Saha Yönetim Sistemi</b><div style="font-size:12px;opacity:.85">${esc(me.ad)} · ${ROL[me.rol]}${me.departman_id?' · '+esc(dname(me.departman_id)):''}</div></div><div class="row" style="flex-wrap:nowrap;gap:6px"><select data-nocevir aria-label="Dil" onchange="dilDegis(this.value)" style="width:auto;padding:7px 6px;font-size:13px;font-weight:700">${Object.entries(DILLER).map(([k,v])=>`<option value="${k}" ${k===DIL?'selected':''}>${v.k}</option>`).join('')}</select><button class="btn s l zil" aria-label="Bildirimler" onclick="go('bildirim')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg><span id="rozet" class="rozet" hidden></span></button>${kontrolMu()?`<button class="btn s l" onclick="go('kontrol')" aria-label="Kontrol paneli" title="Kontrol paneli">🛡️</button>`:''}${(ofisMi()||me.rol==='patron')&&!GOMULU?`<button class="btn s l" onclick="go('atolye')" aria-label="Cari ve Kasa · atölye işleri" title="Cari ve Kasa · atölye işleri">📒</button>`:''}<button class="btn s l" onclick="go('akis')" aria-label="Sistem nasıl çalışır" title="Sistem nasıl çalışır">📖</button><button class="btn s l" onclick="cikis()">Çıkış</button></div></header>
   <main id="m"><p class="muted">Yükleniyor…</p></main>
   <nav class="bottom${tabsFor().length>6?' n7':''}">${tabsFor().map(([k,t])=>`<button class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''} onclick="go('${k}')"><span>${t}</span><span class="nb" data-nb="${k}" hidden></span></button>`).join('')}</nav>`;
   const m=$('#m');
-  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({koord:vKoord,yoklama:vYoklamaS,gunluk:vGunluk,kontrol:vKontrol,donem:vDonemRapor,haftalik:vHaftalik,faturatakip:vFaturaTakip,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
+  const v=S.belge&&BELGE?vBelge:S.aj?vAjanda:S.pid?vProje:({atolye:vAtolye,koord:vKoord,yoklama:vYoklamaS,gunluk:vGunluk,kontrol:vKontrol,donem:vDonemRapor,haftalik:vHaftalik,faturatakip:vFaturaTakip,tedarik:vTedarik,ofisana:vOfisAna,teklif:vTeklifler,hakedis:vHakedisler,planlama:vPlanlama,fatura:vFatura,bildirim:vBildirim,onay:vOnay,departmanlar:vDepartmanlar,projeler:vProjeler,biten:vProjeler,cari:vCari,akis:vAkis,gorevlerim:vGorevlerim,mesajlar:vMesajlar,ekip:vEkip})[S.tab];
   Promise.resolve(v(m)).then(()=>{if(!S.belge&&!S.aj&&!S.pid&&['onay','planlama','koord','ofisana'].includes(S.tab)){let h='';if(hfYetki()&&!m.querySelector('.hfbtn'))h+=hfBtn();if(ftYetki()&&!m.querySelector('.ftbtn'))h+=ftBtn();if(h){const b=m.querySelector('.hfbtn');if(b)b.insertAdjacentHTML('afterend',h);else m.insertAdjacentHTML('afterbegin',h)}}}).finally(bildirimKontrol);
 }
+// Cari ve Kasa (atölye işleri, cari, stok) DSYS'nin içinde — aynı giriş, aynı veri
+function vAtolye(m){m.innerHTML=`${geriBtn()}<iframe title="Cari ve Kasa" src="/cari?gomulu=1#sayfa=isler" style="display:block;width:100%;height:calc(100vh - 190px);min-height:520px;border:1px solid #e3e7ef;border-radius:14px;background:#fff"></iframe>`}
 function geriBtn(){return`<button class="btn s l" style="margin-bottom:10px" onclick="go(S.prev&&S.prev!==S.tab?S.prev:tabsFor()[0][0])">← Panele dön</button>`}
 function go(k){if(k!==S.tab&&!['kontrol','bildirim','akis'].includes(S.tab))S.prev=S.tab;if(k!=='departmanlar')S.rap=0;if(k==='gunluk')S.pg=null;S.cari=null;S.ted=null;S.tab=k;S.pid=null;S.aj=null;S.belge=false;S.dep=null;S.kanal=null;render();scrollTo(0,0)}
 function mesajAc(id){S.tab='mesajlar';S.kanal=id;S.pid=null;render()}
