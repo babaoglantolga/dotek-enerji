@@ -1032,6 +1032,7 @@ function kasaBakiye(){const b={kasa:{},banka:{}};S.kasa.forEach(k=>{b[k.hesap][k
 function yeniMenu(){const ust=ustaMi();modal('Ne kaydedeceksin?',`<div class="radio">
  <label onclick="kapat();isForm()"><span>🔧 Atölyeye iş kabul<small>Elektronik veya bobinaj · cihaz gelir, QR etiket basılır</small></span></label>
  ${ust?'':`<label onclick="kapat();alisForm()"><span>🧾 Alış faturası<small>Malzeme geldi · stoğa veya direkt işe · tedarikçi hesabına yazılır</small></span></label>
+ <label onclick="kapat();satisFaturaForm()"><span>🧾 Müşteriye fatura yaz<small>Satış faturası veya proforma · saha işi, hizmet · cariye borç yazılır</small></span></label>
  <label onclick="kapat();kapiForm()"><span>🛒 Kapıda satış<small>Stoktan sat · peşin veya cariye</small></span></label>
  <label onclick="kapat();tahsilatForm('tahsilat')"><span>💰 Tahsilat al<small>Müşteri para getirdi · farklı dövizle de olur</small></span></label>
  <label onclick="kapat();tahsilatForm('odeme')"><span>📤 Ödeme yap<small>Tedarikçiye / ustaya ödedik</small></span></label>
@@ -1120,7 +1121,7 @@ function yillik(){const ay=AYK.map((a,i)=>YIL+'-'+String(i+1).padStart(2,'0'));c
  <div class="tabs" style="margin-top:12px">${[['is','İş adedi'],['ciro','Ciro (departman)'],['dev','Tahsilat ve devir'],['para','Fatura ve para']].map(([k,a])=>`<button class="${YT===k?'on':''}" onclick="YT='${k}';render()">${a}</button>`).join('')}</div>
  <div class="tw">${tab}</div><p class="muted mini">Tutarlar TL karşılığıdır (güncel Kaya Döviz kuruyla).</p></div>`}
 const ODAD={cari:'Cariye',kasa:'Peşin · Kasa',banka:'Peşin · Banka',taksit:'Taksit'};
-function satisAd(x){return x.kaynak==='kapi'?'Kapıda satış':(isBul(x.is_id)||{}).no+' · '+((isBul(x.is_id)||{}).cihaz||'')}
+function satisAd(x){return x.kaynak==='elle'?(x.not||'Fatura'):x.kaynak==='kapi'?'Kapıda satış':(isBul(x.is_id)||{}).no+' · '+((isBul(x.is_id)||{}).cihaz||'')}
 function grupAd(x){return x.kaynak==='kapi'?'Kapıda satış':dep(x.dep).ad}
 function dKesilen(filtre){const hepsi=S.satislar.filter(x=>ayFiltre(x.tarih)&&(!filtre||grupAd(x)===filtre||(x.kaynak==='is'&&per(x.usta).ad===filtre)||(x.getiren&&(cari(x.getiren)||{}).ad===filtre))).sort((a,b)=>b.tarih.localeCompare(a.tarih)||b.id-a.id),l=hepsi.filter(faturaMi),pr=hepsi.filter(x=>!faturaMi(x));
  const top=l.reduce((a,x)=>a+tl(x.tutar,x.pb),0);
@@ -1311,10 +1312,34 @@ function dsysIsleKaydet(pid){const p=(DSF||[]).find(x=>x.id===pid),cid=+$('#ds_c
  if(kal<=0.005){toast('Bu fatura DSYS\'de ödenmiş, cariye borç yazılmadı');kapat();return}
  hareket(cid,{tur:'satis',pb,tutar:kal,tarih,vade:gunEkle(tarih,30),aciklama:'DSYS iş: '+(p.ad||'')+(p.fatura_no?' · '+(p.iletim==='proforma'?'Proforma ':'Fatura ')+p.fatura_no:''),ref:{dsys:pid}});
  kaydet();kapat();toast('Cariye işlendi · '+(cari(cid)||{}).ad);render()}
+/* ---- Müşteriye doğrudan satış faturası / proforma (saha işi, hizmet, elle) ---- */
+function satisFaturaForm(cid){const L=S.cariler.filter(c=>c.tur!=='tedarikci').sort((a,b)=>a.ad.localeCompare(b.ad,'tr'));
+ modal('Müşteriye fatura yaz',`<label>Belge türü</label><div class="radio" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="sf_b" value="fatura" checked onchange="sfNo()"><span>Satış faturası</span></label><label><input type="radio" name="sf_b" value="proforma" onchange="sfNo()"><span>Proforma</span></label></div>
+ <div class="f2"><div><label for="sf_f" id="sf_fl">Fatura no</label><input id="sf_f"></div><div><label for="sf_tar">Tarih</label><input id="sf_tar" type="date" value="${bugun()}"></div></div>
+ <label for="sf_c">Müşteri (cari)</label><select id="sf_c"><option value="">— Cari seç —</option>${L.map(c=>`<option value="${c.id}"${cid===c.id?' selected':''}>${esc(c.ad)}</option>`).join('')}</select>
+ <div class="muted mini" style="margin-top:4px">Listede yoksa <a href="#" onclick="kapat();cariForm(null,{sonra:c=>satisFaturaForm(c.id)});return false">yeni cari aç</a>.</div>
+ <label for="sf_d">Bölüm</label><select id="sf_d">${DEPS.map(d=>`<option value="${d.id}"${d.id==='elektrik'?' selected':''}>${d.ad}</option>`).join('')}</select>
+ <label for="sf_ac">Ne için? (faturada ve carinin hareketinde görünür)</label><input id="sf_ac" placeholder="Örn. Bosmar pano yenileme işçilik + malzeme">
+ <div class="f2"><div><label for="sf_t">Tutar</label><input id="sf_t" inputmode="decimal" placeholder="0" oninput="sfCiz()"></div><div><label for="sf_pb">Para birimi</label><select id="sf_pb" onchange="sfCiz()">${PB.map(x=>`<option value="${x}"${x==='TRY'?' selected':''}>${SYM[x]} ${PBAD[x]}</option>`).join('')}</select></div></div>
+ <div class="f2"><div><label for="sf_kdv">KDV</label><select id="sf_kdv" onchange="sfCiz()">${[16,10,5,0].map(v=>`<option value="${v}" ${v===(S.ayar.kdv??16)?'selected':''}>%${v}</option>`).join('')}</select></div><div><label for="sf_kd">Yazdığım tutar</label><select id="sf_kd" onchange="sfCiz()"><option value="1">KDV dahil</option><option value="0">KDV hariç</option></select></div></div>
+ <label>Ödeme nasıl?</label><div class="radio"><label><input type="radio" name="sf_o" value="cari" checked><span>Cariye yaz<small>Vade 1 ay, ödeme takibine düşer.</small></span></label><label><input type="radio" name="sf_o" value="kasa"><span>Peşin aldık · Kasa</span></label><label><input type="radio" name="sf_o" value="banka"><span>Peşin aldık · Banka / kart</span></label></div>
+ <div class="toplam b" id="sf_top"><span>Fatura toplamı</span><span>—</span></div>`,
+ `<button class="btn l" onclick="kapat()">Vazgeç</button><button class="btn g" onclick="sfKaydet()">Kaydet</button>`);sfNo();sfCiz()}
+const sfBelge=()=>document.querySelector('input[name=sf_b]:checked').value;
+function sfNo(){const b=sfBelge();$('#sf_fl').textContent=b==='proforma'?'Proforma no':'Fatura no';$('#sf_f').value=sonrakiNo(b)}
+function sfHesap(){return ksKdvHesap(num($('#sf_t').value),num($('#sf_kdv').value),$('#sf_kd').value==='1')}
+function sfCiz(){const h=sfHesap(),pb=$('#sf_pb').value;$('#sf_top').innerHTML=`<span>Fatura toplamı${h.kdv?` <small class="muted">(matrah ${fmt(h.mat,pb)} + KDV ${fmt(h.kdv,pb)})</small>`:''}</span><span>${fmt(h.gen,pb)}</span>`}
+function sfKaydet(){const b=sfBelge(),no=$('#sf_f').value.trim(),cid=+$('#sf_c').value,acik=$('#sf_ac').value.trim(),pb=$('#sf_pb').value,h=sfHesap(),o=document.querySelector('input[name=sf_o]:checked').value,tarih=$('#sf_tar').value||bugun(),ko=num($('#sf_kdv').value);
+ if(!cid){toast('Müşteriyi seç');return}if(!acik){toast('Ne için yazıldığını yaz');return}if(!(h.gen>0)){toast('Tutarı yaz');return}if(no&&noVarMi(b,no)){toast('Bu numara zaten kullanılmış');return}
+ const st={id:yid(),tarih,kaynak:'elle',dep:$('#sf_d').value,cari_id:cid,pb,odeme:o,belge:b,fatura_no:no,kalemler:[],tutar:h.gen,matrah:h.mat,kdv:h.kdv,kdv_oran:ko,kdvDahil:$('#sf_kd').value==='1',liste:h.gen,maliyet_tl:0,malz_satis_tl:0,pesin_tl:0,pesin_hesap:null,not:acik};
+ const ac=(b==='proforma'?'Proforma ':'Fatura ')+(no||'')+' · '+acik;
+ hareket(cid,{tarih,tur:'satis',pb,tutar:st.tutar,vade:gunEkle(tarih,30),aciklama:ac,ref:{satis:st.id}});
+ if(o!=='cari'){kasaEkle({hesap:o,pb,tutar:st.tutar,tarih,tur:'pesin',cari_id:cid,aciklama:ac,ref:{satis:st.id}});st.pesin_tl=r2(tl(st.tutar,pb));st.pesin_hesap=o;hareket(cid,{tarih,tur:'tahsilat',pb,tutar:-st.tutar,aciklama:'Peşin ödendi · '+(o==='kasa'?'Kasa':'Banka'),ref:{satis:st.id}})}
+ S.satislar.push(st);noKullan(b,no);kaydet();kapat();toast((b==='proforma'?'Proforma ':'Fatura ')+(no||'')+' yazıldı · '+cari(cid).ad+' · '+fmt(st.tutar,pb));render()}
 function faturaKesMenu(){const L=S.isler.filter(i=>i.durum==='bitti').sort((a,b)=>String(b.id).localeCompare(String(a.id)));
- modal('Fatura kes',`<div class="radio">${L.map(i=>`<label onclick="kapat();kapatForm(${i.id})"><span>🔧 ${esc(i.no||'')} · ${esc(i.cihaz||'')}<small>${esc((cari(i.cari_id)||{}).ad||'')}${i.fiyat?' · '+fmt(i.fiyat,i.pb):''}</small></span></label>`).join('')}
+ modal('Fatura kes',`<div class="radio"><label onclick="kapat();satisFaturaForm()"><span>🧾 Müşteriye fatura / proforma yaz<small>Saha işi, hizmet ya da her türlü satış · cariye veya peşin</small></span></label>${L.map(i=>`<label onclick="kapat();kapatForm(${i.id})"><span>🔧 ${esc(i.no||'')} · ${esc(i.cihaz||'')}<small>${esc((cari(i.cari_id)||{}).ad||'')}${i.fiyat?' · '+fmt(i.fiyat,i.pb):''}</small></span></label>`).join('')}
   <label onclick="kapat();kapiForm()"><span>🛒 Kapıda satış<small>Stoktan sat, fatura kes · peşin veya cariye</small></span></label></div>
-  ${L.length?'':'<p class="muted mini">Biten, faturası kesilmemiş atölye işi yok.</p>'}<p class="muted mini">Saha işleri (elektrik, jeneratör) DSYS'de kesilir ve bu listeye kendiliğinden düşer.</p>`)}
+  <p class="muted mini">DSYS'de kesilen faturalar da listeye kendiliğinden düşer.</p>`)}
 function flSatirlar(){const t=bugun(),ayOk=x=>FL.ay==='hepsi'||ayFiltre(x.tarih);
  if(FL.yon==='giden'){const ac={};acikKalemler().forEach(k=>{const id=k.h.ref&&k.h.ref.satis;if(id)ac[id]=r2((ac[id]||0)+k.kalan);ac['h'+k.h.id]=r2((ac['h'+k.h.id]||0)+k.kalan)});
   return S.satislar.filter(ayOk).map(x=>{const kal=ac[x.id]||0,g=gunFark(x.tarih,t),d=kal>0.005?(g>30?'gec':'bek'):'ode';
