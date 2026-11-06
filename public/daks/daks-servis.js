@@ -16,8 +16,8 @@ function renderDocumentReminders(){
   }
  }
  reminderPanel.append(el('summary',null,'Belge hatırlatmaları · '+rows.length+' uyarı · '+missing+' eksik bilgi'));
- reminderPanel.append(el('p',null,'30 gün, 7 gün, son gün ve gecikme uyarıları. Muayene harç ödemesi geçerlilik tarihi yerine kullanılmaz.'));
- if(!rows.length)reminderPanel.append(el('p',null,'Bilinen bitiş tarihlerine göre yaklaşan veya geçen belge yok.'));
+ reminderPanel.append(el('p',null,'Yalnızca tarihi gelen ve geçmiş belgeler gösterilir. Muayene harç ödemesi geçerlilik tarihi yerine kullanılmaz.'));
+ if(!rows.length)reminderPanel.append(el('p',null,'Bilinen bitiş tarihlerine göre tarihi gelen veya geçmiş belge yok.'));
  for(const row of rows)reminderPanel.append(row);
  if(missing)reminderPanel.append(el('p',null,'Eksik belgeleri Belge takibi bölümünden tamamlayın.'));
  reminderPanel.classList.toggle('has-due',!!rows.length);
