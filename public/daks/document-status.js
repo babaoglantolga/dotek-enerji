@@ -15,6 +15,8 @@ function vehicleDocumentInfo(car, records, today) {
     return n<0?{tone:'due',label:Math.abs(n)+' gün gecikti · kontrol et'}:n===0?{tone:'due',label:'BUGÜN SON GÜN'}:{tone:'ok',label:'Zamanı gelmedi'};
   }
   let inspectionStatus=status(car.inspection);
+  // For confirmed inspection deadlines near month-end, start the warning on day one.
+  if(car.inspection&&Number(car.inspection.slice(8,10))>=25&&car.inspection.slice(0,7)===today.slice(0,7)&&days(car.inspection)>0)inspectionStatus={tone:'due',label:'Muayene ayı geldi · ay sonunu beklemeyin'};
   const inspectionPeriod=period(inspection,'inspection')||period({note:car.inspectionCheckNote},'inspection');
   if(!car.inspection&&inspection){
     inspectionStatus={tone:'missing',label:'Harç ödendi · sonuç doğrulanmadı'};
