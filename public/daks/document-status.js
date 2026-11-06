@@ -16,13 +16,16 @@ function vehicleDocumentInfo(car, records, today) {
   }
   const insurance=car.insurance?status(car.insurance):car.insuranceMonth?(car.insuranceMonth<=today.slice(0,7)?{tone:'due',label:'Sigorta ayı geldi / geçti · poliçeyi kontrol et'}:{tone:'ok',label:'Zamanı gelmedi · kesin gün eksik'}):{...missing};
   let inspectionStatus=status(car.inspection);
-  const inspectionPeriod=period(inspection);
+  const inspectionPeriod=period(inspection)||period({note:car.inspectionCheckNote});
   if(!car.inspection&&inspection){
     inspectionStatus={tone:'missing',label:'Harç ödendi · sonuç doğrulanmadı'};
   }
   if(!car.inspection&&car.officialCheckDate&&car.officialInspectionFee==='none')inspectionStatus={tone:'missing',label:'Harç borcu yok · sonuç doğrulanmadı'};
+  if(car.officialCheckDate&&car.officialInspectionFee==='debt')inspectionStatus={tone:'due',label:'MUAYENE BORCU VAR · kontrol et'};
+  const inspectionOutstanding=(car.inspectionCheckNote||'').match(/Ödenecek (?:cezalı )?muayene harcı:\s*([\d.,]+)\s*TL/i)?.[1]||null;
+  const roadPaymentBlocked=/online seyrüsefer ödemesi engelleniyor/i.test(car.inspectionCheckNote||'');
   const roadStatus=status(roadEnd);
   const statuses=[roadStatus,insurance,inspectionStatus];
   const group=statuses.some(s=>s.tone==='due')?'due':statuses.some(s=>s.tone==='missing')?'missing':'ok';
-  return {road,inspection,roadPeriod:period(road),inspectionPeriod,roadEnd,roadStatus,insuranceStatus:insurance,inspectionStatus,group};
+  return {inspectionOutstanding,roadPaymentBlocked,road,inspection,roadPeriod:period(road),inspectionPeriod,roadEnd,roadStatus,insuranceStatus:insurance,inspectionStatus,group};
 }

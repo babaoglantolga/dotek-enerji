@@ -57,7 +57,9 @@ window.servisCiz=function(){if(!$('svcRows'))return;
   satir('Geçerlilik sonu',tarihY(info.roadEnd));
   if(info.roadEnd){const d=new Date(info.roadEnd+'T00:00:00');d.setDate(1);d.setMonth(d.getMonth()+1);satir('Yenileme ayı',d.toLocaleDateString('tr-TR',{month:'long',year:'numeric'}));}
   if(info.road)satir('Son ödeme',tl(info.road.amount)+' · '+tarihY(info.road.svcDate));
+  if(info.roadPaymentBlocked)satir('Online ödeme','Muayene borcu nedeniyle engelli','#ffb5bd');
   state('Muayene',info.inspectionStatus);
+  if(info.inspectionOutstanding&&c.officialInspectionFee==='debt')satir('Ödenmemiş harç',info.inspectionOutstanding+' TL','#ffb5bd');
   if(c.officialCheckDate&&c.officialInspectionFee&&c.officialInspectionFee!=='unknown')satir('Resmî harç sorgusu',c.officialInspectionFee==='none'?'Ödenecek harç yok':'Ödenecek harç var',c.officialInspectionFee==='none'?'#7be7d1':'#ffb5bd');
 
   if(info.inspectionPeriod)satir('Muayene dönemi',info.inspectionPeriod.join(' – '));
