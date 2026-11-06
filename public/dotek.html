@@ -1140,8 +1140,13 @@ async function ofisProformaKaydet(){
   const isc=d.kalemler.filter(k=>(k.ad||'').toLocaleLowerCase('tr').includes('işçilik')).reduce((t,k)=>t+kTut(k),0);
   if(BELGE._kayitli)return;BELGE._kayitli=true;
   const {data:pid,error}=await sb.rpc('ofis_proforma_olustur',{dep,veri:d,toplam:h.gen,isc});if(error){BELGE._kayitli=false;hata(error);return}
-  S.belge=false;toast('Proforma kaydedildi · Fatura bekleyen işlere eklendi');await proformaAc(pid);
+  S.belge=false;await defterProforma(pid,d,dep,h);toast('Proforma kaydedildi · Fatura bekleyen işlere ve dükkân defterine eklendi');await proformaAc(pid);
 }
+// Proforma yazılan iş, Dükkân defterine "Yapılan iş" olarak kendiliğinden düşer (tekrar yazılmaz)
+async function defterProforma(pid,d,dep,h){try{const r=await sb.from('projeler').select('proforma_no').eq('id',pid).single();const no=(r.data&&r.data.proforma_no)||'';
+  const ne=(d.isler&&d.isler.length?d.isler:d.kalemler.map(k=>k.ad).filter(Boolean)).slice(0,4).join(', ');
+  const {error}=await sb.from('koord_kayit').insert({gun:bugunS(),saat:simdiS(),tur:'is',kisi:me.ad,bolum:dname(dep)||null,metin:'📄 Proforma '+no+' · '+d.musteri.ad.trim()+(d.konu?' · '+d.konu:'')+(ne?' — '+ne:'')+' · '+bPara(h.gen,d.pb)});
+  if(error)console.warn('Deftere yazılamadı',error)}catch(e){console.warn('Deftere yazılamadı',e)}}
 // --- Proforma: onaylanan işten ---
 async function proformaAc(pid){
   const [pr,ml]=await Promise.all([sb.from('projeler').select('*').eq('id',pid).single(),sb.from('malzemeler').select('*').eq('proje_id',pid)]);
