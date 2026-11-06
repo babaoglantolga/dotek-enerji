@@ -10,6 +10,7 @@
     vehicles: ['Araç bilgileri', 'Araç listesi, belgeler ve güncel kilometre bilgileri.'],
     fuel: ['Yakıt kayıtları', 'Aylık yakıt özeti, alım kayıtları ve fiş / kart eşleştirmesi.'],
     service: ['Belge takibi', 'Araçların muayene ve seyrüsefer durumu.'],
+    calendar: ['Takvim', 'Plakaya göre muayene ve seyrüsefer tarihleri.'],
     checks: ['Kontroller', 'Haftalık takip, seyrüsefer ve muayene işlemleri.'],
     weekly: ['Haftalık bildirimler', 'Kilometre ve bakım bildirimlerini inceleyin.'],
     backup: ['Yedekleme', 'Dosya yedeği alın ve son yedek zamanını görün.']
@@ -30,7 +31,7 @@
   }
   function refresh() {
     const driver = role.value === 'driver';
-    const allowed = driver ? ['weekly', 'fuel', 'vehicles'] : ['vehicles', 'fuel', 'service', 'checks', 'weekly', ...(['admin', 'office'].includes(role.value) ? ['backup'] : [])];
+    const allowed = driver ? ['weekly', 'fuel', 'vehicles'] : ['vehicles', 'fuel', 'service', 'calendar', 'checks', 'weekly', ...(['admin', 'office'].includes(role.value) ? ['backup'] : [])];
     nav.replaceChildren();
     for (const key of allowed) {
       const button = document.createElement('button');
