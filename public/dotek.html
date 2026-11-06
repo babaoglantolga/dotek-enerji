@@ -356,7 +356,8 @@ function viewWait(){
 async function cikis(){try{if(me)await sb.rpc('oturum_kaydet',{tur:'cikis',cihaz:cihazAd()})}catch(e){}try{const r=await navigator.serviceWorker.ready,su=await r.pushManager.getSubscription();if(su)await sb.rpc('push_sil',{e:su.endpoint})}catch(e){}await sb.auth.signOut();me=null;S.tab='';S.pid=null;viewLogin()}
 
 // ---------------- Kabuk ----------------
-function tabsFor(){const T=tabsFor0();if(me.rol==='patron'||!koordMi())return T;const L=T.filter(t=>!['gunluk','koord'].includes(t[0]));return[L[0],['koord','Koordinatör'],['gunluk','Günlük'],...L.slice(1)]}
+function tabsFor(){const T=tabsFor1();if(GOMULU&&!T.some(t=>t[0]==='teklif'))return[T[0],['teklif','Teklif'],...T.slice(1)];return T}
+function tabsFor1(){const T=tabsFor0();if(me.rol==='patron'||!koordMi())return T;const L=T.filter(t=>!['gunluk','koord'].includes(t[0]));return[L[0],['koord','Koordinatör'],['gunluk','Günlük'],...L.slice(1)]}
 function tabsFor0(){
   if(me.rol==='patron')return[['onay','Ana Sayfa'],['gunluk','Günlük'],['departmanlar','Departman'],['projeler','Projeler'],['biten','Biten İş'],['cari','Müşteri'],['mesajlar','Mesajlar'],['ekip','Ekip']];
   if(ofisMi())return me.rol==='ds'?[['ofisana','Ana Sayfa'],['gunluk','Günlük'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']]:[['ofisana','Ana Sayfa'],['gunluk','Günlük'],['fatura','Fatura'],['teklif','Teklif'],['cari','Müşteri'],['gorevlerim','Görevlerim'],['mesajlar','Mesajlar'],['tedarik','Alımlar']];
