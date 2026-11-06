@@ -58,8 +58,8 @@ function renderSchedule(){
     const road=document.createElement('span');road.className='cell-sub';road.textContent='Seyrüsefer: '+plan.road;
     const inspection=document.createElement('span');inspection.className='cell-sub';inspection.textContent='Muayene: '+plan.inspection;
     const first=document.createElement('span');first.className='cell-sub';first.textContent='İlk muayene: '+(car.firstInspection?new Date(car.firstInspection+'T00:00:00').toLocaleDateString('tr-TR'):'Girilmedi');
-    const ins=document.createElement('span');ins.className='cell-sub';ins.textContent='Sigorta: '+(car.insurance?new Date(car.insurance+'T00:00:00').toLocaleDateString('tr-TR'):'Girilmedi')+(car.tire?' · Lastik: '+car.tire:'');body.append(title,road,inspection,first,ins);const status=document.createElement('span');status.className='badge';
-    const due=[plan.roadDue,plan.inspectionDue,car.insurance?new Date(car.insurance+'T00:00:00'):null].filter(Boolean).some(d=>(d-today)/86400000<=30);
+    body.append(title,road,inspection,first);const status=document.createElement('span');status.className='badge';
+    const due=[plan.roadDue,plan.inspectionDue].filter(Boolean).some(d=>(d-today)/86400000<=30);
     status.textContent=due?'Kontrol et':(!plan.inspectionDue||!plan.roadDue)?'Bilgi / takvim tamamla':'Planlandı';
     if(due)status.classList.add('warn');row.append(body,status);$('scheduleList').append(row);
   }

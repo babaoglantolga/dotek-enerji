@@ -9,7 +9,7 @@ function renderDocumentReminders(){
  reminderPanel.replaceChildren();const rows=[];let missing=0;
  for(const car of visibleCars()){
   const info=vehicleDocumentInfo(car,records,bugun());
-  for(const [name,status,date] of [['Seyrüsefer',info.roadStatus,info.roadEnd],['Muayene',info.inspectionStatus,car.inspection],['Sigorta',info.insuranceStatus,car.insurance||car.insuranceMonth]]){
+  for(const [name,status,date] of [['Seyrüsefer',info.roadStatus,info.roadEnd],['Muayene',info.inspectionStatus,car.inspection]]){
    if(status.tone==='missing'){missing++;continue;}
    if(status.tone!=='due')continue;
    const row=el('div','row');row.append(el('strong',null,car.plate+' · '+name),el('span',null,(date?date.split('-').reverse().join('.')+' · ':'')+status.label));rows.push(row);
@@ -65,9 +65,6 @@ window.servisCiz=function(){if(!$('svcRows'))return;
   if(info.inspectionPeriod)satir('Muayene dönemi',info.inspectionPeriod.join(' – '));
   if(c.inspection)satir('Geçerlilik sonu',tarihY(c.inspection));
   if(info.inspection)satir('Son harç ödemesi',tl(info.inspection.amount)+' · '+tarihY(info.inspection.svcDate));
-  state('Sigorta',info.insuranceStatus);
-  if(c.insurance)satir('Geçerlilik sonu',tarihY(c.insurance));
-  else if(c.insuranceMonth)satir('Sigorta ayı',c.insuranceMonth.split('-').reverse().join('.'));
   const extra=el('details','document-extra');extra.append(el('summary',null,'Diğer araç bilgileri'));k.append(extra);
   if(sv||fv){satir('Servis / gider',tl(sv));satir('Yakıt',tl(fv));satir('Toplam araç gideri',tl(sv+fv));}
   if(weekly[c.plate]?.kmKnown!==false&&weekly[c.plate]?.km!=null)satir('Son kilometre',weekly[c.plate]&&weekly[c.plate].kmKnown!==false&&weekly[c.plate].km!=null?Number(weekly[c.plate].km).toLocaleString('tr-TR')+' KM':'Girilmedi');

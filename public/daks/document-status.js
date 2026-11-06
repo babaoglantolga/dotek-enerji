@@ -14,7 +14,6 @@ function vehicleDocumentInfo(car, records, today) {
     const n=days(date);if(!Number.isFinite(n))return {...missing};
     return n<0?{tone:'due',label:Math.abs(n)+' gün gecikti · kontrol et'}:n===0?{tone:'due',label:'BUGÜN SON GÜN'}:{tone:'ok',label:'Zamanı gelmedi'};
   }
-  const insurance=car.insurance?status(car.insurance):car.insuranceMonth?(car.insuranceMonth<=today.slice(0,7)?{tone:'due',label:'Sigorta ayı geldi / geçti · poliçeyi kontrol et'}:{tone:'ok',label:'Zamanı gelmedi · kesin gün eksik'}):{...missing};
   let inspectionStatus=status(car.inspection);
   const inspectionPeriod=period(inspection)||period({note:car.inspectionCheckNote});
   if(!car.inspection&&inspection){
@@ -25,7 +24,7 @@ function vehicleDocumentInfo(car, records, today) {
   const inspectionOutstanding=(car.inspectionCheckNote||'').match(/Ödenecek (?:cezalı )?muayene harcı:\s*([\d.,]+)\s*TL/i)?.[1]||null;
   const roadPaymentBlocked=/online seyrüsefer ödemesi engelleniyor/i.test(car.inspectionCheckNote||'');
   const roadStatus=status(roadEnd);
-  const statuses=[roadStatus,insurance,inspectionStatus];
+  const statuses=[roadStatus,inspectionStatus];
   const group=statuses.some(s=>s.tone==='due')?'due':statuses.some(s=>s.tone==='missing')?'missing':'ok';
-  return {inspectionOutstanding,roadPaymentBlocked,road,inspection,roadPeriod:period(road),inspectionPeriod,roadEnd,roadStatus,insuranceStatus:insurance,inspectionStatus,group};
+  return {inspectionOutstanding,roadPaymentBlocked,road,inspection,roadPeriod:period(road),inspectionPeriod,roadEnd,roadStatus,inspectionStatus,group};
 }
