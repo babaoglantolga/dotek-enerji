@@ -85,14 +85,25 @@ function dateStatus(date){
 }
 function cell(text,className){const el=document.createElement('td');const content=document.createElement('span');content.textContent=text;if(className)content.className=className;el.append(content);return el;}
 function deadlineCell(date,service=false){const state=dateStatus(date);const td=cell(!date?'Bilgi girilmedi':service?(state.style==='overdue'?'Bakım gecikti':state.style==='warn'?'Bakım yaklaşıyor':'Planlandı'):state.label,'badge '+state.style);const sub=document.createElement('span');sub.className='cell-sub';sub.textContent=(service?'Planlanan: ':'Geçerlilik: ')+state.date;td.append(sub);return td;}
-function roadCell(car){
-  if(!car.firstRoad)return cell('İlk ödeme tarihi girilmeli','badge warn');
-  const first=new Date(car.firstRoad+'T00:00:00');const now=new Date();
-  const td=cell(first.toLocaleDateString('tr-TR',{month:'long'}),'badge');
-  const sub=document.createElement('span');sub.className='cell-sub';sub.textContent='İlk ödeme: '+first.toLocaleDateString('tr-TR');td.append(sub);
-  if(first.getMonth()===now.getMonth()&&first<=now){const alert=document.createElement('span');alert.className='cell-sub badge warn';alert.textContent='Kontrol et';td.append(alert);}
+function documentCell(car,kind){
+  const info=vehicleDocumentInfo(car,records),road=kind==='road';
+  const state=road?info.roadStatus:info.inspectionStatus;
+  const end=road?info.roadEnd:car.inspection;
+  let label=state.label;
+  if(road&&car.officialCheckDate&&car.officialRoadStatus==='debt')label='SEYRÜSEFER BORCU VAR · kontrol et';
+  else if(road&&!end&&car.officialCheckDate&&car.officialRoadStatus==='none')label='Borç yok · bitiş doğrulanmadı';
+  const td=cell(label,'badge '+(state.tone==='due'?'overdue':state.tone==='missing'?'warn':''));
+  const line=text=>{const sub=document.createElement('span');sub.className='cell-sub';sub.textContent=text;td.append(sub);};
+  if(end)line('Geçerlilik: '+new Date(end+'T00:00:00').toLocaleDateString('tr-TR'));
+  if(road&&end){const d=new Date(end+'T00:00:00');d.setDate(1);d.setMonth(d.getMonth()+1);line('Yenileme: '+d.toLocaleDateString('tr-TR',{month:'long',year:'numeric'}));}
+  if(!road&&info.inspectionPeriod)line('Muayene dönemi: '+info.inspectionPeriod.join(' – '));
+  if(road&&info.roadPaymentBlocked)line('Online ödeme muayene borcu nedeniyle engelli');
+  const receipt=road?info.road:info.inspection;
+  if(receipt)line((road?'Son ödeme: ':'Son harç: ')+Number(receipt.amount||0).toLocaleString('tr-TR')+' TL · '+new Date(receipt.svcDate+'T00:00:00').toLocaleDateString('tr-TR'));
+  if(car.officialCheckDate)line('Kontrol: '+new Date(car.officialCheckDate+'T00:00:00').toLocaleDateString('tr-TR'));
   return td;
 }
+function roadCell(car){return documentCell(car,'road');}
 function renderFuel(){
  if(!$('fuelRecords'))return;
  const visible=visibleCars(),old=$('fuelPlate').value;$('fuelPlate').replaceChildren();
@@ -165,7 +176,7 @@ function renderTable(){
   const query=$('search').value.trim().toLocaleLowerCase('tr-TR');
   const filtered=visibleCars().filter(car=>[car.plate,car.model,isPrivileged()?car.owner:'',String(car.year)].join(' ').toLocaleLowerCase('tr-TR').includes(query));
   $('vehicles').replaceChildren();$('noResults').hidden=filtered.length>0;
-  for(const car of filtered){const row=document.createElement('tr');const plate=cell(car.plate,'plate-chip');const model=document.createElement('span');model.className='cell-sub';model.textContent=car.model;plate.append(model);const {report,missing}=weekState(car);const km=cell(report.kmKnown===false?'Bilgi girilmedi':report.km.toLocaleString('tr-TR')+' km');const date=document.createElement('span');date.className='cell-sub';date.textContent='Son bildirim: '+(report.date?new Date(report.date+'T00:00:00').toLocaleDateString('tr-TR'):'Haftalık bildirim yok');km.append(date);const status=cell(missing?'Bildirim bekleniyor':report.maintenance==='done'?'Bakım bildirildi':report.maintenance==='pending'?'Bakım yapılmadı':'Bakım bildirimi eksik','badge '+(missing?'warn':report.maintenance==='pending'?'overdue':report.maintenance==='unreported'?'warn':''));row.append(plate,cell(car.year||'Bilgi girilmedi'));if(isPrivileged())row.append(cell(car.owner),cell(car.identity),cell(car.titleDate?new Date(car.titleDate+'T00:00:00').toLocaleDateString('tr-TR'):'Bilgi girilmedi'));row.append(roadCell(car),deadlineCell(car.inspection),deadlineCell(car.service,true),km,status);if(isPrivileged()){const action=document.createElement('td');const edit=document.createElement('button');edit.type='button';edit.textContent='Düzenle';edit.style.padding='8px 10px';edit.setAttribute('aria-label',car.plate+' düzenle');edit.addEventListener('click',()=>openVehicleEditor(car));action.append(edit);row.append(action);}$('vehicles').append(row);}
+  for(const car of filtered){const row=document.createElement('tr');const plate=cell(car.plate,'plate-chip');const model=document.createElement('span');model.className='cell-sub';model.textContent=car.model;plate.append(model);const {report,missing}=weekState(car);const km=cell(report.kmKnown===false?'Bilgi girilmedi':report.km.toLocaleString('tr-TR')+' km');const date=document.createElement('span');date.className='cell-sub';date.textContent='Son bildirim: '+(report.date?new Date(report.date+'T00:00:00').toLocaleDateString('tr-TR'):'Haftalık bildirim yok');km.append(date);const status=cell(missing?'Bildirim bekleniyor':report.maintenance==='done'?'Bakım bildirildi':report.maintenance==='pending'?'Bakım yapılmadı':'Bakım bildirimi eksik','badge '+(missing?'warn':report.maintenance==='pending'?'overdue':report.maintenance==='unreported'?'warn':''));row.append(plate,cell(car.year||'Bilgi girilmedi'));if(isPrivileged())row.append(cell(car.owner),cell(car.identity),cell(car.titleDate?new Date(car.titleDate+'T00:00:00').toLocaleDateString('tr-TR'):'Bilgi girilmedi'));row.append(roadCell(car),documentCell(car,'inspection'),deadlineCell(car.service,true),km,status);if(isPrivileged()){const action=document.createElement('td');const edit=document.createElement('button');edit.type='button';edit.textContent='Düzenle';edit.style.padding='8px 10px';edit.setAttribute('aria-label',car.plate+' düzenle');edit.addEventListener('click',()=>openVehicleEditor(car));action.append(edit);row.append(action);}$('vehicles').append(row);}
 }
 function render(){
   if($('driverProfile')){const previous=$('driverProfile').value;const names=[...new Set(cars.map(car=>weekly[car.plate]?.driver).filter(Boolean))];$('driverProfile').replaceChildren();for(const name of names){const option=document.createElement('option');option.value=name;option.textContent=name;$('driverProfile').append(option);}if(names.includes(previous))$('driverProfile').value=previous;}

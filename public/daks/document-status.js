@@ -4,7 +4,7 @@ function vehicleDocumentInfo(car, records, today) {
   const rows=records.filter(r=>r.kind==='service'&&r.plate===car.plate).slice().sort((a,b)=>(b.svcDate||'').localeCompare(a.svcDate||''));
   const road=rows.find(r=>/seyrüsefer dönemi/i.test(r.note||''));
   const inspection=rows.find(r=>/muayene (dönemi|tarihleri)/i.test(r.note||''));
-  const period=r=>(r?.note||'').match(/(?:muayene dönemi|muayene tarihleri|seyrüsefer dönemi):?\s*([\d.]+)\s*[–-]\s*([\d.]+)/i)?.slice(1).map(s=>s.replace(/\.+$/,''))||null;
+  const period=(r,kind)=>(kind==='inspection'?((r?.note||'').match(/muayene (?:dönemi|tarihleri):?\s*[\d.]+\s*[–-]\s*[\d.]+/i)?.[0]||''):(r?.note||'')).match(/(?:muayene dönemi|muayene tarihleri|seyrüsefer dönemi):?\s*([\d.]+)\s*[–-]\s*([\d.]+)/i)?.slice(1).map(s=>s.replace(/\.+$/,''))||null;
   const end=road?.note?.match(/ruhsat bitişi:\s*(\d{2}\.\d{2}\.\d{4})/i)?.[1];
   const roadEnd=car.road||(end?end.split('.').reverse().join('-'):'');
   const missing={tone:'missing',label:'Bilgi eksik'};
@@ -15,7 +15,7 @@ function vehicleDocumentInfo(car, records, today) {
     return n<0?{tone:'due',label:Math.abs(n)+' gün gecikti · kontrol et'}:n===0?{tone:'due',label:'BUGÜN SON GÜN'}:{tone:'ok',label:'Zamanı gelmedi'};
   }
   let inspectionStatus=status(car.inspection);
-  const inspectionPeriod=period(inspection)||period({note:car.inspectionCheckNote});
+  const inspectionPeriod=period(inspection,'inspection')||period({note:car.inspectionCheckNote},'inspection');
   if(!car.inspection&&inspection){
     inspectionStatus={tone:'missing',label:'Harç ödendi · sonuç doğrulanmadı'};
   }
