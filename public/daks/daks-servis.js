@@ -3,6 +3,26 @@
 const tl=n=>Number(n||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' TL';
 const bugun=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const reminderPanel=el('details','card document-reminders');reminderPanel.id='documentReminders';reminderPanel.dataset.hideDriver='';
+document.querySelector('main>.notice').after(reminderPanel);
+function renderDocumentReminders(){
+ reminderPanel.replaceChildren();const rows=[];let missing=0;
+ for(const car of visibleCars()){
+  const info=vehicleDocumentInfo(car,records,bugun());
+  for(const [name,status,date] of [['Seyrüsefer',info.roadStatus,info.roadEnd],['Muayene',info.inspectionStatus,car.inspection],['Sigorta',info.insuranceStatus,car.insurance||car.insuranceMonth]]){
+   if(status.tone==='missing'){missing++;continue;}
+   if(status.tone!=='due')continue;
+   const row=el('div','row');row.append(el('strong',null,car.plate+' · '+name),el('span',null,(date?date.split('-').reverse().join('.')+' · ':'')+status.label));rows.push(row);
+  }
+ }
+ reminderPanel.append(el('summary',null,'Belge hatırlatmaları · '+rows.length+' uyarı · '+missing+' eksik bilgi'));
+ reminderPanel.append(el('p',null,'30 gün, 7 gün, son gün ve gecikme uyarıları. Muayene harç ödemesi geçerlilik tarihi yerine kullanılmaz.'));
+ if(!rows.length)reminderPanel.append(el('p',null,'Bilinen bitiş tarihlerine göre yaklaşan veya geçen belge yok.'));
+ for(const row of rows)reminderPanel.append(row);
+ if(missing)reminderPanel.append(el('p',null,'Eksik belgeleri Belge takibi bölümünden tamamlayın.'));
+ reminderPanel.classList.toggle('has-due',!!rows.length);
+ reminderPanel.hidden=$('role').value==='driver';
+}
 if($('svcCards')&&$('documentCardsHeading')){
  const form=$('svcForm');form.before($('documentCardsHeading'),$('svcCards'));
  const ledger=$('svcRows').closest('.table-scroll'),details=el('details','document-ledger');
@@ -12,6 +32,7 @@ if($('svcCards')&&$('documentCardsHeading')){
 if($('documentFilter'))$('documentFilter').addEventListener('change',()=>servisCiz());
 if($('svcDate'))$('svcDate').value=bugun();if($('svcMonth'))$('svcMonth').value=bugun().slice(0,7);
 window.servisCiz=function(){if(!$('svcRows'))return;
+ renderDocumentReminders();
  const cs=visibleCars(),old=$('svcPlate').value;$('svcPlate').replaceChildren();for(const c of cs){const o=el('option',null,c.plate+' · '+c.model);o.value=c.plate;$('svcPlate').append(o)}if(cs.some(c=>c.plate===old))$('svcPlate').value=old;
  const ay=$('svcMonth').value||bugun().slice(0,7),L=records.map((r,i)=>({r,i})).filter(x=>x.r.kind==='service'&&(x.r.svcDate||'').slice(0,7)===ay).sort((a,b)=>b.r.svcDate.localeCompare(a.r.svcDate));
  $('svcRows').replaceChildren();$('svcEmpty').hidden=L.length>0;
@@ -62,6 +83,8 @@ window.servisCiz=function(){if(!$('svcRows'))return;
   $('svcCards').append(k)}
 };
 if($('svcMonth'))$('svcMonth').addEventListener('change',servisCiz);
+let reminderDay=bugun();setInterval(()=>{if(bugun()!==reminderDay){reminderDay=bugun();servisCiz();}},60000);
+window.addEventListener('focus',()=>{if(bugun()!==reminderDay){reminderDay=bugun();servisCiz();}});
 if($('svcForm'))$('svcForm').addEventListener('submit',async e=>{e.preventDefault();const m=$('svcMessage');
  const amount=Number($('svcAmount').value);if(!(amount>=0)){m.textContent='Tutarı yazın.';return}
  records.push({kind:'service',plate:$('svcPlate').value,svcDate:$('svcDate').value,svcType:$('svcType').value,amount,km:$('svcKm').value?Number($('svcKm').value):null,shop:$('svcShop').value.trim(),note:$('svcNote').value.trim(),author:$('role').value,date:new Date().toLocaleString('tr-TR')});

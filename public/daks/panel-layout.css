@@ -53,3 +53,5 @@
 .document-extra,.document-ledger{margin-top:20px;border-top:1px solid #ffffff18;padding-top:16px}.document-extra summary,.document-ledger summary{cursor:pointer;color:#7be7d1;font-size:13px;line-height:1.5}.document-ledger[open] summary{margin-bottom:18px}
 .document-ledger table{white-space:normal}.document-ledger td{overflow-wrap:anywhere;line-height:1.6;min-width:80px}.document-ledger td:nth-child(4){min-width:210px;max-width:500px}.document-ledger td:nth-child(6){white-space:nowrap}
 @media(max-width:600px){.daks-panel #svcCards{grid-template-columns:1fr}}
+
+.document-reminders{margin-top:16px;padding:16px!important}.document-reminders summary{cursor:pointer;color:#f0d498;font-weight:700;font-size:14px}.document-reminders.has-due{border-color:#f8717155!important}.document-reminders.has-due summary{color:#ffb5bd}.document-reminders .row{font-size:13px}.document-reminders p{font-size:12px}

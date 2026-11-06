@@ -67,7 +67,7 @@ function renderSchedule(){
 function renderRoadAlerts(){
   if(!$('roadAlerts'))return;
   $('roadAlerts').replaceChildren();const now=new Date();
-  const due=visibleCars().filter(car=>{if(!car.firstRoad)return false;const date=new Date(car.firstRoad+'T00:00:00');return date<=now&&date.getMonth()===now.getMonth();});
+  const due=visibleCars().filter(car=>{if(car.road||!car.firstRoad)return false;const date=new Date(car.firstRoad+'T00:00:00');return date<=now&&date.getMonth()===now.getMonth();});
   $('roadAlerts').hidden=due.length===0;
   for(const car of due){const item=document.createElement('div');item.className='road-alarm';item.setAttribute('role','alert');const icon=document.createElement('span');icon.className='alarm-icon';icon.textContent='!';icon.setAttribute('aria-hidden','true');const body=document.createElement('div');const title=document.createElement('strong');title.textContent=car.plate+' — SEYRÜSEFER KONTROL ET';const detail=document.createElement('p');detail.textContent='Seyrüsefer ödeme ayı geldi. Resmî sorgulama üzerinden kontrol edin.';const query=document.createElement('a');query.className='link alarm-query';query.href='https://online.vergi.gov.ct.tr/gvdos_online-vergi/akosths.jsp?token=d1078f5e3dc646b78d5d4e5842f21e97feb48d366bc7617458b6679dec12675154a01fccc42292bb04d926bc259dbc75e39dd8e202535fd70a7098396c74a6f7';query.target='_blank';query.rel='noopener noreferrer';query.textContent='Seyrüseferi kontrol et ↗';body.append(title,detail,query);item.append(icon,body);$('roadAlerts').append(item);}
 }

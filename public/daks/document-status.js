@@ -12,7 +12,7 @@ function vehicleDocumentInfo(car, records, today) {
   function status(date) {
     if(!date)return {...missing};
     const n=days(date);if(!Number.isFinite(n))return {...missing};
-    return n<0?{tone:'due',label:'Süresi geçti · kontrol et'}:n<=30?{tone:'due',label:'Kontrol zamanı geldi · '+n+' gün kaldı'}:{tone:'ok',label:'Zamanı gelmedi'};
+    return n<0?{tone:'due',label:Math.abs(n)+' gün gecikti · kontrol et'}:n===0?{tone:'due',label:'BUGÜN SON GÜN'}:n<=7?{tone:'due',label:'ACİL · '+n+' gün kaldı'}:n<=30?{tone:'due',label:'Yaklaşıyor · '+n+' gün kaldı'}:{tone:'ok',label:'Zamanı gelmedi'};
   }
   const insurance=car.insurance?status(car.insurance):car.insuranceMonth?(car.insuranceMonth<=today.slice(0,7)?{tone:'due',label:'Sigorta ayı geldi / geçti · poliçeyi kontrol et'}:{tone:'ok',label:'Zamanı gelmedi · kesin gün eksik'}):{...missing};
   let inspectionStatus=status(car.inspection);
