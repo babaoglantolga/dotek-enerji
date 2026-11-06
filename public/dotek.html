@@ -859,7 +859,7 @@ const FATURA_KDV=16;
 const kdvNot=d=>d.ek?'':d.kdvDahil?'Fiyatlara KDV dahildir.':kdvKarma(d)?'KDV oranları kalem bazında uygulanmıştır. Genel toplam KDV dahil tutardır.':Number(d.kdv)>0?'Faturaya %'+String(d.kdv).replace('.',',')+' KDV eklenir. Genel toplam KDV dahil tutardır.':'Fiyatlara KDV dahil değildir. Faturaya %'+FATURA_KDV+' KDV eklenir.';
 const totIc=(h,d,pb,EL,et)=>`<div><span>${d.kdvDahil?'Toplam':EL?'Toplam fiyat':'Ara toplam'}</span><span>${bPara(h.ara,pb)}</span></div>${h.ind?`<div><span>${indAd(d)}</span><span>−${bPara(h.ind,pb)}</span></div><div><span>İndirimli toplam</span><span>${bPara(h.net,pb)}</span></div>`:''}${h.kdvL.map(x=>`<div><span>KDV %${yO(x.oran)}</span><span>${x.dahil?'Dahil':bPara(x.tutar,pb)}</span></div>`).join('')}<div class="g"${et?' style="font-size:13.5px;gap:10px"':''}><span>${et||'GENEL TOPLAM'}</span><span style="white-space:nowrap">${bPara(h.gen,pb)}</span></div>`;
 function belgeHTML(d){
-  if(d.tip==='teslim')return teslimHTML(d);if(d.tip==='rapor')return raporHTML(d);
+  if(d.tip==='teslim')return teslimHTML(d);if(d.tip==='rapor')return cihazRaporHTML(d);
   if(d.ek)return ekHTML(d);
   const h=bHesap(d),pb=d.pb,EL=elT(d),CS=EL?2:4;
   let no=0;const tr=tabloSatir(d).map(k=>k.tip==='st'?`<tr><td class="s" style="background:#FFF8D6"></td><td colspan="${CS-1}" style="text-align:right;font-weight:800;color:#0D1526;background:#FFF8D6">${esc(k.ad)}</td><td class="n" style="background:#FFF8D6"><b>${bPara(k.tutar,pb)}</b></td></tr>`:k.tip==='sb'?(no=0,`<tr><td colspan="${CS+1}" style="background:#0D1526;color:#F5D90A;font-weight:800;letter-spacing:.08em;font-size:9.5pt;padding:8px 12px">${esc(k.ad)}</td></tr>`):k.tip==='b'?`<tr><td class="s"></td><td colspan="${CS}" style="font-size:8pt;font-weight:800;letter-spacing:.12em;color:#5b667a">${esc(k.ad)}</td></tr>`
@@ -896,7 +896,7 @@ function teslimHTML(d){const K=(d.kalemler||[]).filter(k=>(k.ad||'').trim());
   ${d.konu?`<div class="kn">Konu: <b>${esc(d.konu)}</b></div>`:'<div class="kn"></div>'}
   <table><thead><tr><th>NO</th><th>MALZEME</th><th>KOD / AÇIKLAMA</th><th class="n">MİKTAR</th></tr></thead><tbody>${K.map((k,i)=>`<tr><td class="s">${String(i+1).padStart(2,'0')}</td><td><b>${esc(k.ad)}</b></td><td>${esc(k.kod||'')}</td><td class="n">${String(k.miktar??'').replace('.',',')} ${esc(k.birim||'')}</td></tr>`).join('')||'<tr><td colspan="4" style="color:#8a94a6">Kalem yok</td></tr>'}</tbody></table>
   <div style="margin-top:10px;color:#5b667a">Toplam <b>${K.length}</b> kalem. Yukarıdaki malzemeler eksiksiz ve sağlam olarak teslim alınmıştır.</div>${b2Not(d)}${b2Alt(d)}`}
-function raporHTML(d){const c=d.cihaz||{},P=(d.parcalar||[]).filter(k=>(k.ad||'').trim()),I=(d.islemler||[]).filter(x=>(x||'').trim());
+function cihazRaporHTML(d){const c=d.cihaz||{},P=(d.parcalar||[]).filter(k=>(k.ad||'').trim()),I=(d.islemler||[]).filter(x=>(x||'').trim());
   const blok=(b,t)=>t&&String(t).trim()?`<div class="yi" style="margin-top:12px"><h4>${b}</h4><div style="white-space:pre-wrap">${esc(String(t).trim())}</div></div>`:'';
   return`<div class="blg">${b2Ust(d)}<div class="ic"><div class="iki">${b2Kisi(d,'MÜŞTERİ')}
   <div class="kt"><dl><dt>Rapor no</dt><dd>${esc(d.no||'—')}</dd><dt>Rapor tarihi</dt><dd>${bTar(d.tarih)}</dd>${d.gelis?`<dt>Geliş tarihi</dt><dd>${bTar(d.gelis)}</dd>`:''}${d.isNo?`<dt>İş no</dt><dd>${esc(d.isNo)}</dd>`:''}<dt>Teknisyen</dt><dd>${esc(d.teknisyen||'')}</dd></dl></div></div>
