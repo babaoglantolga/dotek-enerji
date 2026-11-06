@@ -587,6 +587,14 @@ function cfKaydet(){let ad=$('#cf_ad').value.trim();if(!ad){toast('İsim yazın'
  if(CF.ust)o.ust_id=CF.ust;let c;if(CF.cid){c=cari(CF.cid);Object.assign(c,o)}else c=cariEkle(o);const s=CF.sonra;kapat();toast(CF.cid?'Cari güncellendi':'Cari açıldı: '+c.ad);s&&s(c)}
 
 /* ============ CARİ KARTI + EKSTRE ============ */
+/* Cari kartı: bu müşteriye verilen DSYS teklifleri — borç yazılmaz, sadece görünür */
+async function cariTeklifCiz(cid){const c=cari(cid),k=$('#ck_tkl');if(!c||!k)return;
+ try{const r=await sb.from('teklifler').select('no,konu,durum,tarih,para_birimi,kalemler,musteri,proje_id').order('tarih',{ascending:false});if(r.error)throw r.error;
+  const n=norm(c.ad),L=(r.data||[]).filter(t=>{const m=norm(t.musteri);return m&&(m===n||(m.length>3&&(m.includes(n)||n.includes(m))))});
+  const TD={istendi:'İstendi',taslak:'Hazırlanıyor',gonderildi:'Gönderildi',kabul:'Kabul edildi',red:'Reddedildi'};
+  const top=t=>{const K=t.kalemler||[],el=K.find(x=>x&&x._toplam!=null);if(el)return +el._toplam;return r2(K.filter(x=>x&&x.ad).reduce((a,x)=>a+(+x.miktar||0)*(+x.fiyat||0),0))};
+  if(!$('#ck_tkl'))return;k.style.display=L.length?'':'none';k.innerHTML=L.length?`<h3>Teklifler <small class="muted">· cariye borç yazılmaz</small></h3><div class="list">${L.map(t=>`<div class="it" onclick="kapatHepsi();dsysAc('teklif')"><div class="m"><b>${esc(t.no||'Teklif')} · ${esc(t.konu||'')}</b><span class="muted">${trTarih(String(t.tarih).slice(0,10))} · ${TD[t.durum]||t.durum}${t.proje_id?' · işe döndü':''}</span></div><b>${fmt(top(t),PB.includes(t.para_birimi)?t.para_birimi:'TRY')}</b></div>`).join('')}</div>`:''}
+ catch(e){console.warn('teklifler okunamadı',e)}}
 function cariKart(cid){const f=()=>{const c=cari(cid);if(!c)return{html:'<p>Cari silindi.</p>',foot:''};const b=bakiye(cid),g=geciken().filter(x=>x.cari.id===cid);
  const hs=S.hareketler.filter(h=>h.cari_id===cid).sort((a,b)=>b.tarih.localeCompare(a.tarih)||b.id-a.id).slice(0,40);
  const isl=S.isler.filter(i=>i.cari_id===cid||i.getiren_id===cid).sort((a,b)=>b.id-a.id).slice(0,10);const wl=waLink(c.tel,borcMesaj(c));
@@ -599,9 +607,10 @@ function cariKart(cid){const f=()=>{const c=cari(cid);if(!c)return{html:'<p>Cari
  ${!c.ust_id?(()=>{const alt=S.cariler.filter(x=>x.ust_id===cid);return `<div class="card"><div class="row sp"><h3 style="margin:0">Bağlı birimler</h3>${paraGorur()?`<button class="btn l s" onclick="cariForm(null,{ust:${cid},tur:'${c.tur}',sonra:()=>guncelle()})">+ Birim ekle</button>`:''}</div>${alt.length?`<div class="tw" style="margin-top:8px"><table><tr><th>Birim</th><th class="n">İş</th><th class="n">Bakiye</th></tr>${alt.map(a=>`<tr class="click" onclick="cariKart(${a.id})"><td><b>${esc(a.ad.startsWith(c.ad+' - ')?a.ad.slice(c.ad.length+3):a.ad)}</b></td><td class="n">${S.isler.filter(i=>i.cari_id===a.id).length}</td><td class="n">${pbSatir(bakiye(a.id))}</td></tr>`).join('')}<tr class="top"><td>Ana cari + birimler</td><td class="n">${S.isler.filter(i=>i.cari_id===cid||alt.some(a=>a.id===i.cari_id)).length}</td><td class="n">${pbSatir(pbBirles(b,...alt.map(a=>bakiye(a.id))))}</td></tr></table></div>`:'<p class="muted mini" style="margin-top:6px">Şubesi, tesisi ya da ayrı projesi varsa birim olarak ekleyin (örn. Doğuş Yanal - Gargasuyu). Her birimin kendi işleri ve hesabı olur.</p>'}</div>`})():''}
  ${(cari(cid).takip||[]).length?`<div class="card"><h3>Arama ve ekstre takibi</h3>${takipListe(cid)}</div>`:''}
  ${hatKutu({cari_id:cid})}
+ <div id="ck_tkl" class="card" style="display:none"></div>
  <div class="card"><h3>Son hareketler</h3>${hs.length?`<div class="tw"><table><tr><th>Tarih</th><th>Açıklama</th><th class="n">Borç</th><th class="n">Alacak</th><th></th></tr>${hs.map(h=>`<tr><td>${trTarih(h.tarih)}${h.vade&&h.tutar>0?`<div class="muted mini">vade ${trTarih(h.vade)}</div>`:''}</td><td>${esc(h.aciklama)}</td><td class="n">${h.tutar>0?fmt(h.tutar,h.pb):''}</td><td class="n">${h.tutar<0?fmt(-h.tutar,h.pb):''}</td><td style="white-space:nowrap">${paraGorur()?`<button class="btn l s" title="Düzenle" onclick="hareketDuzenle(${h.id})">✎</button> <button class="btn l s" title="Sil" onclick="hareketSil(${h.id})">✕</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="muted">Henüz hareket yok.</p>'}</div>
- ${isl.length?`<div class="card"><h3>İşleri</h3><div class="list">${isl.map(isSatir).join('')}</div></div>`:''}`,foot:''}};
- const y=f();modal(cari(cid).ad,y.html,null,{yenile:f})}
+ ${isl.length?`<div class="card"><h3>İşleri</h3><div class="list">${isl.map(isSatir).join('')}</div></div>`:''}`,foot:''}};const f2=()=>{const y=f();setTimeout(()=>cariTeklifCiz(cid),0);return y};
+ const y=f2();modal(cari(cid).ad,y.html,null,{yenile:f2})}
 let HIBEACIK=false;
 
 /* ============ NOTLAR (yazınca konusuna göre ayrılır) ============ */
@@ -1296,7 +1305,7 @@ function dKdv(t){const bu=kdvAy(AY);
 /* ---- Tek fatura listesi: Gelen / Giden, ödeme durumu, arama ---- */
 let FL={yon:'giden',ay:'bu',d:'hepsi'};
 let DSF=null,DSF_T=0;
-async function dsysFatYukle(zorla){if(!zorla&&DSF&&Date.now()-DSF_T<60000)return;try{const {data,error}=await sb.from('projeler').select('id,ad,musteri,fiyat,para_birimi,odenen,odeme_durum,fatura_tarihi,fatura_no,iletim,departman_id').eq('fatura_durum','kesildi');if(error)throw error;DSF=data||[];DSF_T=Date.now();if(SEKME==='fatura')render()}catch(e){DSF=DSF||[];console.warn('DSYS faturaları okunamadı',e)}}
+async function dsysFatYukle(zorla){if(!zorla&&DSF&&Date.now()-DSF_T<60000)return;try{const {data,error}=await sb.from('projeler').select('id,ad,musteri,fiyat,para_birimi,odenen,odeme_durum,fatura_tarihi,fatura_no,iletim,departman_id,proforma').eq('fatura_durum','kesildi');if(error)throw error;DSF=data||[];DSF_T=Date.now();if(SEKME==='fatura')render()}catch(e){DSF=DSF||[];console.warn('DSYS faturaları okunamadı',e)}}
 const dsysHareket=id=>S.hareketler.find(h=>h.ref&&h.ref.dsys===id);
 function dsysSatirlar(ayOk,t,ac){if(!DSF)return[];const nolar=new Set(S.satislar.filter(x=>x.fatura_no).map(x=>String(x.fatura_no).trim()));
  return DSF.filter(p=>p.fatura_tarihi&&!(p.fatura_no&&nolar.has(String(p.fatura_no).trim()))).map(p=>{const tarih=String(p.fatura_tarihi).slice(0,10),pb=PB.includes(p.para_birimi)?p.para_birimi:'TRY',h=dsysHareket(p.id),tutar=+p.fiyat||0;
@@ -1308,13 +1317,25 @@ function dsysIsle(pid){const p=(DSF||[]).find(x=>x.id===pid);if(!p)return;if(dsy
  modal('DSYS faturasını cariye işle',`<p><b>${esc(p.ad||'')}</b><br><span class="muted">${esc(p.musteri||'')} · ${p.iletim==='proforma'?'Proforma':'Fatura'} ${esc(p.fatura_no||'')} · ${trTarih(String(p.fatura_tarihi).slice(0,10))}</span></p>
   <p>Tutar <b>${fmt(+p.fiyat||0,pb)}</b>${+p.odenen?` · DSYS'de ödenen ${fmt(+p.odenen,pb)}`:''} → cariye <b>${fmt(kal,pb)}</b> borç yazılır, vade 1 ay.</p>
   <label for="ds_c">Hangi cari?</label><select id="ds_c"><option value="">— Cari seç —</option>${L.map(c=>`<option value="${c.id}"${tah&&tah.id===c.id?' selected':''}>${esc(c.ad)}</option>`).join('')}</select>
-  <div class="muted mini" style="margin-top:4px">Listede yoksa önce "+ Yeni kayıt → Yeni cari" ile aç.${tah?' Ada göre tahmin edildi, kontrol et.':''}</div>`,
-  `<button class="btn l" onclick="kapat()">Vazgeç</button><button class="btn g" onclick="dsysIsleKaydet(${pid})">Cariye işle</button>`)}
+  <div class="muted mini" style="margin-top:4px">Listede yoksa önce "+ Yeni kayıt → Yeni cari" ile aç.${tah?' Ada göre tahmin edildi, kontrol et.':''}</div>
+  <h3 style="margin-top:14px">Stoktan düşülecek malzemeler</h3><div id="ds_stok" class="muted">Malzemeler yükleniyor…</div>`,
+  `<button class="btn l" onclick="kapat()">Vazgeç</button><button class="btn g" onclick="dsysIsleKaydet(${pid})">Cariye işle</button>`);dsysStokCiz(p)}
+/* İşin malzemeleri → stok eşleştirme. Daha önce İş Panosu'ndan bu iş için düşülen miktar tekrar düşülmez. */
+let DS_ST=[];
+async function dsysStokCiz(p){const kutu=$('#ds_stok');let L=[];
+ try{const r=await sb.from('malzemeler').select('ad,miktar,birim,tur').eq('proje_id',p.id);if(r.error)throw r.error;L=(r.data||[]).filter(x=>x.tur==='kullanilan').map(x=>({ad:x.ad,m:+x.miktar||0,birim:x.birim||''}))}catch(e){console.warn(e)}
+ if(!L.length&&p.proforma&&Array.isArray(p.proforma.kalemler))L=p.proforma.kalemler.filter(k=>k&&k.ad&&!/işçilik|hizmet bedeli/i.test(k.ad)&&k.birim!=='iş').map(k=>({ad:k.ad,m:+k.miktar||0,birim:k.birim||''}));
+ const toplu={};L.forEach(x=>{const k=norm(x.ad);if(toplu[k])toplu[k].m=r2(toplu[k].m+x.m);else toplu[k]={...x}});L=Object.values(toplu);
+ const U=S.urunler.slice().sort((a,b)=>a.ad.localeCompare(b.ad,'tr')),onceki=uid=>-r2(S.stokh.filter(h=>h.urun_id===uid&&!h.arac&&String(h.aciklama||'').includes('DSYS iş: '+p.ad)).reduce((t,h)=>t+(+h.miktar||0),0));
+ DS_ST=L.map(x=>{const n=norm(x.ad),u=U.find(u=>norm(u.ad)===n)||U.find(u=>n.length>3&&(norm(u.ad).includes(n)||n.includes(norm(u.ad))));const d=u?Math.max(0,onceki(u.id)):0;return{...x,uid:u?u.id:'',dus:r2(Math.max(0,x.m-d)),once:d}});
+ if(!kutu)return;if(!DS_ST.length){kutu.innerHTML='Bu işe yazılmış malzeme yok. Stok değişmez.';return}
+ kutu.className='';kutu.innerHTML=DS_ST.map((x,i)=>`<div class="f2" style="align-items:end;margin-top:6px"><div><label for="ds_u${i}">${esc(x.ad)} · ${fmtN(x.m)} ${esc(x.birim)}${x.once?` <small class="muted">(${fmtN(x.once)} zaten düşülmüş)</small>`:''}</label><select id="ds_u${i}"><option value="">— Stoktan düşme —</option>${U.map(u=>`<option value="${u.id}"${u.id===x.uid?' selected':''}>${esc(u.ad)} · stok ${fmtN(u.miktar)} ${esc(u.birim||'')}</option>`).join('')}</select></div><div><label for="ds_m${i}">Düşülecek</label><input id="ds_m${i}" type="number" step="0.01" value="${x.dus}"></div></div>`).join('')+'<div class="muted mini" style="margin-top:6px">Stokta karşılığı olmayanı "Stoktan düşme" bırak.</div>'}
+function dsysStokDus(p){let n=0;DS_ST.forEach((x,i)=>{const e=$('#ds_u'+i),q=$('#ds_m'+i);if(!e||!q)return;const uid=e.value?+e.value:0,m=num(q.value);if(uid&&m>0&&urun(uid)){stokDegis(uid,-m,'DSYS iş: '+(p.ad||'')+(p.fatura_no?' · '+p.fatura_no:''));n++}});DS_ST=[];return n}
 function dsysIsleKaydet(pid){const p=(DSF||[]).find(x=>x.id===pid),cid=+$('#ds_c').value;if(!cid){toast('Cari seç');return}if(dsysHareket(pid)){kapat();return}
  const pb=PB.includes(p.para_birimi)?p.para_birimi:'TRY',kal=p.odeme_durum==='alindi'?0:r2(Math.max(0,(+p.fiyat||0)-(+p.odenen||0))),tarih=String(p.fatura_tarihi).slice(0,10);
  if(kal<=0.005){toast('Bu fatura DSYS\'de ödenmiş, cariye borç yazılmadı');kapat();return}
  hareket(cid,{tur:'satis',pb,tutar:kal,tarih,vade:gunEkle(tarih,30),aciklama:'DSYS iş: '+(p.ad||'')+(p.fatura_no?' · '+(p.iletim==='proforma'?'Proforma ':'Fatura ')+p.fatura_no:''),ref:{dsys:pid}});
- kaydet();kapat();toast('Cariye işlendi · '+(cari(cid)||{}).ad);render()}
+ const sd=dsysStokDus(p);kaydet();kapat();toast('Cariye işlendi · '+(cari(cid)||{}).ad+(sd?' · '+sd+' malzeme stoktan düştü':''));render()}
 /* ---- Müşteriye doğrudan satış faturası / proforma (saha işi, hizmet, elle) ---- */
 function satisFaturaForm(cid){const L=S.cariler.filter(c=>c.tur!=='tedarikci').sort((a,b)=>a.ad.localeCompare(b.ad,'tr'));
  modal('Müşteriye fatura yaz',`<label>Belge türü</label><div class="radio" style="grid-template-columns:1fr 1fr"><label><input type="radio" name="sf_b" value="fatura" checked onchange="sfNo()"><span>Satış faturası</span></label><label><input type="radio" name="sf_b" value="proforma" onchange="sfNo()"><span>Proforma</span></label></div>
