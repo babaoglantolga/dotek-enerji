@@ -651,7 +651,8 @@ async function odemeTakipKart(){
 async function faturaIlet(id,tur){const i=$('#fno'+id),no=i?i.value.trim():'';
   if(tur==='fatura'&&!no&&!confirm('Fatura no yazmadın. Yine de "Fatura kesildi" olarak işaretlensin mi?'))return;
   const {error}=await sb.rpc('fatura_kes',{p:id,no,belge:tur});if(hata(error))return;
-  toast((tur==='proforma'?'Proforma verildi':'Fatura kesildi')+' · müşteriye iletildi, ödeme bekleyenlere geçti');render()}
+  const ck=await ckAlacakYaz(id);
+  toast((tur==='proforma'?'Proforma verildi':'Fatura kesildi')+' · ödeme bekleyenlere geçti'+(ck?' · '+ck:''));render()}
 const iletAd=p=>p.iletim==='proforma'?'Proforma verildi':'Fatura kesildi';
 // ---------------- Ajanda (planlar) ----------------
 const AJD={bekliyor:'Bekliyor',bakiyor:'Bakıyorum',planlandi:'Planlandı',devam:'Devam ediyor',bitti:'Bitti'};
@@ -1122,7 +1123,7 @@ const bugunStr=()=>gunStr(new Date());
 const gunEkle=(n)=>{const x=new Date();x.setDate(x.getDate()+n);return gunStr(x)};
 
 // --- Proforma: Ofis'in kendisi sıfırdan hazırlar (sahadan gelmeyen işler) ---
-const opEkstra=()=>`<div style="margin-top:12px;padding:12px;border:2px solid #9fd3b2;background:#eefaf2;border-radius:12px"><label for="opdep" style="margin-top:0">Hangi departmanın işi? *</label><select id="opdep" onchange="window._opDep=Number(this.value);BELGE.ekstra=opEkstra()">${deps.map(x=>`<option value="${x.id}"${Number(x.id)===Number(window._opDep)?' selected':''}>${esc(x.ad)}</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:6px">Kaydedince PRF numarası verilir, iş "Fatura bekleyen işler"e düşer, Doğuş'a bildirim gider. Müşteriye verince orada "📄 Proforma verildi"ye bas, ödeme bekleyenlere geçer.</div></div>`;
+const opEkstra=()=>`<div style="margin-top:12px;padding:12px;border:2px solid #9fd3b2;background:#eefaf2;border-radius:12px"><label for="opdep" style="margin-top:0">Hangi departmanın işi? *</label><select id="opdep" onchange="window._opDep=Number(this.value);BELGE.ekstra=opEkstra()">${deps.map(x=>`<option value="${x.id}"${Number(x.id)===Number(window._opDep)?' selected':''}>${esc(x.ad)}</option>`).join('')}</select><div class="muted" style="font-size:12px;margin-top:6px">Kaydedince PRF numarası verilir, iş doğrudan "Ödeme bekleyenler"e geçer, müşterinin carisine alacak yazılır, Doğuş'a bildirim gider.</div></div>`;
 function ofisProformaYeni(){
   if(!(ofisYetki()||me.rol==='patron'))return toast('Proformayı Ofis hazırlar');
   window._opDep=(deps.find(x=>x.ofis)||deps[0]||{}).id;
@@ -1140,8 +1141,37 @@ async function ofisProformaKaydet(){
   const isc=d.kalemler.filter(k=>(k.ad||'').toLocaleLowerCase('tr').includes('işçilik')).reduce((t,k)=>t+kTut(k),0);
   if(BELGE._kayitli)return;BELGE._kayitli=true;
   const {data:pid,error}=await sb.rpc('ofis_proforma_olustur',{dep,veri:d,toplam:h.gen,isc});if(error){BELGE._kayitli=false;hata(error);return}
-  S.belge=false;await defterProforma(pid,d,dep,h);toast('Proforma kaydedildi · Fatura bekleyen işlere ve dükkân defterine eklendi');await proformaAc(pid);
+  S.belge=false;await defterProforma(pid,d,dep,h);
+  let ck='';{const r=await sb.from('projeler').select('proforma_no').eq('id',pid).single();const f=await sb.rpc('fatura_kes',{p:pid,no:(r.data&&r.data.proforma_no)||'',belge:'proforma'});if(f.error)console.warn('proforma verildi işaretlenemedi',f.error);else ck=await ckAlacakYaz(pid)}
+  toast('Proforma kaydedildi · dükkân defterine yazıldı'+(ck?' · '+ck:''));await proformaAc(pid);
 }
+// Proforma / fatura müşteriye verilince: Cari ve Kasa'da müşterinin carisine alacak (vade 1 ay) + stoktaki birebir aynı isimli malzemeler düşer
+const ckNorm=x=>String(x||'').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/ş/g,'s').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ö/g,'o').replace(/ç/g,'c').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+async function ckAlacakYaz(pid){try{
+  if(CKP.rol===undefined){try{const r=await sb.rpc('ck_rol');CKP.rol=r.error?null:r.data}catch(e){CKP.rol=null}}
+  if(!CKP.rol)return'';
+  const p=(await sb.from('projeler').select('id,ad,musteri,fiyat,para_birimi,odenen,odeme_durum,fatura_tarihi,fatura_no,iletim,proforma_no,proforma').eq('id',pid).single()).data;if(!p)return'';
+  const v=await sb.from('ck_kayit').select('id').eq('kol','hareketler').eq('veri->ref->>dsys',String(pid)).limit(1);if(v.error)throw v.error;if((v.data||[]).length)return'cariye zaten işli';
+  const kal=p.odeme_durum==='alindi'?0:ckR2(Math.max(0,(+p.fiyat||0)-(+p.odenen||0)));if(kal<=0.005)return'';
+  const cs=((await sb.from('ck_kayit').select('veri').eq('kol','cariler')).data||[]).map(x=>x.veri).filter(c=>c&&c.ad&&c.tur!=='tedarikci');
+  const n=ckNorm(p.musteri);let c=n?cs.filter(x=>ckNorm(x.ad)===n):[];c=c.length===1?c[0]:await ckCariSec(p,cs);if(!c)return'cariye işlenmedi (Cari ve Kasa → Fatura dengesi\'nden işlenir)';
+  const pb=['TRY','EUR','GBP','USD'].includes(p.para_birimi)?p.para_birimi:'TRY',tarih=String(p.fatura_tarihi||bugunS()).slice(0,10),no=p.fatura_no||p.proforma_no||'',hid=ckYid();
+  const satir=[];if(c._yeni){delete c._yeni;satir.push({kol:'cariler',id:String(c.id),veri:c})}
+  satir.push({kol:'hareketler',id:String(hid),veri:{id:hid,cari_id:c.id,tarih,tur:'satis',pb,tutar:kal,aciklama:'DSYS iş: '+(p.ad||'')+(no?' · '+(p.iletim==='proforma'?'Proforma ':'Fatura ')+no:''),vade:gunEk(tarih,30),ref:{dsys:pid}}});
+  const {error}=await sb.from('ck_kayit').upsert(satir,{onConflict:'kol,id'});if(error)throw error;
+  let sd=0;try{await ckPanoYukle();const K=((p.proforma&&p.proforma.kalemler)||[]).filter(k=>k&&k.ad&&+k.miktar>0&&!/işçilik|hizmet bedeli/i.test(k.ad));
+    for(const k of K){const u=CKP.urun.find(x=>ckNorm(x.ad)===ckNorm(k.ad));if(u){await ckStokYaz(u.id,[{depo:-(+k.miktar),acik:'DSYS iş: '+p.ad+(no?' · '+no:'')}]);sd++}}}catch(e){console.warn('stok düşülemedi',e)}
+  return c.ad+' carisine alacak yazıldı'+(sd?' · '+sd+' malzeme stoktan düştü':'')}catch(e){console.warn(e);return'cariye yazılamadı: '+(e.message||e)}}
+// Müşteri adı carilerde birebir yoksa: seç ya da yeni cari aç
+function ckCariSec(p,cs){return new Promise(res=>{const n=ckNorm(p.musteri),puan=c=>{const a=ckNorm(c.ad);return a===n?3:(n&&(a.includes(n)||n.includes(a)))?2:a.split(' ')[0]===n.split(' ')[0]?1:0};
+  const L=cs.slice().sort((a,b)=>puan(b)-puan(a)||a.ad.localeCompare(b.ad,'tr')),k=document.createElement('div');
+  k.style.cssText='position:fixed;inset:0;background:rgba(13,21,38,.55);z-index:70;display:flex;align-items:center;justify-content:center;padding:16px';
+  k.innerHTML=`<div class="card" role="dialog" aria-modal="true" style="max-width:460px;width:100%"><h3 style="margin-top:0">Alacak hangi cariye yazılsın?</h3><div class="muted">${esc(p.ad||'')} · Müşteri: <b>${esc(p.musteri||'—')}</b> · ${tl(p.fiyat,p.para_birimi)}</div>
+   <label for="ckc">Cari</label><select id="ckc"><option value="yeni">➕ Yeni cari aç: ${esc(p.musteri||'')}</option>${L.map((c,i)=>`<option value="${i}"${i===0&&puan(c)>=2?' selected':''}>${esc(c.ad)}</option>`).join('')}</select>
+   <div class="row" style="margin-top:12px;gap:8px;flex-wrap:nowrap"><button class="btn l" style="flex:1" id="ckv">Şimdi değil</button><button class="btn g" style="flex:1" id="cko">Alacağa yaz</button></div></div>`;
+  document.body.appendChild(k);const bit=v=>{k.remove();res(v)};
+  k.querySelector('#ckv').onclick=()=>bit(null);
+  k.querySelector('#cko').onclick=()=>{const v=k.querySelector('#ckc').value;if(v!=='yeni')return bit(L[+v]);if(!(p.musteri||'').trim())return toast('Müşteri adı yok');bit({id:ckYid(),ad:p.musteri.trim(),tur:'musteri',tel:'',vergi:'',adres:'',vade:30,not:'DSYS\'den açıldı',olusturma:bugunS(),_yeni:true})}})}
 // Proforma yazılan iş, Dükkân defterine "Yapılan iş" olarak kendiliğinden düşer (tekrar yazılmaz)
 async function defterProforma(pid,d,dep,h){try{const r=await sb.from('projeler').select('proforma_no').eq('id',pid).single();const no=(r.data&&r.data.proforma_no)||'';
   const ne=(d.isler&&d.isler.length?d.isler:d.kalemler.map(k=>k.ad).filter(Boolean)).slice(0,4).join(', ');
