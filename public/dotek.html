@@ -2502,8 +2502,8 @@ async function kDfSil(id){if(!confirm('Bu kayıt silinsin mi?'))return;const {er
 // ---------------- İş Defteri: herkesin yazdığı ve gördüğü tek defter (kim, nerede, ne yaptı, durum) ----------------
 const IDT={kesif:['Keşif','#7C3AED','#F3E8FF'],is:['İş','#047857','#D1FAE5'],servis:['Servis','#0E9BB8','#E0F7FB'],bakim:['Bakım','#3B82F6','#EEF4FF'],ariza:['Arıza','#DC2626','#FEE2E2'],gelen:['Geldi / getirdi','#0E9BB8','#E0F7FB'],giden:['Gitti / teslim','#3B82F6','#EEF4FF'],not:['Not','#B45309','#FEF3C7']};
 const IDIS=['kesif','is','servis','bakim','ariza'];
-const IDD={devam:['Devam ediyor','#1D4ED8','#EEF4FF'],bitti:['Bitti','#047857','#D1FAE5'],malzeme:['Malzeme bekliyor','#B45309','#FEF3C7'],teklif:['Teklif bekliyor','#7C3AED','#F3E8FF']};
-const idDur=x=>x.durum||(IDIS.includes(x.tur)?'bitti':'');
+const IDD={devam:['Devam ediyor','#1D4ED8','#EEF4FF'],bitti:['Bitti','#047857','#D1FAE5'],malzeme:['Malzeme bekliyor','#B45309','#FEF3C7']};
+const idDur=x=>{const d=x.durum||(IDIS.includes(x.tur)?'bitti':'');return d&&!IDD[d]?'devam':d};
 const idAcik=x=>{const d=idDur(x);return d&&d!=='bitti'};
 const idKisiler=s=>String(s||'').split(/\s*(?:\+|,|&|\bve\b)\s*/i).map(x=>x.trim().toLocaleUpperCase('tr-TR')).filter(Boolean);
 function idAralik(a){const g=bugunS(),d=new Date(g+'T12:00:00'),pzt=gunEk(g,-((d.getDay()+6)%7)),ay1=g.slice(0,8)+'01';
