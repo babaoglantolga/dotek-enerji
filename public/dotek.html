@@ -2500,8 +2500,8 @@ async function kDfGonder(id,sessiz){const {data:x,error}=await sb.from('koord_ka
   toast(sessiz?'Deftere yazıldı · Doğuş\'a gönderildi':'Doğuş\'a gönderildi');if(!sessiz)render()}
 async function kDfSil(id){if(!confirm('Bu kayıt silinsin mi?'))return;const {error}=await sb.from('koord_kayit').delete().eq('id',id);if(hata(error))return;toast('Silindi');render()}
 // ---------------- İş Defteri: herkesin yazdığı ve gördüğü tek defter (kim, nerede, ne yaptı, durum) ----------------
-const IDT={kesif:['Keşif','#7C3AED','#F3E8FF'],is:['İş','#047857','#D1FAE5'],servis:['Servis','#0E9BB8','#E0F7FB'],bakim:['Bakım','#3B82F6','#EEF4FF'],ariza:['Arıza','#DC2626','#FEE2E2'],gelen:['Geldi / getirdi','#0E9BB8','#E0F7FB'],giden:['Gitti / teslim','#3B82F6','#EEF4FF'],not:['Not','#B45309','#FEF3C7']};
-const IDIS=['kesif','is','servis','bakim','ariza'];
+const IDT={kesif:['Keşif','#7C3AED','#F3E8FF'],teklif:['Teklif','#B45309','#FEF3C7'],is:['İş','#047857','#D1FAE5'],servis:['Servis','#0E9BB8','#E0F7FB'],bakim:['Bakım','#3B82F6','#EEF4FF'],ariza:['Arıza','#DC2626','#FEE2E2'],gelen:['Geldi / getirdi','#0E9BB8','#E0F7FB'],giden:['Gitti / teslim','#3B82F6','#EEF4FF'],not:['Not','#B45309','#FEF3C7']};
+const IDIS=['kesif','teklif','is','servis','bakim','ariza'];
 const IDD={devam:['Devam ediyor','#1D4ED8','#EEF4FF'],bitti:['Bitti','#047857','#D1FAE5'],malzeme:['Malzeme bekliyor','#B45309','#FEF3C7']};
 const idDur=x=>{const d=x.durum||(IDIS.includes(x.tur)?'bitti':'');return d&&!IDD[d]?'devam':d};
 const idAcik=x=>{const d=idDur(x);return d&&d!=='bitti'};
@@ -2530,7 +2530,7 @@ async function idCiz(b){
     ${(x.gecmis||[]).length?`<div class="muted" style="font-size:12px;margin-top:4px">${gec(x)}</div>`:''}</div>
     ${durSec(x)}${(x.yazan===me.id||me.rol==='patron'||ofisMi()||koordMi())?`<button class="kp-x" aria-label="Sil" title="Sil" onclick="idSil(${x.id})">×</button>`:''}</div>`;
   // rapor: kişi kişi
-  const R={};T.filter(x=>IDIS.includes(x.tur)).forEach(x=>idKisiler(x.kisi).forEach(k=>{const o=R[k]=R[k]||{n:0,b:0,a:0,ks:0};o.n++;if(idDur(x)==='bitti')o.b++;else o.a++;if(x.tur==='kesif')o.ks++}));
+  const R={};T.filter(x=>IDIS.includes(x.tur)).forEach(x=>idKisiler(x.kisi).forEach(k=>{const o=R[k]=R[k]||{n:0,b:0,a:0,ks:0};o.n++;if(idDur(x)==='bitti')o.b++;else o.a++;if(x.tur==='kesif')o.ks++;if(x.tur==='teklif')o.tk=(o.tk||0)+1}));
   const RL=Object.entries(R).sort((a,b)=>b[1].n-a[1].n);
   const sec=(id,v,ops)=>`<select onchange="S.idf.${id}=this.value;render()" style="width:auto;flex:1;min-width:120px">${ops.map(([k,a])=>`<option value="${k}" ${k===v?'selected':''}>${a}</option>`).join('')}</select>`;
   b.innerHTML=`<form id="idf" class="kp-grp kp-form" style="margin-bottom:14px"><header><span class="ic" style="background:#EEF4FF;color:#3B82F6">${kSvg('kalem',17)}</span><b>Deftere yaz</b><span class="kp-cnt">tarih ve saat kendiliğinden</span></header>
@@ -2552,8 +2552,8 @@ async function idCiz(b){
   <section class="kp-grp"><header><span class="ic" style="background:#D1FAE5;color:#047857">${kSvg('liste',17)}</span><b>${aAd}</b><span class="kp-cnt">${tarih(bas)} – ${tarih(son)} · ${L.length} kayıt</span></header>
    ${L.length?L.map(satir).join(''):'<div class="kp-empty" style="border:0;border-radius:0"><b>Bu aralıkta kayıt yok</b><span>Yukarıdan yazın: kim, nerede, ne yaptı.</span></div>'}</section>
   <section class="kp-grp"><header><span class="ic" style="background:#F3E8FF;color:#7C3AED">${kSvg('kisi',17)}</span><b>${aAd} kim ne yaptı</b><button class="kp-btn sm" style="margin-left:auto" onclick="idYazdir()">🖨️ Çıktı al / PDF</button></header>
-   ${RL.length?`<div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th></tr></thead><tbody>
-   ${RL.map(([k,v])=>`<tr><td><div class="kp-tn">${kAv(k,26)}<b>${esc(k)}</b></div></td><td class="n"><b>${v.n}</b></td><td class="n">${v.b||'—'}</td><td class="n">${v.a||'—'}</td><td class="n">${v.ks||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted" style="padding:12px 16px;margin:0">Bu aralıkta iş kaydı yok.</p>'}</section>`;
+   ${RL.length?`<div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th><th class="n">Teklif</th></tr></thead><tbody>
+   ${RL.map(([k,v])=>`<tr><td><div class="kp-tn">${kAv(k,26)}<b>${esc(k)}</b></div></td><td class="n"><b>${v.n}</b></td><td class="n">${v.b||'—'}</td><td class="n">${v.a||'—'}</td><td class="n">${v.ks||'—'}</td><td class="n">${v.tk||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted" style="padding:12px 16px;margin:0">Bu aralıkta iş kaydı yok.</p>'}</section>`;
   S._idRapor={aAd,bas,son,RL,L};
   const f=$('#idf');f.t.onchange=()=>{S.idt=f.t.value;f.d.hidden=!IDIS.includes(f.t.value)};f.d.hidden=!IDIS.includes(f.t.value);
   f.onsubmit=async ev=>{ev.preventDefault();const t=f.t.value,o={gun:bugunS(),saat:simdiS(),tur:t,kisi:f.k.value.trim()||null,musteri:f.mu.value.trim()||null,bolum:f.bl.value||null,metin:f.m.value.trim(),yazan:me.id,durum:IDIS.includes(t)?f.d.value:null,gecmis:[]};
@@ -2569,7 +2569,7 @@ function idYazdir(){const R=S._idRapor;if(!R)return;const w=window.open('','_bla
   const e=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Dotek İş Defteri · ${e(R.aAd)}</title><style>body{font-family:Arial,sans-serif;color:#1F2937;margin:28px}h1{font-size:20px;margin:0}p{color:#6B7280;margin:4px 0 16px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px}th,td{border:1px solid #E5E7EB;padding:6px 8px;text-align:left;vertical-align:top}th{background:#F3F4F6}td.n,th.n{text-align:right}</style></head><body>
   <h1>DOTEK ENERJİ · İş Defteri</h1><p>${e(R.aAd)} · ${tarih(R.bas)} – ${tarih(R.son)}</p>
-  <table><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th></tr>${R.RL.map(([k,v])=>`<tr><td>${e(k)}</td><td class="n">${v.n}</td><td class="n">${v.b}</td><td class="n">${v.a}</td><td class="n">${v.ks}</td></tr>`).join('')}</table>
+  <table><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th><th class="n">Teklif</th></tr>${R.RL.map(([k,v])=>`<tr><td>${e(k)}</td><td class="n">${v.n}</td><td class="n">${v.b}</td><td class="n">${v.a}</td><td class="n">${v.ks}</td><td class="n">${v.tk||0}</td></tr>`).join('')}</table>
   <table><tr><th>Tarih</th><th>Kim</th><th>Müşteri / yer</th><th>Tür</th><th>Ne yapıldı</th><th>Durum</th></tr>${R.L.map(x=>`<tr><td>${tarih(x.gun)} ${saatF(x.saat)}</td><td>${e(x.kisi)}</td><td>${e(x.musteri)}</td><td>${(IDT[x.tur]||IDT.not)[0]}</td><td>${e(x.metin)}</td><td>${(IDD[idDur(x)]||[''])[0]}</td></tr>`).join('')}</table>
   <script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
 // --- Sipariş ve Kargo takibi ---
