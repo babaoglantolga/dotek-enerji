@@ -2518,7 +2518,7 @@ async function idCiz(b){
   if(r.error&&/koord_kayit|schema cache|does not exist/i.test(r.error.message)){b.innerHTML='<div class="kp-empty"><b>İş defteri kuruluyor</b><span>Sunucu tarafı kurulunca burası açılır.</span></div>';return}
   if(hata(r.error)||hata(ac.error))return;
   const T=r.data||[],ACIK=ac.data||[];
-  const kAd=[...new Set([...T,...ACIK].flatMap(x=>idKisiler(x.kisi)))].sort((a,b)=>a.localeCompare(b,'tr'));
+  const kAd=[...new Set([...T,...ACIK].filter(x=>IDIS.includes(x.tur)).flatMap(x=>idKisiler(x.kisi)))].sort((a,b)=>a.localeCompare(b,'tr'));
   const L=T.filter(x=>(!F.d||(F.d==='acik'?idAcik(x):idDur(x)===F.d))&&(!F.k||idKisiler(x.kisi).includes(F.k))&&(!F.bl||x.bolum===F.bl));
   const benimBol=KBOL.includes(dname(me.departman_id))?dname(me.departman_id):'';
   const pill=([a,c,bg])=>`<span class="kp-pill" style="background:${bg};color:${c}">${a}</span>`;
