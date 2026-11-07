@@ -2505,7 +2505,7 @@ const IDIS=['kesif','is','servis','bakim','ariza'];
 const IDD={devam:['Devam ediyor','#1D4ED8','#EEF4FF'],bitti:['Bitti','#047857','#D1FAE5'],malzeme:['Malzeme bekliyor','#B45309','#FEF3C7'],teklif:['Teklif bekliyor','#7C3AED','#F3E8FF']};
 const idDur=x=>x.durum||(IDIS.includes(x.tur)?'bitti':'');
 const idAcik=x=>{const d=idDur(x);return d&&d!=='bitti'};
-const idKisiler=s=>String(s||'').split(/\s*(?:\+|,|&|\bve\b)\s*/i).map(x=>x.trim()).filter(Boolean);
+const idKisiler=s=>String(s||'').split(/\s*(?:\+|,|&|\bve\b)\s*/i).map(x=>x.trim().toLocaleUpperCase('tr-TR')).filter(Boolean);
 function idAralik(a){const g=bugunS(),d=new Date(g+'T12:00:00'),pzt=gunEk(g,-((d.getDay()+6)%7)),ay1=g.slice(0,8)+'01';
   if(a==='bugun')return[g,g,'Bugün'];if(a==='ay')return[ay1,g,'Bu ay'];
   if(a==='gecenay'){const s=new Date(ay1+'T12:00:00');s.setMonth(s.getMonth()-1);const b=gunStr(s);return[b,gunEk(ay1,-1),'Geçen ay']}
