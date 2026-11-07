@@ -2547,10 +2547,11 @@ async function idCiz(b){
    ${sec('a',F.a,[['bugun','Bugün'],['hafta','Bu hafta'],['gecenhafta','Geçen hafta'],['ay','Bu ay'],['gecenay','Geçen ay']])}
    ${sec('d',F.d,[['','Tüm durumlar'],['acik','Açık olanlar'],...Object.entries(IDD).map(([k,[a]])=>[k,a])])}
    ${sec('k',F.k,[['','Herkes'],...kAd.map(k=>[k,k])])}
-   ${sec('bl',F.bl,[['','Tüm bölümler'],...KBOL.map(x=>[x,x])])}</div>
+   ${sec('bl',F.bl,[['','Tüm bölümler'],...KBOL.map(x=>[x,x])])}
+   <button class="kp-btn" style="flex:none" onclick="idYazdir()">🖨️ Çıktı al / PDF</button></div>
   <section class="kp-grp"><header><span class="ic" style="background:#D1FAE5;color:#047857">${kSvg('liste',17)}</span><b>${aAd}</b><span class="kp-cnt">${tarih(bas)} – ${tarih(son)} · ${L.length} kayıt</span></header>
    ${L.length?L.map(satir).join(''):'<div class="kp-empty" style="border:0;border-radius:0"><b>Bu aralıkta kayıt yok</b><span>Yukarıdan yazın: kim, nerede, ne yaptı.</span></div>'}</section>
-  <section class="kp-grp"><header><span class="ic" style="background:#F3E8FF;color:#7C3AED">${kSvg('kisi',17)}</span><b>${aAd} kim ne yaptı</b><button class="kp-btn ghost sm" style="margin-left:auto" onclick="idYazdir()">${kSvg('ok',14)} Yazdır / PDF</button></header>
+  <section class="kp-grp"><header><span class="ic" style="background:#F3E8FF;color:#7C3AED">${kSvg('kisi',17)}</span><b>${aAd} kim ne yaptı</b><button class="kp-btn sm" style="margin-left:auto" onclick="idYazdir()">🖨️ Çıktı al / PDF</button></header>
    ${RL.length?`<div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th></tr></thead><tbody>
    ${RL.map(([k,v])=>`<tr><td><div class="kp-tn">${kAv(k,26)}<b>${esc(k)}</b></div></td><td class="n"><b>${v.n}</b></td><td class="n">${v.b||'—'}</td><td class="n">${v.a||'—'}</td><td class="n">${v.ks||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted" style="padding:12px 16px;margin:0">Bu aralıkta iş kaydı yok.</p>'}</section>`;
   S._idRapor={aAd,bas,son,RL,L};
