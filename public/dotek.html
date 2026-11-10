@@ -2568,7 +2568,7 @@ async function idCiz(b){
   <section class="kp-grp"><header><span class="ic" style="background:#F3E8FF;color:#7C3AED">${kSvg('kisi',17)}</span><b>${aAd} kim ne yaptı</b><button class="kp-btn sm" style="margin-left:auto" onclick="idYazdir()">🖨️ Çıktı al / PDF</button><button class="kp-btn sm" style="background:#16A34A;border-color:#16A34A" onclick="idWARapor()">WhatsApp</button></header>
    ${RL.length?`<div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th><th class="n">Teklif</th></tr></thead><tbody>
    ${RL.map(([k,v])=>`<tr><td><div class="kp-tn">${kAv(k,26)}<b>${esc(k)}</b></div></td><td class="n"><b>${v.n}</b></td><td class="n">${v.b||'—'}</td><td class="n">${v.a||'—'}</td><td class="n">${v.ks||'—'}</td><td class="n">${v.tk||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted" style="padding:12px 16px;margin:0">Bu aralıkta iş kaydı yok.</p>'}</section>`;
-  S._idRapor={aAd,bas,son,RL,L};S._idK={};[...T,...ACIK,...BIT].forEach(x=>S._idK[x.id]=x);
+  S._idRapor={aAd,bas,son,RL,L,ACIK,BIT,F:{...F}};S._idK={};[...T,...ACIK,...BIT].forEach(x=>S._idK[x.id]=x);
   const f=$('#idf');f.t.onchange=()=>{S.idt=f.t.value};
   f.onsubmit=async ev=>{ev.preventDefault();const t=f.t.value,o={gun:bugunS(),saat:simdiS(),tur:t,kisi:idKimOku(f)||null,musteri:f.mu.value.trim()||null,bolum:f.bl.value||null,metin:f.m.value.trim(),yazan:me.id,durum:f.d.value||'devam',gecmis:[]};
     if(!o.metin||!o.kisi){toast('Kim ve ne yapıldı boş kalmasın');return}
@@ -2591,22 +2591,38 @@ async function idKaydet(ev,id){ev.preventDefault();const f=ev.target,o={kisi:idK
   if(!data||!data.length){toast('Bu kaydı yalnızca yazan kişi düzenleyebilir');return false}
   S.ide=null;toast('Kayıt güncellendi');render();return false}
 function idWA(id){const x=(S._idK||{})[id];if(!x)return;const d=idDur(x);
-  const t=[`*DOTEK ENERJİ · İş Defteri*`,`📅 ${tarih(x.gun)}${saatF(x.saat)?' '+saatF(x.saat):''}`,x.musteri?`📍 ${x.musteri}`:'',`📝 ${x.metin}`,x.kisi?`👷 ${x.kisi}`:'',`🏷️ ${(IDT[x.tur]||IDT.not)[0]}${x.bolum?' · '+x.bolum:''}`,d?`✅ Durum: ${(IDD[d]||[d])[0]}`:''].filter(Boolean).join('\n');
+  const t=[`*DOTEK ENERJİ - İş Defteri*`,`Tarih: ${tarih(x.gun)}${saatF(x.saat)?' '+saatF(x.saat):''}`,x.musteri?`Müşteri / yer: ${x.musteri}`:'',`Ne yapıldı: ${x.metin}`,x.kisi?`Kim: ${idAdlar(x.kisi).join(', ')}`:'',`Tür: ${(IDT[x.tur]||IDT.not)[0]}${x.bolum?' - '+x.bolum:''}`,d?`Durum: ${(IDD[d]||[d])[0]}`:''].filter(Boolean).join('\n');
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 async function idSil(id){if(!confirm('Bu kayıt silinsin mi?'))return;const {data,error}=await sb.from('koord_kayit').delete().eq('id',id).select();if(hata(error))return;if(!data||!data.length){toast('Bu kaydı yalnızca yazan kişi silebilir');return}toast('Silindi');render()}
-function idWARapor(){const R=S._idRapor;if(!R)return;
-  const L=[`*DOTEK ENERJİ · İş Defteri*`,`📅 ${R.aAd}: ${tarih(R.bas)} – ${tarih(R.son)}`,''];
-  if(R.RL.length){L.push('*Kim ne yaptı*');R.RL.forEach(([k,v])=>L.push(`👷 ${k}: ${v.n} iş · ${v.b} bitti · ${v.a} açık${v.ks?' · '+v.ks+' keşif':''}${v.tk?' · '+v.tk+' teklif':''}`));L.push('')}
-  L.push(`*Kayıtlar (${R.L.length})*`);
-  R.L.forEach(x=>{const d=idDur(x);L.push(`• ${tarih(x.gun).slice(0,5)}${saatF(x.saat)?' '+saatF(x.saat):''} · ${x.musteri?x.musteri+' · ':''}${x.metin}${x.kisi?' · '+x.kisi:''} · ${(IDT[x.tur]||IDT.not)[0]}${d?' · '+(IDD[d]||[d])[0]:''}`)});
-  window.open('https://wa.me/?text='+encodeURIComponent(L.join('\n')),'_blank')}
-function idYazdir(){const R=S._idRapor;if(!R)return;const w=window.open('','_blank');if(!w){toast('Açılır pencere engellendi');return}
-  const e=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Dotek İş Defteri · ${e(R.aAd)}</title><style>body{font-family:Arial,sans-serif;color:#1F2937;margin:28px}h1{font-size:20px;margin:0}p{color:#6B7280;margin:4px 0 16px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px}th,td{border:1px solid #E5E7EB;padding:6px 8px;text-align:left;vertical-align:top}th{background:#F3F4F6}td.n,th.n{text-align:right}</style></head><body>
-  <h1>DOTEK ENERJİ · İş Defteri</h1><p>${e(R.aAd)} · ${tarih(R.bas)} – ${tarih(R.son)}</p>
-  <table><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th><th class="n">Teklif</th></tr>${R.RL.map(([k,v])=>`<tr><td>${e(k)}</td><td class="n">${v.n}</td><td class="n">${v.b}</td><td class="n">${v.a}</td><td class="n">${v.ks}</td><td class="n">${v.tk||0}</td></tr>`).join('')}</table>
-  <table><tr><th>Tarih</th><th>Kim</th><th>Müşteri / yer</th><th>Tür</th><th>Ne yapıldı</th><th>Durum</th></tr>${R.L.map(x=>`<tr><td>${tarih(x.gun)} ${saatF(x.saat)}</td><td>${e(x.kisi)}</td><td>${e(x.musteri)}</td><td>${(IDT[x.tur]||IDT.not)[0]}</td><td>${e(x.metin)}</td><td>${(IDD[idDur(x)]||[''])[0]}</td></tr>`).join('')}</table>
-  <script>window.onload=()=>window.print()<\/script></body></html>`);w.document.close()}
+const idTxt=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function idFiltreAd(R){const F=R.F||{},d=F.d==='acik'?'Bitmeyenler':F.d?(IDD[F.d]||[F.d])[0]:'';return [F.bl&&F.bl+' bölümü',F.k&&F.k,d].filter(Boolean).join(' · ')}
+function idDosyaAdi(R){const t=x=>tarih(x).replace(/\//g,'.'),F=R.F||{};
+  return ['Dotek_Is_Defteri',R.aAd,t(R.bas)+'-'+t(R.son),F.bl,F.k].filter(Boolean).join('_').replace(/\s+/g,'_').replace(/[\\/:*?"<>|]/g,'')}
+function idRaporHTML(R){const e=idTxt,fa=idFiltreAd(R),bu=tarih(bugunS());
+  const th='border:1px solid #E5E7EB;padding:6px 8px;text-align:left;background:#F3F4F6;font-size:12px',td='border:1px solid #E5E7EB;padding:6px 8px;vertical-align:top;font-size:12px';
+  const h2=(t,alt)=>`<div style="margin:22px 0 8px;padding:8px 12px;background:#EEF4FF;border-left:4px solid #3B82F6;border-radius:6px"><b style="font-size:15px">${t}</b><div style="color:#4B5563;font-size:12px;margin-top:2px">${alt}</div></div>`;
+  const tablo=L=>L.length?`<table style="width:100%;border-collapse:collapse"><tr><th style="${th}">Tarih</th><th style="${th}">Kim</th><th style="${th}">Müşteri / yer</th><th style="${th}">Tür</th><th style="${th}">Ne yapıldı</th><th style="${th}">Durum</th></tr>${L.map(x=>`<tr><td style="${td};white-space:nowrap">${tarih(x.gun)} ${saatF(x.saat)}</td><td style="${td}">${e(idAdlar(x.kisi).join(', '))}</td><td style="${td}">${e(x.musteri)}</td><td style="${td}">${(IDT[x.tur]||IDT.not)[0]}${x.bolum?' · '+e(x.bolum):''}</td><td style="${td}">${e(x.metin)}</td><td style="${td}">${(IDD[idDur(x)]||[''])[0]}</td></tr>`).join('')}</table>`:'<p style="color:#6B7280;font-size:12px;margin:4px 0">Kayıt yok.</p>';
+  const ara=`${tarih(R.bas)} – ${tarih(R.son)} arası`;
+  return `<div style="font-family:Arial,sans-serif;color:#1F2937;padding:32px;background:#fff;width:794px;box-sizing:border-box">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #38BDD8;padding-bottom:10px"><div><div style="font-size:12px;color:#0E9BB8;font-weight:700;letter-spacing:1px">DOTEK ENERJİ SİSTEMLERİ</div><div style="font-size:22px;font-weight:800">İş Defteri Raporu</div></div>
+  <div style="text-align:right;font-size:12px;color:#4B5563"><b style="font-size:14px;color:#1F2937">${e(R.aAd)}: ${tarih(R.bas)} – ${tarih(R.son)}</b>${fa?`<br>Filtre: ${e(fa)}`:''}<br>Hazırlanma: ${bu}</div></div>
+  ${h2('1. Kim ne yaptı',ara+' · '+R.L.length+' kayıt')}
+  ${R.RL.length?`<table style="width:100%;border-collapse:collapse"><tr><th style="${th}">Kişi</th><th style="${th};text-align:right">İş</th><th style="${th};text-align:right">Bitti</th><th style="${th};text-align:right">Devam / bekleyen</th><th style="${th};text-align:right">Keşif</th><th style="${th};text-align:right">Teklif</th></tr>${R.RL.map(([k,v])=>`<tr><td style="${td}"><b>${e(k)}</b></td><td style="${td};text-align:right">${v.n}</td><td style="${td};text-align:right">${v.b}</td><td style="${td};text-align:right">${v.a}</td><td style="${td};text-align:right">${v.ks}</td><td style="${td};text-align:right">${v.tk||0}</td></tr>`).join('')}</table>`:'<p style="color:#6B7280;font-size:12px">Kayıt yok.</p>'}
+  ${h2('2. Devam eden işler',bu+' itibarıyla bitmemiş tüm işler (tarih fark etmeksizin) · '+(R.ACIK||[]).length+' iş')}${tablo(R.ACIK||[])}
+  ${h2('3. Biten işler',ara+' bitirilen işler · '+(R.BIT||[]).length+' iş')}${tablo(R.BIT||[])}
+  ${h2('4. Tüm kayıtlar',ara+' deftere yazılanlar · '+R.L.length+' kayıt')}${tablo(R.L)}
+  </div>`}
+async function idPdfBlob(R){await yukle('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');const c=await belgeTuval(null,idRaporHTML(R));
+  const pdf=new window.jspdf.jsPDF({unit:'mm',format:'a4'}),sayfa=Math.round(c.width*297/210);
+  for(let y=0,i=0;y<c.height;y+=sayfa,i++){const p=document.createElement('canvas');p.width=c.width;p.height=Math.min(sayfa,c.height-y);const x=p.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,p.width,p.height);x.drawImage(c,0,y,c.width,p.height,0,0,c.width,p.height);
+    if(i)pdf.addPage();pdf.addImage(p.toDataURL('image/jpeg',.92),'JPEG',0,0,210,p.height*210/c.width)}
+  return pdf.output('blob')}
+async function idYazdir(){const R=S._idRapor;if(!R)return;toast('PDF hazırlanıyor…');try{indir(await idPdfBlob(R),idDosyaAdi(R)+'.pdf')}catch(e){toast(e.message)}}
+async function idWARapor(){const R=S._idRapor;if(!R)return;toast('PDF hazırlanıyor…');
+  try{const blob=await idPdfBlob(R),ad=idDosyaAdi(R)+'.pdf',file=new File([blob],ad,{type:'application/pdf'}),fa=idFiltreAd(R);
+    const metin=`Dotek İş Defteri raporu - ${R.aAd}: ${tarih(R.bas)} - ${tarih(R.son)}${fa?' ('+fa+')':''}`;
+    if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],text:metin,title:ad});return}catch(e){if(e&&e.name==='AbortError')return}}
+    indir(blob,ad);window.open('https://wa.me/?text='+encodeURIComponent(metin),'_blank');toast('PDF indirildi · WhatsApp\'ta sohbete sürükleyip gönder')}catch(e){toast(e.message)}}
 // --- Sipariş ve Kargo takibi ---
 const KSK={
  siparis:{tablo:'koord_siparis',ad:'Sipariş',ik:'sepet',renk:['#047857','#D1FAE5'],ilk:'istendi',bitti:['geldi','iptal'],
