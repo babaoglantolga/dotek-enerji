@@ -2558,10 +2558,10 @@ async function idCiz(b){
    ${sec('d',F.d,[['','Tüm durumlar'],['acik','Açık olanlar'],...Object.entries(IDD).map(([k,[a]])=>[k,a])])}
    ${sec('k',F.k,[['','Herkes'],...kAd.map(k=>[k,k])])}
    ${sec('bl',F.bl,[['','Tüm bölümler'],...KBOL.map(x=>[x,x])])}
-   <button class="kp-btn" style="flex:none" onclick="idYazdir()">🖨️ Çıktı al / PDF</button></div>
+   <button class="kp-btn" style="flex:none" onclick="idYazdir()">🖨️ Çıktı al / PDF</button><button class="kp-btn" style="flex:none;background:#16A34A;border-color:#16A34A" onclick="idWARapor()">WhatsApp</button></div>
   <section class="kp-grp"><header><span class="ic" style="background:#D1FAE5;color:#047857">${kSvg('liste',17)}</span><b>${aAd}</b><span class="kp-cnt">${tarih(bas)} – ${tarih(son)} · ${L.length} kayıt</span></header>
    ${L.length?L.map(satir).join(''):'<div class="kp-empty" style="border:0;border-radius:0"><b>Bu aralıkta kayıt yok</b><span>Yukarıdan yazın: kim, nerede, ne yaptı.</span></div>'}</section>
-  <section class="kp-grp"><header><span class="ic" style="background:#F3E8FF;color:#7C3AED">${kSvg('kisi',17)}</span><b>${aAd} kim ne yaptı</b><button class="kp-btn sm" style="margin-left:auto" onclick="idYazdir()">🖨️ Çıktı al / PDF</button></header>
+  <section class="kp-grp"><header><span class="ic" style="background:#F3E8FF;color:#7C3AED">${kSvg('kisi',17)}</span><b>${aAd} kim ne yaptı</b><button class="kp-btn sm" style="margin-left:auto" onclick="idYazdir()">🖨️ Çıktı al / PDF</button><button class="kp-btn sm" style="background:#16A34A;border-color:#16A34A" onclick="idWARapor()">WhatsApp</button></header>
    ${RL.length?`<div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th><th class="n">Teklif</th></tr></thead><tbody>
    ${RL.map(([k,v])=>`<tr><td><div class="kp-tn">${kAv(k,26)}<b>${esc(k)}</b></div></td><td class="n"><b>${v.n}</b></td><td class="n">${v.b||'—'}</td><td class="n">${v.a||'—'}</td><td class="n">${v.ks||'—'}</td><td class="n">${v.tk||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted" style="padding:12px 16px;margin:0">Bu aralıkta iş kaydı yok.</p>'}</section>`;
   S._idRapor={aAd,bas,son,RL,L};S._idK={};[...T,...ACIK].forEach(x=>S._idK[x.id]=x);
@@ -2585,6 +2585,12 @@ function idWA(id){const x=(S._idK||{})[id];if(!x)return;const d=idDur(x);
   const t=[`*DOTEK ENERJİ · İş Defteri*`,`📅 ${tarih(x.gun)}${saatF(x.saat)?' '+saatF(x.saat):''}`,x.musteri?`📍 ${x.musteri}`:'',`📝 ${x.metin}`,x.kisi?`👷 ${x.kisi}`:'',`🏷️ ${(IDT[x.tur]||IDT.not)[0]}${x.bolum?' · '+x.bolum:''}`,d?`✅ Durum: ${(IDD[d]||[d])[0]}`:''].filter(Boolean).join('\n');
   window.open('https://wa.me/?text='+encodeURIComponent(t),'_blank')}
 async function idSil(id){if(!confirm('Bu kayıt silinsin mi?'))return;const {data,error}=await sb.from('koord_kayit').delete().eq('id',id).select();if(hata(error))return;if(!data||!data.length){toast('Bu kaydı yalnızca yazan kişi silebilir');return}toast('Silindi');render()}
+function idWARapor(){const R=S._idRapor;if(!R)return;
+  const L=[`*DOTEK ENERJİ · İş Defteri*`,`📅 ${R.aAd}: ${tarih(R.bas)} – ${tarih(R.son)}`,''];
+  if(R.RL.length){L.push('*Kim ne yaptı*');R.RL.forEach(([k,v])=>L.push(`👷 ${k}: ${v.n} iş · ${v.b} bitti · ${v.a} açık${v.ks?' · '+v.ks+' keşif':''}${v.tk?' · '+v.tk+' teklif':''}`));L.push('')}
+  L.push(`*Kayıtlar (${R.L.length})*`);
+  R.L.forEach(x=>{const d=idDur(x);L.push(`• ${tarih(x.gun).slice(0,5)}${saatF(x.saat)?' '+saatF(x.saat):''} · ${x.musteri?x.musteri+' · ':''}${x.metin}${x.kisi?' · '+x.kisi:''} · ${(IDT[x.tur]||IDT.not)[0]}${d?' · '+(IDD[d]||[d])[0]:''}`)});
+  window.open('https://wa.me/?text='+encodeURIComponent(L.join('\n')),'_blank')}
 function idYazdir(){const R=S._idRapor;if(!R)return;const w=window.open('','_blank');if(!w){toast('Açılır pencere engellendi');return}
   const e=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   w.document.write(`<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Dotek İş Defteri · ${e(R.aAd)}</title><style>body{font-family:Arial,sans-serif;color:#1F2937;margin:28px}h1{font-size:20px;margin:0}p{color:#6B7280;margin:4px 0 16px}table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:18px}th,td{border:1px solid #E5E7EB;padding:6px 8px;text-align:left;vertical-align:top}th{background:#F3F4F6}td.n,th.n{text-align:right}</style></head><body>
