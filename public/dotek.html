@@ -2519,7 +2519,9 @@ async function idCiz(b){
     sb.from('koord_kayit').select('*').eq('durum','bitti').order('guncelleme',{ascending:false,nullsFirst:false}).limit(300)]);
   if(r.error&&/koord_kayit|schema cache|does not exist/i.test(r.error.message)){b.innerHTML='<div class="kp-empty"><b>İş defteri kuruluyor</b><span>Sunucu tarafı kurulunca burası açılır.</span></div>';return}
   if(hata(r.error)||hata(ac.error))return;
-  const T=r.data||[],ACIK=ac.data||[],BIT=((bt&&bt.data)||[]).filter(x=>{const g=(x.guncelleme||x.gun||'').slice(0,10);return g>=bas&&g<=son});
+  const herkes=me.rol==='patron'||ofisMi()||koordMi(),bBol=dname(me.departman_id),bAd=String(me.ad||'').toLocaleUpperCase('tr-TR');
+  const gor=x=>herkes||x.yazan===me.id||(x.bolum&&String(bBol).toLocaleLowerCase('tr-TR').startsWith(x.bolum.toLocaleLowerCase('tr-TR')))||(bAd&&idKisiler(x.kisi).includes(bAd));
+  const T=(r.data||[]).filter(gor),ACIK=(ac.data||[]).filter(gor),BIT=((bt&&bt.data)||[]).filter(x=>{const g=(x.guncelleme||x.gun||'').slice(0,10);return g>=bas&&g<=son&&gor(x)});
   const kAd=[...new Set([...T,...ACIK].filter(x=>x.kisi).flatMap(x=>idKisiler(x.kisi)))].sort((a,b)=>a.localeCompare(b,'tr'));
   const L=T.filter(x=>(!F.d||(F.d==='acik'?idAcik(x):idDur(x)===F.d))&&(!F.k||idKisiler(x.kisi).includes(F.k))&&(!F.bl||x.bolum===F.bl));
   const benimBol=KBOL.includes(dname(me.departman_id))?dname(me.departman_id):'';
