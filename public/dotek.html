@@ -2504,7 +2504,7 @@ async function kDfSil(id){if(!confirm('Bu kayıt silinsin mi?'))return;const {er
 const IDT={kesif:['Keşif','#7C3AED','#F3E8FF'],teklif:['Teklif','#B45309','#FEF3C7'],is:['İş','#047857','#D1FAE5'],servis:['Servis','#0E9BB8','#E0F7FB'],bakim:['Bakım','#3B82F6','#EEF4FF'],ariza:['Arıza','#DC2626','#FEE2E2'],gelen:['Geldi / getirdi','#0E9BB8','#E0F7FB'],giden:['Gitti / teslim','#3B82F6','#EEF4FF'],not:['Not','#B45309','#FEF3C7']};
 const IDIS=['kesif','teklif','is','servis','bakim','ariza'];
 const IDD={devam:['Devam ediyor','#1D4ED8','#EEF4FF'],bitti:['Bitti','#047857','#D1FAE5'],malzeme:['Malzeme bekliyor','#B45309','#FEF3C7']};
-const idDur=x=>{const d=x.durum||(IDIS.includes(x.tur)?'bitti':'');return d&&!IDD[d]?'devam':d};
+const idDur=x=>{const d=x.durum||(IDIS.includes(x.tur)?'bitti':'devam');return d&&!IDD[d]?'devam':d};
 const idAcik=x=>{const d=idDur(x);return d&&d!=='bitti'};
 const idKisiler=s=>String(s||'').split(/\s*(?:\+|,|&|\bve\b)\s*/i).map(x=>x.trim().toLocaleUpperCase('tr-TR')).filter(Boolean);
 function idAralik(a){const g=bugunS(),d=new Date(g+'T12:00:00'),pzt=gunEk(g,-((d.getDay()+6)%7)),ay1=g.slice(0,8)+'01';
@@ -2565,8 +2565,8 @@ async function idCiz(b){
    ${RL.length?`<div style="overflow-x:auto"><table class="kp-tbl"><thead><tr><th>Kişi</th><th class="n">İş</th><th class="n">Bitti</th><th class="n">Açık</th><th class="n">Keşif</th><th class="n">Teklif</th></tr></thead><tbody>
    ${RL.map(([k,v])=>`<tr><td><div class="kp-tn">${kAv(k,26)}<b>${esc(k)}</b></div></td><td class="n"><b>${v.n}</b></td><td class="n">${v.b||'—'}</td><td class="n">${v.a||'—'}</td><td class="n">${v.ks||'—'}</td><td class="n">${v.tk||'—'}</td></tr>`).join('')}</tbody></table></div>`:'<p class="muted" style="padding:12px 16px;margin:0">Bu aralıkta iş kaydı yok.</p>'}</section>`;
   S._idRapor={aAd,bas,son,RL,L};S._idK={};[...T,...ACIK].forEach(x=>S._idK[x.id]=x);
-  const f=$('#idf');f.t.onchange=()=>{S.idt=f.t.value;f.d.hidden=!IDIS.includes(f.t.value)};f.d.hidden=!IDIS.includes(f.t.value);
-  f.onsubmit=async ev=>{ev.preventDefault();const t=f.t.value,o={gun:bugunS(),saat:simdiS(),tur:t,kisi:f.k.value.trim()||null,musteri:f.mu.value.trim()||null,bolum:f.bl.value||null,metin:f.m.value.trim(),yazan:me.id,durum:IDIS.includes(t)?f.d.value:null,gecmis:[]};
+  const f=$('#idf');f.t.onchange=()=>{S.idt=f.t.value};
+  f.onsubmit=async ev=>{ev.preventDefault();const t=f.t.value,o={gun:bugunS(),saat:simdiS(),tur:t,kisi:f.k.value.trim()||null,musteri:f.mu.value.trim()||null,bolum:f.bl.value||null,metin:f.m.value.trim(),yazan:me.id,durum:f.d.value||'devam',gecmis:[]};
     if(!o.metin||!o.kisi){toast('Kim ve ne yapıldı boş kalmasın');return}
     if(o.durum)o.gecmis=[{t:new Date().toISOString(),d:o.durum,k:me.ad}];
     const {error}=await sb.from('koord_kayit').insert(o);if(hata(error))return;S.idt=t;toast('Deftere yazıldı');render()};
@@ -2577,7 +2577,7 @@ async function idDurum(id,d){const {data:x,error}=await sb.from('koord_kayit').s
 const idYetki=x=>x.yazan===me.id||me.rol==='patron'||ofisMi()||koordMi();
 async function idKaydet(ev,id){ev.preventDefault();const f=ev.target,o={kisi:f.k.value.trim(),musteri:f.mu.value.trim()||null,tur:f.t.value,bolum:f.bl.value||null,gun:f.g.value,saat:f.s.value||null,metin:f.m.value.trim(),guncelleme:new Date().toISOString()};
   if(!o.kisi||!o.metin||!o.gun){toast('Kim, tarih ve ne yapıldı boş kalmasın');return false}
-  const x=(S._idK||{})[id];if(IDIS.includes(o.tur)){if(!x||!x.durum)o.durum='devam'}else o.durum=null;
+  const x=(S._idK||{})[id];if(!x||!x.durum)o.durum='devam';
   const {data,error}=await sb.from('koord_kayit').update(o).eq('id',id).select();if(hata(error))return false;
   if(!data||!data.length){toast('Bu kaydı yalnızca yazan kişi düzenleyebilir');return false}
   S.ide=null;toast('Kayıt güncellendi');render();return false}
