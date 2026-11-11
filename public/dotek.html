@@ -2441,7 +2441,20 @@ async function kPersonel(b,P){const e=S.pe;const x=e==='yeni'?{aktif:true}:P.fin
    ${Pasif.length?`<details class="kp-grp" style="padding:12px 16px"><summary style="cursor:pointer;font-weight:700">Ayrılanlar (${Pasif.length})</summary><div class="kp-meta" style="margin-top:10px">${Pasif.map(p=>`<button class="kp-pill" style="border:0;cursor:pointer" onclick="S.pe=${p.id};render();scrollTo(0,0)">${esc(p.ad)}</button>`).join('')}</div></details>`:''}`;
   const pq=$('#pq');if(pq)pq.oninput=()=>{S.pq=pq.value;const v=pq.value.toLocaleLowerCase('tr-TR');b.querySelectorAll('.kp-cards .kp-pc').forEach(c=>c.hidden=!!v&&!c.dataset.q.includes(v))};
   const f=$('#pf2');if(f)f.onsubmit=async ev=>{ev.preventDefault();const o={ad:f.ad.value.trim(),departman:f.dep.value.trim()||null,telefon:f.tel.value.trim()||null,dogum_gunu:f.dg.value||null,notu:f.nt.value.trim()||null,aktif:f.ak.checked};KOLCU.forEach(([k])=>{o[k]=f['o_'+k].value.trim()||null});
-    const r=e==='yeni'?await sb.from('personel').insert(o):await sb.from('personel').update(o).eq('id',e);if(hata(r.error))return;S.pe=null;toast('Kaydedildi');render()}}
+    const r=e==='yeni'?await sb.from('personel').insert(o):await sb.from('personel').update(o).eq('id',e);if(hata(r.error))return;const ms=await kKyDus(x,o);S.pe=null;toast('Kaydedildi'+(ms?' · '+ms:''));render()}}
+// Personele verilen kıyafet farkını Envanter'den düşer (azaltılırsa geri ekler)
+const KKYAD={pantolon:['pantolon'],kazak:['kazak'],polar:['polar'],fosforlu:['fosforlu'],yelek:['yelek'],tisort:['tişört','tisort'],ayakkabi:['ayakkabı','ayakkabi'],mont:['mont']};
+const kNorm=v=>String(v||'').toLocaleLowerCase('tr-TR').replace(/\s+/g,' ').trim();
+const kBdN=v=>String(v||'').toLocaleUpperCase('tr-TR').replace(/\s+/g,'');
+function kKyParse(v){const m={};String(v||'').split(/[,;\n]+/).map(t=>t.trim()).filter(Boolean).forEach(t=>{const r=t.match(/^(.*?)\s*[×xX*]\s*(\d+)$/);const bd=kBdN(r&&r[1]?r[1]:t),n=r&&r[1]?Number(r[2]):1;m[bd]=(m[bd]||0)+n});return m}
+async function kKyDus(eski,yeni){const fark=[];KOLCU.forEach(([k,a])=>{const A=kKyParse(eski[k]),B=kKyParse(yeni[k]);new Set([...Object.keys(A),...Object.keys(B)]).forEach(bd=>{const d=(B[bd]||0)-(A[bd]||0);if(d)fark.push({k,a,bd,d})})});
+  if(!fark.length)return '';const {data,error}=await sb.from('kiyafet').select('*');if(error)return 'Envanter okunamadı, stok düşülmedi';const L=data||[],ok=[],yok=[];
+  for(const f of fark){const c=L.filter(r=>{const n=kNorm(r.ad);return KKYAD[f.k].some(w=>n.includes(w))&&!(f.k==='mont'&&n.includes('fosforlu'))});
+    const row=c.find(r=>kBdN(r.beden)===f.bd)||(c.length===1&&!c[0].beden?c[0]:null);
+    if(!row){if(f.d>0)yok.push(f.a+' '+f.bd);continue}
+    const yeniAdet=Math.max(0,(row.adet||0)-f.d);const u=await sb.from('kiyafet').update({adet:yeniAdet,guncelleme:new Date().toISOString()}).eq('id',row.id);
+    if(u.error){yok.push(f.a+' '+f.bd);continue}row.adet=yeniAdet;ok.push(f.a+' '+f.bd+' '+(f.d>0?'−':'+')+Math.abs(f.d)+((row.adet===0&&f.d>0)?' (stok bitti)':''))}
+  return (ok.length?'Envanter: '+ok.join(', '):'')+(yok.length?(ok.length?' · ':'')+'Envanterde yok, düşülmedi: '+yok.join(', '):'')}
 async function kPrSil(id){const p=(await sb.from('personel').select('ad').eq('id',id).maybeSingle()).data;if(!confirm((p?p.ad+' ':'')+'silinsin mi? Bu kişinin geldi/gitti kayıtları da silinir. (Ayrıldıysa silmek yerine "Çalışıyor" işaretini kaldır.)'))return;
   const {error}=await sb.from('personel').delete().eq('id',id);if(hata(error))return;S.pe=null;toast('Silindi');render()}
 // --- Dükkân defteri: kim geldi ne getirdi, kim ne yapıyor ---
