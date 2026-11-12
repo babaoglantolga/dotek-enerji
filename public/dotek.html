@@ -160,6 +160,18 @@ nav.bottom button{display:flex;flex-direction:column;align-items:center;gap:3px;
 .kp-pcd{display:flex;align-items:center;gap:6px;font-size:13px;color:#4B5563}.kp-pcd svg{color:#3B82F6}
 .kp-szs{display:grid;grid-template-columns:repeat(auto-fill,minmax(74px,1fr));gap:6px}.kp-sz{background:#F8FAFF;border:1px solid #E5EBF5;border-radius:10px;padding:5px 6px;text-align:center;font-weight:800;font-size:13px;line-height:1.25;color:#1F2937}.kp-sz i{display:block;font-style:normal;font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em}.kp-sz.bos{color:#CBD5E1;background:#fff;border-style:dashed}
 .kp-adet{margin-left:auto;text-align:center;background:#D1FAE5;color:#047857;border-radius:12px;padding:4px 10px;min-width:54px}.kp-adet b{font-size:20px;display:block;line-height:1.1}.kp-adet span{font-size:10px;font-weight:800;text-transform:uppercase}.kp-adet.yok{background:#FEE2E2;color:#DC2626}
+.ky-flt{display:flex;gap:6px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}.ky-flt::-webkit-scrollbar{display:none}
+.ky-flt button{flex:none;border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font:inherit;font-size:13px;font-weight:700;color:#4B5563;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.ky-flt button i{font-style:normal;background:#EEF1F6;border-radius:99px;padding:1px 7px;font-size:12px}.ky-flt button.on{background:linear-gradient(90deg,#38BDD8,#3B82F6);color:#fff;border-color:transparent}.ky-flt button.on i{background:rgba(255,255,255,.25)}
+.ky-flt button.az{color:#B45309;border-color:#FDE68A;background:#FFFBEB}.ky-flt button.az.on{background:#F59E0B;color:#fff}
+.ky-leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12px;color:#4B5563;margin:0 0 12px}.ky-leg span{display:inline-flex;align-items:center;gap:6px}.ky-leg i{width:10px;height:10px;border-radius:50%;display:inline-block}
+.ky-g>header{flex-wrap:wrap}.ky-top{margin-left:auto;font-size:13px;color:#6B7280}.ky-top b{font-size:20px;color:#1F2937;margin-left:4px}
+.ky-b{padding:6px 16px 14px}.ky-row{padding:10px 0;border-top:1px solid #F1F3F7}.ky-row:first-child{border-top:0}
+.ky-rn{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:14px}.ky-rn i{width:14px;height:14px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}.ky-rn span{color:#6B7280;font-size:12px}
+.ky-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.ky-t{position:relative;font:inherit;cursor:pointer;border:1.5px solid var(--c);background:var(--bg);border-radius:12px;padding:8px 4px 6px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;transition:transform .12s,box-shadow .12s}
+.ky-t:hover{transform:translateY(-2px);box-shadow:0 6px 14px rgba(0,0,0,.08)}.ky-t .bd{font-size:13px;font-weight:800;color:#1F2937;background:#fff;border-radius:7px;padding:1px 8px}
+.ky-t b{font-size:24px;line-height:1.1;color:var(--c)}.ky-t .yz{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--c)}.ky-t .km{position:absolute;top:4px;right:5px;color:#3B82F6}
 .kp-kpis.k3{grid-template-columns:repeat(3,minmax(0,1fr))}@media(max-width:640px){.kp-kpis.k3{grid-template-columns:1fr 1fr}}
 .kp-form{box-shadow:0 10px 30px rgba(59,130,246,.12);border-color:#BFDBFE}.kp-form>header b{flex:1}
 .kp-x{border:0;background:#EEF1F6;width:30px;height:30px;border-radius:9px;font-size:18px;cursor:pointer;color:#4B5563}
@@ -2761,13 +2773,36 @@ async function kKiyafet(b){const {data,error}=await sb.from('kiyafet').select('*
     <datalist id="kyl">${['Tişört','Polo tişört','Pantolon','İş ayakkabısı','Mont','Yelek','Baret','Eldiven','Gözlük','Tulum','Matkap','Avometre','Pens ampermetre','Merdiven','Kaynak makinesi'].map(k=>`<option value="${k}">`).join('')}</datalist>`:'')+
    `<div class="kp-kpis k3">${kpi('gomlek','#0E9BB8','#E0F7FB',top,'Depoda toplam adet')}${kpi('liste','#3B82F6','#EEF4FF',tur,'Çeşit')}${kpi('uyari',biten?'#DC2626':'#047857',biten?'#FEE2E2':'#D1FAE5',biten,'Stokta biten')}</div>
    <div class="kp-bar"><b style="font-size:16px">Envanter · kıyafet, takım, ekipman</b><button class="kp-btn" style="margin-left:auto" onclick="S.ye='yeni';render();scrollTo(0,0)">+ Envantere ekle</button></div>
-   ${data.length?`<div class="kp-cards">${data.map(k=>`<button class="kp-pc" onclick="S.ye=${k.id};render();scrollTo(0,0)">
-     <div class="kp-pch"><span class="ic" style="width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:#E0F7FB;color:#0E9BB8;flex:none">${kSvg('gomlek',20)}</span><div style="min-width:0;flex:1"><b>${esc(k.ad)}</b><div class="kp-meta" style="margin-top:3px">${k.beden?`<span class="kp-pill blue">Beden ${esc(k.beden)}</span>`:''}</div></div>
-     <div class="kp-adet ${k.adet?'':'yok'}"><b>${k.adet||0}</b><span>${k.adet?'depoda':'bitti'}</span></div></div>
-     ${k.kimde?`<div class="kp-pcd">${kSvg('kisi',14)} ${esc(k.kimde)}</div>`:''}${k.notu?`<div class="kp-not">${esc(k.notu)}</div>`:''}</button>`).join('')}</div>`
-     :`<div class="kp-empty">${kSvg('gomlek',30)}<b>Envanter boş</b><span>Kıyafet, takım ve ekipmanları buraya yaz. Personelin bedenleri Personel sekmesinde.</span></div>`}`;
+   ${data.length?kyGruplar(data):`<div class="kp-empty">${kSvg('gomlek',30)}<b>Envanter boş</b><span>Kıyafet, takım ve ekipmanları buraya yaz. Personelin bedenleri Personel sekmesinde.</span></div>`}`;
   const f=$('#kyf');if(f)f.onsubmit=async ev=>{ev.preventDefault();const o={ad:f.ad.value.trim(),beden:f.bd.value.trim()||null,adet:Number(f.ad2.value)||0,kimde:f.km.value.trim()||null,notu:f.nt.value.trim()||null,guncelleme:new Date().toISOString()};
     const r=e==='yeni'?await sb.from('kiyafet').insert(o):await sb.from('kiyafet').update(o).eq('id',e);if(hata(r.error))return;S.ye=null;toast('Kaydedildi');render()}}
+// Envanter: aynı ürün tek kutuda, renk satırları, beden kutucukları
+const KY_RENK={'MAVİ':'#3B82F6','SİYAH':'#111827','BEYAZ':'#FFFFFF','GRİ':'#9CA3AF','LACİVERT':'#1E3A8A','KIRMIZI':'#EF4444','YEŞİL':'#10B981','TURUNCU':'#F97316','SARI':'#FACC15','HAKİ':'#6B7A3A','KAHVE':'#78350F','KAHVERENGİ':'#78350F','BORDO':'#7F1D1D','LACİ':'#1E3A8A'};
+const KY_SIRA=['XXS','XS','S','M','L','XL','XXL','2XL','3XL','XXXL','4XL','5XL'];
+function kyBol(b){const t=String(b||'').trim().toLocaleUpperCase('tr-TR').split(/\s+/).filter(Boolean);const r=t.filter(x=>KY_RENK[x]),z=t.filter(x=>!KY_RENK[x]);return{beden:z.join(' ')||'Tek beden',renk:r.join(' ')}}
+function kySira(a){const i=KY_SIRA.indexOf(a);if(i>=0)return 1000+i;const n=parseFloat(a);return isNaN(n)?5000:n}
+const kyDurum=n=>!n?['bos','#DC2626','#FEE2E2','bitti']:n<=2?['az','#B45309','#FEF3C7','az kaldı']:['ok','#047857','#D1FAE5','yeterli'];
+function kyGruplar(data){
+  const G={};data.forEach(k=>{const key=String(k.ad||'').trim().toLocaleUpperCase('tr-TR');(G[key]=G[key]||[]).push(k)});
+  const turler=Object.keys(G).sort((a,b)=>a.localeCompare(b,'tr')),f=S.kyF&&G[S.kyF]?S.kyF:'',az=!!S.kyAz;
+  const azSay=data.filter(k=>(k.adet||0)<=2).length;
+  const bar=`<div class="ky-flt"><button class="${!f?'on':''}" onclick="S.kyF='';render()">Tümü</button>${turler.map(t=>`<button class="${f===t?'on':''}" onclick="S.kyF='${esc(t).replace(/'/g,"\\'")}';render()">${esc(t)} <i>${G[t].reduce((s,k)=>s+(k.adet||0),0)}</i></button>`).join('')}
+    <button class="az ${az?'on':''}" onclick="S.kyAz=!S.kyAz;render()">${kSvg('uyari',14)} Azalanlar <i>${azSay}</i></button></div>
+    <div class="ky-leg"><span><i style="background:#10B981"></i>3+ adet: yeterli</span><span><i style="background:#F59E0B"></i>1–2 adet: az kaldı</span><span><i style="background:#EF4444"></i>0: bitti</span><span class="muted">Değiştirmek için kutucuğa dokun</span></div>`;
+  const kutular=turler.filter(t=>!f||t===f).map(t=>{
+    let L=G[t].map(k=>({k,...kyBol(k.beden)}));if(az)L=L.filter(x=>(x.k.adet||0)<=2);if(!L.length)return'';
+    const top=G[t].reduce((s,k)=>s+(k.adet||0),0),bit=G[t].filter(k=>!k.adet).length,ad=G[t][0].ad;
+    const R={};L.forEach(x=>(R[x.renk]=R[x.renk]||[]).push(x));
+    const renkler=Object.keys(R).sort((a,b)=>(a?0:1)-(b?0:1)||a.localeCompare(b,'tr'));
+    const satir=r=>{const l=R[r].sort((a,b)=>kySira(a.beden)-kySira(b.beden)),rt=l.reduce((s,x)=>s+(x.k.adet||0),0);
+      const ad2=r?r.split(' ').map(w=>w[0]+w.slice(1).toLocaleLowerCase('tr-TR')).join(' '):(renkler.length>1?'Diğer':'');
+      return`<div class="ky-row">${ad2?`<div class="ky-rn"><i style="background:${KY_RENK[r.split(' ')[0]]||'#CBD5E1'}"></i><b>${esc(ad2)}</b><span>${rt} adet</span></div>`:''}
+       <div class="ky-tiles">${l.map(x=>{const [c,cl,bg,yz]=kyDurum(x.k.adet||0);return`<button class="ky-t ${c}" style="--c:${cl};--bg:${bg}" onclick="S.ye=${x.k.id};render();scrollTo(0,0)" title="${esc(x.k.kimde||x.k.notu||'')}">
+         <span class="bd">${esc(x.beden)}</span><b>${x.k.adet||0}</b><span class="yz">${yz}</span>${x.k.kimde?`<span class="km">${kSvg('kisi',11)}</span>`:''}</button>`}).join('')}</div></div>`};
+    return`<section class="kp-grp ky-g"><header><span class="ic" style="background:#E0F7FB;color:#0E9BB8">${kSvg('gomlek',17)}</span><b>${esc(ad)}</b>
+      <span class="kp-cnt">${G[t].length} beden/renk</span>${bit?`<span class="kp-pill red">${bit} bitti</span>`:''}<span class="ky-top">Toplam <b>${top}</b></span></header>
+      <div class="ky-b">${renkler.map(satir).join('')}</div></section>`}).join('');
+  return bar+(kutular||'<p class="muted" style="padding:14px 4px">Azalan ürün yok. 👍</p>')}
 async function kKySil(id){if(!confirm('Silinsin mi?'))return;const {error}=await sb.from('kiyafet').delete().eq('id',id);if(hata(error))return;S.ye=null;render()}
 
 async function koordSayi(){if(!koordMi())return 0;try{const {data}=await sb.from('koord_isler').select('id').neq('durum','bitti').lte('son_tarih',gunStr(new Date()));return (data||[]).length}catch(e){return 0}}
